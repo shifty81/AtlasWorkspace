@@ -1,0 +1,23 @@
+# ninja log v7
+0	4	1775498453592384801	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-mkdir	cf0f69fce6382207
+0	4	1775498453592384801	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-mkdir	cf0f69fce6382207
+4	2862	1775498456450380900	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download	ccf0e90a1c045ddc
+4	2862	1775498456450380900	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download	ccf0e90a1c045ddc
+2862	2871	1775498456450380900	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update	3311aa529907aa28
+2862	2871	1775498456450380900	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update	3311aa529907aa28
+2871	2874	1775498456462380884	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch	7647547e5dc5ffae
+2871	2874	1775498456462380884	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch	7647547e5dc5ffae
+2874	2878	1775498456465380880	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-configure	5e822f3f3f94edc8
+2874	2878	1775498456465380880	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-configure	5e822f3f3f94edc8
+2878	2881	1775498456469380875	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-build	e91b163bed702d10
+2878	2881	1775498456469380875	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-build	e91b163bed702d10
+2881	2884	1775498456472380871	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-install	3263741f8058b844
+2881	2884	1775498456472380871	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-install	3263741f8058b844
+2885	2888	1775498456475380867	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-test	40c14ad9371fff83
+2885	2888	1775498456475380867	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-test	40c14ad9371fff83
+2888	2893	1775498456481380859	CMakeFiles/catch2-populate-complete	663723836fef5194
+2888	2893	1775498456481380859	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-done	663723836fef5194
+2888	2893	1775498456481380859	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/CMakeFiles/catch2-populate-complete	663723836fef5194
+2888	2893	1775498456481380859	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-done	663723836fef5194
+0	4	1775499284939173635	catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download	ccf0e90a1c045ddc
+0	4	1775499284939173635	/home/runner/work/AtlasWorkspace_NovaForge/AtlasWorkspace_NovaForge/build_ci/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download	ccf0e90a1c045ddc

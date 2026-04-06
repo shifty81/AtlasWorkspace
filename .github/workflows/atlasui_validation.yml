@@ -1,0 +1,24 @@
+name: AtlasUI Validation
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  atlasui-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run path validator
+        run: python Tools/Validation/atlasui_path_validator.py
+      - name: Run symbol validator
+        run: python Tools/Validation/atlasui_symbol_validator.py
+      - name: Run theme validator
+        run: python Tools/Validation/atlasui_theme_validator.py
+      - name: Run migration gate validator
+        run: python Tools/Validation/atlasui_migration_gate_validator.py --config Tools/Validation/atlasui_validation_config.json
