@@ -1,66 +1,98 @@
 # Atlas Workspace
 
-> **Generic C++ Development Environment** | Platform-first design
+> **Generic C++ Development Environment** | Powered by the Flagship Atlas Engine
 
-**Atlas Workspace** is a native C++ development environment that:
+**Atlas Workspace** is a native C++ development environment and the home of the
+**Atlas Engine** — the engine that powers all software built in this platform.
 
-- Loads external projects
-- Provides editors and tools
+The workspace:
+- Hosts the Atlas Engine (ECS, Physics, Audio, Animation, Input, Networking, Rendering)
+- Loads and runs external projects through adapters and plugins
+- Provides editors and tools built on the engine
 - Manages assets, builds, logs, and automation
-- Brokers AI assistance through AtlasAI
+- Brokers AI assistance through AtlasAI (which hooks directly into the engine)
 
 [![Language](https://img.shields.io/badge/language-C%2B%2B20-brightgreen)]()
-[![Build](https://img.shields.io/badge/build-CMake-blue)]()
+[![Engine](https://img.shields.io/badge/engine-Atlas%20Engine-blue)]()
+[![Build](https://img.shields.io/badge/build-CMake-orange)]()
 
 ## Architecture
 
-Atlas Workspace is divided into four layers:
-
-1. **Workspace Core** — windowing, UI framework, docking, command system, panels, project loader, plugin system, asset indexing, build orchestration, AtlasAI broker, Git integration
-2. **Workspace SDK** — extension contracts for plugins, editors, asset types, document types, build providers
-3. **Project Adapter** — bridge between Workspace and a specific project (e.g. NovaForge)
-4. **Project Content** — the loaded repo, read through the adapter
+```
+┌─────────────────────────────────────────────────────┐
+│                   Atlas Workspace                    │
+│                                                      │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │              Atlas Engine (Flagship)             │ │
+│  │  Core · Engine · Physics · Audio · Animation    │ │
+│  │  Input · Networking · Renderer                  │ │
+│  └─────────────────────────────────────────────────┘ │
+│                                                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │
+│  │  AtlasUI     │  │  AtlasAI     │  │  Codex    │  │
+│  │  GraphVM     │  │  (hooks into │  │  Logger   │  │
+│  │  Editor      │  │   Engine)    │  │  Pipeline │  │
+│  └──────────────┘  └──────────────┘  └───────────┘  │
+│                                                      │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │         Project / Plugin Layer (SDK)             │ │
+│  │   NovaForge · arena2d · atlas-sample · ...      │ │
+│  └─────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
+```
 
 ## Repository Structure
 
 ```
 /AtlasWorkspace
-  /Source          — Workspace platform modules (Core, UI, Editor, GraphVM, Renderer, AI, Pipeline)
-  /Tests           — Workspace platform tests
+  /Source
+    /Core          — Foundation types, logging, memory
+    /Engine        — Atlas Engine: ECS, behavior trees, asset system, scene graph
+    /Physics       — Atlas Engine: physics subsystem
+    /Audio         — Atlas Engine: audio subsystem
+    /Animation     — Atlas Engine: animation subsystem
+    /Input         — Atlas Engine: input subsystem
+    /Networking    — Atlas Engine: networking subsystem
+    /Renderer      — Atlas Engine: rendering subsystem
+    /UI            — AtlasUI framework
+    /GraphVM       — Visual graph/scripting VM
+    /AI            — AtlasAI broker (hooks into Engine)
+    /Pipeline      — Build orchestration / workspace broker
+    /Editor        — Workspace editor host
+  /Tests           — Atlas Engine + workspace tests
   /Docs            — Workspace documentation
-  /Project         — Generic project samples
   /Schemas         — Workspace schemas (atlas.project.v1, atlas.build.v1)
-  /Atlas           — Atlas tools and configuration
+  /Project         — Generic project samples
+  /Atlas           — Atlas tools
   /AtlasAI         — AtlasAI broker
-  /Codex           — Logger/diagnostics/knowledge system
+  /Codex           — Logger/diagnostics
   /Scripts         — Build scripts
   /Tools           — Workspace tools
-  /ThirdParty      — Third-party dependencies
-  /NovaForge       — NovaForge game project (adapter + game source)
+  /NovaForge       — NovaForge game project (uses Atlas Engine via adapter)
 ```
 
 ## Building
 
 ```bash
-# Configure and build workspace
+# Build workspace (includes Atlas Engine)
 cmake --preset debug
 cmake --build --preset debug --parallel
 
-# Run workspace tests
+# Run tests
 ctest --preset debug
 ```
 
-## NovaForge Project
+## NovaForge
 
-The NovaForge game project lives in `/NovaForge`. It is a project adapter that
-extends Atlas Workspace with game-specific editors, systems, and content.
+The NovaForge game lives in `/NovaForge`. It uses the Atlas Engine through the
+workspace adapter layer — game logic, world generation, and gameplay systems
+all sit in `NovaForge/Source/` and link against the workspace-provided engine.
 
-See `/NovaForge/CMakeLists.txt` for the NovaForge build configuration.
+See `/NovaForge/CMakeLists.txt` for the standalone NovaForge build.
 
 ## Key Principles
 
-- Workspace must never depend on a project
-- Projects depend on Workspace via SDK
-- All extensions go through plugins/adapters
-- No gameplay logic in core
-- All systems must be reusable across unknown project types
+- The Atlas Engine is owned by the workspace — all projects use it
+- AtlasAI hooks into the engine for context (active entities, logs, git state)
+- Projects load through adapters; no game logic lives in the workspace core
+- All gameplay systems are project-level (NovaForge, arena2d, etc.)

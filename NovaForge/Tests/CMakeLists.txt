@@ -1,4 +1,6 @@
-# ── NovaForge test suite ──────────────────────────────────────────
+# ── NovaForge game test suite ──────────────────────────────────────
+# Engine subsystem tests live in the workspace Tests/.
+# This suite covers NovaForge-specific game modules.
 
 include(FetchContent)
 FetchContent_Declare(
@@ -19,59 +21,10 @@ foreach(CFG Debug Release RelWithDebInfo MinSizeRel)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CFG_UPPER} ${CMAKE_BINARY_DIR}/bin/${CFG}/Tests)
 endforeach()
 
-# Engine tests
-add_executable(NF_EngineTests
-    Engine/test_engine.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_EngineTests PRIVATE NF::Engine NF::Core Catch2::Catch2)
-catch_discover_tests(NF_EngineTests)
-
-# Physics tests
-add_executable(NF_PhysicsTests
-    Physics/test_physics.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_PhysicsTests PRIVATE NF::Physics NF::Core Catch2::Catch2)
-catch_discover_tests(NF_PhysicsTests)
-
 # Game tests
 add_executable(NF_GameTests
     Game/test_game.cpp
     catch_main.cpp
 )
-target_link_libraries(NF_GameTests PRIVATE NF::Game NF::Core Catch2::Catch2)
+target_link_libraries(NF_GameTests PRIVATE NF::Game NF::Engine NF::Core Catch2::Catch2)
 catch_discover_tests(NF_GameTests)
-
-# Input tests
-add_executable(NF_InputTests
-    Input/test_input.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_InputTests PRIVATE NF::Input NF::Core Catch2::Catch2)
-catch_discover_tests(NF_InputTests)
-
-# Audio tests
-add_executable(NF_AudioTests
-    Audio/test_audio.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_AudioTests PRIVATE NF::Audio NF::Core Catch2::Catch2)
-catch_discover_tests(NF_AudioTests)
-
-# Animation tests
-add_executable(NF_AnimationTests
-    Animation/test_animation.cpp
-    Animation/test_s5_animation.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_AnimationTests PRIVATE NF::Animation NF::Core Catch2::Catch2)
-catch_discover_tests(NF_AnimationTests)
-
-# Networking tests
-add_executable(NF_NetworkingTests
-    Networking/test_networking.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_NetworkingTests PRIVATE NF::Networking NF::Engine NF::Core Catch2::Catch2)
-catch_discover_tests(NF_NetworkingTests)

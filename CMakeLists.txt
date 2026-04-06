@@ -48,9 +48,18 @@ endforeach()
 # ── Build options ─────────────────────────────────────────────────
 option(ATLAS_BUILD_TESTS "Build workspace test suite" OFF)
 
-# ── Workspace platform modules (static libraries) ─────────────────
+# ── Atlas Engine subsystems (static libraries) ────────────────────
+# The flagship engine that powers all projects loaded in Atlas Workspace.
 add_subdirectory(Source/Core)
+add_subdirectory(Source/Engine)
 add_subdirectory(Source/Renderer)
+add_subdirectory(Source/Physics)
+add_subdirectory(Source/Audio)
+add_subdirectory(Source/Animation)
+add_subdirectory(Source/Input)
+add_subdirectory(Source/Networking)
+
+# ── Workspace platform modules (static libraries) ─────────────────
 add_subdirectory(Source/UI)
 add_subdirectory(Source/GraphVM)
 add_subdirectory(Source/AI)

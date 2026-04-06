@@ -1,4 +1,4 @@
-# ── Workspace test suite ──────────────────────────────────────────
+# ── Atlas Engine + Workspace test suite ──────────────────────────
 
 include(FetchContent)
 FetchContent_Declare(
@@ -27,6 +27,55 @@ add_executable(NF_CoreTests
 target_link_libraries(NF_CoreTests PRIVATE NF::Core Catch2::Catch2)
 catch_discover_tests(NF_CoreTests)
 
+# Engine tests
+add_executable(NF_EngineTests
+    Engine/test_engine.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EngineTests PRIVATE NF::Engine NF::Core Catch2::Catch2)
+catch_discover_tests(NF_EngineTests)
+
+# Physics tests
+add_executable(NF_PhysicsTests
+    Physics/test_physics.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_PhysicsTests PRIVATE NF::Physics NF::Core Catch2::Catch2)
+catch_discover_tests(NF_PhysicsTests)
+
+# Audio tests
+add_executable(NF_AudioTests
+    Audio/test_audio.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_AudioTests PRIVATE NF::Audio NF::Core Catch2::Catch2)
+catch_discover_tests(NF_AudioTests)
+
+# Animation tests
+add_executable(NF_AnimationTests
+    Animation/test_animation.cpp
+    Animation/test_s5_animation.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_AnimationTests PRIVATE NF::Animation NF::Core Catch2::Catch2)
+catch_discover_tests(NF_AnimationTests)
+
+# Input tests
+add_executable(NF_InputTests
+    Input/test_input.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_InputTests PRIVATE NF::Input NF::Core Catch2::Catch2)
+catch_discover_tests(NF_InputTests)
+
+# Networking tests
+add_executable(NF_NetworkingTests
+    Networking/test_networking.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_NetworkingTests PRIVATE NF::Networking NF::Engine NF::Core Catch2::Catch2)
+catch_discover_tests(NF_NetworkingTests)
+
 # GraphVM tests
 add_executable(NF_GraphVMTests
     GraphVM/test_graphvm.cpp
@@ -48,7 +97,7 @@ add_executable(NF_AITests
     AI/test_ai.cpp
     catch_main.cpp
 )
-target_link_libraries(NF_AITests PRIVATE NF::AI NF::Core NF::GraphVM Catch2::Catch2)
+target_link_libraries(NF_AITests PRIVATE NF::AI NF::Engine NF::Core NF::GraphVM Catch2::Catch2)
 catch_discover_tests(NF_AITests)
 
 # Editor tests
@@ -100,7 +149,7 @@ add_executable(NF_EditorTests
     catch_main.cpp
 )
 target_link_libraries(NF_EditorTests PRIVATE
-    NF::Editor NF::Renderer NF::UI NF::Core NF::GraphVM
+    NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
     Catch2::Catch2
 )
 catch_discover_tests(NF_EditorTests)
@@ -125,5 +174,5 @@ add_executable(NF_UITests
     UI/test_m1_editor.cpp
     catch_main.cpp
 )
-target_link_libraries(NF_UITests PRIVATE NF::UI NF::Core Catch2::Catch2)
+target_link_libraries(NF_UITests PRIVATE NF::UI NF::Core NF::Input Catch2::Catch2)
 catch_discover_tests(NF_UITests)
