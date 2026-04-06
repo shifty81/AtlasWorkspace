@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 :: ╔══════════════════════════════════════════════════════════════════╗
-:: ║  NovaForge — Windows Build System with Progress & Log Mirror   ║
+:: ║  AtlasWorkspace — Windows Build System with Progress & Log Mirror   ║
 :: ║  All output shown on screen AND mirrored to Logs\build.log     ║
 :: ╚══════════════════════════════════════════════════════════════════╝
 
@@ -22,9 +22,9 @@ set "BL_FLAG="
 if "%~2"=="" goto :done_args
 set "ARG=%~2"
 if /I "%ARG%"=="--test" set "RUN_TESTS=1"
-if /I "%ARG%"=="--editor" set "TARGET=NovaForgeEditor"
-if /I "%ARG%"=="--game" set "TARGET=NovaForgeGame"
-if /I "%ARG%"=="--server" set "TARGET=NovaForgeServer"
+if /I "%ARG%"=="--editor" set "TARGET=AtlasWorkspaceEditor"
+if /I "%ARG%"=="--game" set "TARGET=AtlasWorkspaceGame"
+if /I "%ARG%"=="--server" set "TARGET=AtlasWorkspaceServer"
 if /I "%ARG%"=="/bl" set "BL_FLAG=/bl"
 shift
 goto :parse_args
@@ -35,7 +35,7 @@ if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 
 :: Start log
-echo === NovaForge Build Log === > "%LOG_FILE%"
+echo === AtlasWorkspace Build Log === > "%LOG_FILE%"
 echo Started: %DATE% %TIME% >> "%LOG_FILE%"
 echo Build Type: %BUILD_TYPE% >> "%LOG_FILE%"
 echo. >> "%LOG_FILE%"
@@ -43,7 +43,7 @@ echo. >> "%LOG_FILE%"
 :: Banner
 echo.
 echo  ╔══════════════════════════════════════════════════════════╗
-echo  ║  NovaForge Build System v0.1.0 — Windows               ║
+echo  ║  AtlasWorkspace Build System v0.1.0 — Windows               ║
 echo  ╠══════════════════════════════════════════════════════════╣
 echo  ║  Build Type:  %BUILD_TYPE%
 echo  ║  Build Dir:   %BUILD_DIR%
@@ -58,7 +58,7 @@ echo  [*] Step 1/3: Configuring CMake...
 echo [STEP] Configuring CMake >> "%LOG_FILE%"
 
 :: Generate VS solution if it doesn't exist
-if not exist "%BUILD_DIR%\NovaForge.sln" (
+if not exist "%BUILD_DIR%\AtlasWorkspace.sln" (
     echo  Generating Visual Studio solution...
     cmake --preset vs2022 >> "%LOG_FILE%" 2>&1
     if errorlevel 1 (
@@ -101,7 +101,7 @@ echo  Using MSBuild: %MSBUILD%
 set "MSB_TARGET="
 if not "%TARGET%"=="" set "MSB_TARGET=/t:%TARGET%"
 
-"%MSBUILD%" "%BUILD_DIR%\NovaForge.sln" /p:Configuration=%BUILD_TYPE% /m %MSB_TARGET% %BL_FLAG% /fl /flp:logfile="%LOG_FILE%;append" /v:normal /clp:Summary;ShowTimestamp 2>&1
+"%MSBUILD%" "%BUILD_DIR%\AtlasWorkspace.sln" /p:Configuration=%BUILD_TYPE% /m %MSB_TARGET% %BL_FLAG% /fl /flp:logfile="%LOG_FILE%;append" /v:normal /clp:Summary;ShowTimestamp 2>&1
 if errorlevel 1 (
     echo  [ERROR] Build failed! See %LOG_FILE%
     exit /b 1
@@ -120,14 +120,14 @@ echo.
 
 :: List executables
 echo  Executables:
-if exist "%BUILD_DIR%\bin\%BUILD_TYPE%\NovaForgeEditor.exe" (
-    echo    [OK] NovaForgeEditor.exe
+if exist "%BUILD_DIR%\bin\%BUILD_TYPE%\AtlasWorkspaceEditor.exe" (
+    echo    [OK] AtlasWorkspaceEditor.exe
 )
-if exist "%BUILD_DIR%\bin\%BUILD_TYPE%\NovaForgeGame.exe" (
-    echo    [OK] NovaForgeGame.exe
+if exist "%BUILD_DIR%\bin\%BUILD_TYPE%\AtlasWorkspaceGame.exe" (
+    echo    [OK] AtlasWorkspaceGame.exe
 )
-if exist "%BUILD_DIR%\bin\%BUILD_TYPE%\NovaForgeServer.exe" (
-    echo    [OK] NovaForgeServer.exe
+if exist "%BUILD_DIR%\bin\%BUILD_TYPE%\AtlasWorkspaceServer.exe" (
+    echo    [OK] AtlasWorkspaceServer.exe
 )
 
 :: List test executables

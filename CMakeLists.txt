@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 # Must be set before project() to take effect via CMP0091
 cmake_policy(SET CMP0091 NEW)
 
-project(NovaForge VERSION 0.1.0 LANGUAGES CXX)
+project(AtlasWorkspace VERSION 0.1.0 LANGUAGES CXX)
 
 # Enforce a consistent MSVC runtime library across all targets to avoid LNK4098
 if(MSVC)
@@ -45,68 +45,24 @@ foreach(CFG Debug Release RelWithDebInfo MinSizeRel)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CFG_UPPER} ${CMAKE_BINARY_DIR}/lib/${CFG})
 endforeach()
 
-# ── Third-party packages ──────────────────────────────────────────
-# ImGui is banned — the project uses NF::UI (Atlas UI) exclusively.
-# See ATLAS_CORE_CONTRACT.md §6.
+# ── Build options ─────────────────────────────────────────────────
+option(ATLAS_BUILD_TESTS "Build workspace test suite" OFF)
 
-# ── Build mode ────────────────────────────────────────────────────
-option(NF_STANDALONE "Standalone build (all targets enabled by default)" ON)
-option(NF_HOSTED     "Workspace-hosted build (targets disabled by default, Workspace controls)" OFF)
-
-# In hosted mode, disable executables by default (Workspace controls them)
-if(NF_HOSTED AND NOT NF_STANDALONE)
-    set(_NF_DEFAULT_BUILD_TARGETS OFF)
-else()
-    set(_NF_DEFAULT_BUILD_TARGETS ON)
-endif()
-
-# Build options
-option(NF_BUILD_EDITOR  "Build NovaForge Editor"             ${_NF_DEFAULT_BUILD_TARGETS})
-option(NF_BUILD_GAME    "Build NovaForge Game Runtime"       ${_NF_DEFAULT_BUILD_TARGETS})
-option(NF_BUILD_SERVER  "Build NovaForge Dedicated Server"   ${_NF_DEFAULT_BUILD_TARGETS})
-option(NF_BUILD_TESTS   "Build test suite"                   OFF)
-
-# Core modules (static libraries)
+# ── Workspace platform modules (static libraries) ─────────────────
 add_subdirectory(Source/Core)
-add_subdirectory(Source/Engine)
 add_subdirectory(Source/Renderer)
-add_subdirectory(Source/Physics)
-add_subdirectory(Source/Audio)
-add_subdirectory(Source/Animation)
-add_subdirectory(Source/Input)
-add_subdirectory(Source/Networking)
 add_subdirectory(Source/UI)
-add_subdirectory(Source/Game)
+add_subdirectory(Source/GraphVM)
+add_subdirectory(Source/AI)
+add_subdirectory(Source/Pipeline)
+add_subdirectory(Source/Editor)
 
-# Expanded modules (active in tempnovaforge)
-add_subdirectory(Source/GraphVM)   # Phase 5
-add_subdirectory(Source/World)     # Phase 7
-add_subdirectory(Source/AI)        # AtlasAI broker systems
-add_subdirectory(Source/Pipeline)  # S0 Pipeline Core
-
-# Expanded modules (stubs if not yet present)
-# add_subdirectory(Source/GraphVM)   # Phase 5
-# add_subdirectory(Source/World)     # Phase 7
-# add_subdirectory(Source/AI)        # Pending AtlasAI merge
-
-if(NF_BUILD_EDITOR)
-    add_subdirectory(Source/Editor)
-endif()
-
-# Executables
-add_subdirectory(Source/Programs)
-
-if(NF_BUILD_TESTS)
+if(ATLAS_BUILD_TESTS)
     enable_testing()
     add_subdirectory(Tests)
 endif()
 
 message(STATUS "")
-message(STATUS "=== NovaForge ${PROJECT_VERSION} ===")
-message(STATUS "  Standalone:    ${NF_STANDALONE}")
-message(STATUS "  Hosted:        ${NF_HOSTED}")
-message(STATUS "  Build Editor:  ${NF_BUILD_EDITOR}")
-message(STATUS "  Build Game:    ${NF_BUILD_GAME}")
-message(STATUS "  Build Server:  ${NF_BUILD_SERVER}")
-message(STATUS "  Build Tests:   ${NF_BUILD_TESTS}")
+message(STATUS "=== AtlasWorkspace ${PROJECT_VERSION} ===")
+message(STATUS "  Build Tests:   ${ATLAS_BUILD_TESTS}")
 message(STATUS "")

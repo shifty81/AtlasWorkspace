@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║  NovaForge — Build System with Progress Bars & Log Mirroring    ║
+# ║  AtlasWorkspace — Build System with Progress Bars & Log Mirroring    ║
 # ║  All output is shown on screen AND mirrored to Logs/build.log   ║
 # ╚══════════════════════════════════════════════════════════════════╝
 set -euo pipefail
@@ -17,9 +17,9 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --test)     RUN_TESTS=true ;;
         --target)   shift; TARGET="$1" ;;
-        --editor)   TARGET="NovaForgeEditor" ;;
-        --game)     TARGET="NovaForgeGame" ;;
-        --server)   TARGET="NovaForgeServer" ;;
+        --editor)   TARGET="AtlasWorkspaceEditor" ;;
+        --game)     TARGET="AtlasWorkspaceGame" ;;
+        --server)   TARGET="AtlasWorkspaceServer" ;;
         *)          echo "Unknown option: $1"; exit 1 ;;
     esac
     shift
@@ -86,7 +86,7 @@ mkdir -p "$LOG_DIR"
 mkdir -p "$BUILD_DIR"
 
 # Start fresh log for this build
-echo "=== NovaForge Build Log ===" > "$LOG_FILE"
+echo "=== AtlasWorkspace Build Log ===" > "$LOG_FILE"
 echo "Started: $(timestamp)" >> "$LOG_FILE"
 echo "Build Type: $BUILD_TYPE" >> "$LOG_FILE"
 echo "Build Dir: $BUILD_DIR" >> "$LOG_FILE"
@@ -95,7 +95,7 @@ echo "" >> "$LOG_FILE"
 # ── Banner ────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}${CYAN}║${RESET}  ${BOLD}NovaForge Build System v0.1.0${RESET}                           ${BOLD}${CYAN}║${RESET}"
+echo -e "${BOLD}${CYAN}║${RESET}  ${BOLD}AtlasWorkspace Build System v0.1.0${RESET}                           ${BOLD}${CYAN}║${RESET}"
 echo -e "${BOLD}${CYAN}╠══════════════════════════════════════════════════════════╣${RESET}"
 echo -e "${BOLD}${CYAN}║${RESET}  Build Type:  ${YELLOW}$BUILD_TYPE${RESET}"
 echo -e "${BOLD}${CYAN}║${RESET}  Build Dir:   ${DIM}$BUILD_DIR${RESET}"
@@ -117,10 +117,10 @@ CONFIGURE_START=$(date +%s)
 cmake -B "$BUILD_DIR" -S "$ROOT_DIR" \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-    -DNF_BUILD_EDITOR=ON \
-    -DNF_BUILD_GAME=ON \
-    -DNF_BUILD_SERVER=ON \
-    -DNF_BUILD_TESTS=ON \
+     \
+     \
+     \
+    -DATLAS_BUILD_TESTS=ON \
     2>&1 | tee -a "$LOG_FILE" | while IFS= read -r line; do
         echo -e "  ${DIM}${line}${RESET}"
     done

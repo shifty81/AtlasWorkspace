@@ -1,9 +1,9 @@
-# ── NovaForge — Generate Visual Studio Solution ────────────────────
+# ── AtlasWorkspace — Generate Visual Studio Solution ────────────────────
 # Usage:
 #   .\Scripts\generate_vs_solution.ps1              # VS 2022 by default
 #   .\Scripts\generate_vs_solution.ps1 -VSVersion 2019
 #
-# Output: Builds/vs20XX/NovaForge.sln
+# Output: Builds/vs20XX/AtlasWorkspace.sln
 
 param(
     [ValidateSet("2022", "2019")]
@@ -16,7 +16,7 @@ $preset = "vs$VSVersion"
 
 Write-Host ""
 Write-Host "══════════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  NovaForge — Generating VS $VSVersion Solution" -ForegroundColor Cyan
+Write-Host "  AtlasWorkspace — Generating VS $VSVersion Solution" -ForegroundColor Cyan
 Write-Host "══════════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
 
@@ -28,7 +28,7 @@ try {
         throw "CMake configure failed with exit code $LASTEXITCODE"
     }
 
-    $slnPath = Join-Path "Builds" $preset "NovaForge.sln"
+    $slnPath = Join-Path "Builds" $preset "AtlasWorkspace.sln"
     Write-Host ""
     Write-Host "══════════════════════════════════════════════════════════" -ForegroundColor Green
     Write-Host "  Solution generated successfully!" -ForegroundColor Green

@@ -1,4 +1,4 @@
-# NovaForge — CI Pipeline
+# AtlasWorkspace — CI Pipeline
 name: CI
 
 on:
@@ -62,7 +62,7 @@ jobs:
       - name: Configure
         run: |
           cmake -G "Ninja Multi-Config" -B Builds/multiconfig \
-            -DNF_BUILD_TESTS=ON \
+            -DATLAS_BUILD_TESTS=ON \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build Debug
@@ -73,18 +73,6 @@ jobs:
 
       - name: Test (Debug)
         run: cd Builds/multiconfig && ctest -C Debug --output-on-failure
-
-  docker-server:
-    name: Docker Server Build
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: docker build -t novaforge-server:ci .
-
-      - name: Verify server binary
-        run: docker run --rm novaforge-server:ci --version || true
 
   build-windows:
     name: Windows (VS 2022 / MSVC)

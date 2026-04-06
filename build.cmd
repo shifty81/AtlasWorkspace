@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 :: ---------------------------------------------------------------------------
-:: build.cmd — Build NovaForge with MSBuild (VS 2022/2019).
+:: build.cmd — Build AtlasWorkspace with MSBuild (VS 2022/2019).
 ::
 :: Can be run from ANY Command Prompt — MSBuild is auto-located via
 :: vswhere.exe if it is not already on PATH.
@@ -32,7 +32,7 @@ set "LOGFILE=Saved\Logs\build.log"
 
 :: Start log ----------------------------------------------------------------
 echo ========================================================== > "%LOGFILE%"
-echo  NovaForge build started: %DATE% %TIME%                   >> "%LOGFILE%"
+echo  AtlasWorkspace build started: %DATE% %TIME%                   >> "%LOGFILE%"
 echo ========================================================== >> "%LOGFILE%"
 
 :: Detect VS MSBuild --------------------------------------------------------
@@ -82,7 +82,7 @@ goto parse_args
 :done_args
 
 :: Ensure the .sln exists ---------------------------------------------------
-set "SLN_PATH=Builds\vs2022\NovaForge.sln"
+set "SLN_PATH=Builds\vs2022\AtlasWorkspace.sln"
 if not exist "%SLN_PATH%" (
     echo.
     echo [INFO] Solution not found at %SLN_PATH%.
@@ -99,9 +99,9 @@ if not exist "%SLN_PATH%" (
 
 :: Build ---------------------------------------------------------------------
 echo.
-echo === NovaForge %CONFIG% %TARGET% ===
+echo === AtlasWorkspace %CONFIG% %TARGET% ===
 echo.
-echo === NovaForge %CONFIG% %TARGET% === >> "%LOGFILE%"
+echo === AtlasWorkspace %CONFIG% %TARGET% === >> "%LOGFILE%"
 echo. >> "%LOGFILE%"
 
 "!MSBUILD!" "%SLN_PATH%" /t:%TARGET% /p:Configuration=%CONFIG% /p:Platform=x64 /m %EXTRA_ARGS%
@@ -126,8 +126,8 @@ if !BUILD_EXIT! neq 0 (
 )
 
 echo.
-echo [OK] NovaForge %CONFIG% %TARGET% succeeded.
+echo [OK] AtlasWorkspace %CONFIG% %TARGET% succeeded.
 echo.
-echo [OK] NovaForge %CONFIG% %TARGET% succeeded. >> "%LOGFILE%"
+echo [OK] AtlasWorkspace %CONFIG% %TARGET% succeeded. >> "%LOGFILE%"
 echo Build log saved to: %LOGFILE%
 pause
