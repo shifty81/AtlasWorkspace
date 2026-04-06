@@ -190,7 +190,7 @@ TEST_CASE("Manifest save and load round-trip", "[Pipeline][Manifest]") {
     auto path = dir / "manifest.json";
 
     NF::Manifest original;
-    original.projectName = "NovaForge";
+    original.projectName = "TestProject";
     original.modules     = {"Core", "Engine", "Pipeline"};
     original.registerAsset({"", "mesh",    "models/cube.glb",    100LL, "sha1"});
     original.registerAsset({"", "texture", "textures/dirt.png",  200LL, "sha2"});
@@ -199,7 +199,7 @@ TEST_CASE("Manifest save and load round-trip", "[Pipeline][Manifest]") {
 
     NF::Manifest loaded;
     REQUIRE(loaded.load(path));
-    REQUIRE(loaded.projectName   == "NovaForge");
+    REQUIRE(loaded.projectName   == "TestProject");
     REQUIRE(loaded.modules.size() == 3);
     REQUIRE(loaded.recordCount() == 2);
 

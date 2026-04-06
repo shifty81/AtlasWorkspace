@@ -298,10 +298,10 @@ TEST_CASE("SkeletalEditorPanel add/remove/find skeletons and weight paint", "[Ed
 
 TEST_CASE("SkeletalEditorPanel openAsset sets active", "[Editor][M1C]") {
     SkeletalEditorPanel panel;
-    SkeletalAsset skel("ShipHull_01");
+    SkeletalAsset skel("CharacterRig_01");
     REQUIRE(panel.addSkeleton(skel));
-    panel.openAsset("ShipHull_01");
-    REQUIRE(panel.activeSkeleton() == "ShipHull_01");
+    panel.openAsset("CharacterRig_01");
+    REQUIRE(panel.activeSkeleton() == "CharacterRig_01");
 }
 
 // ── AnimationEditorPanel ──────────────────────────────────────────

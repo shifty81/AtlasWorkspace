@@ -19,7 +19,7 @@ struct DataField {
 };
 
 /**
- * @brief One record inside a loaded data file (e.g. one ship, one module).
+ * @brief One record inside a loaded data file (e.g. one entity, one asset).
  *
  * The @c id doubles as a display label in the list view.  Fields hold the
  * flat key–value pairs extracted from the JSON object.
@@ -30,12 +30,11 @@ struct DataEntry {
 };
 
 /**
- * @brief DataBrowserPanel — generic JSON data editor for all game data.
+ * @brief DataBrowserPanel — generic JSON data editor.
  *
- * Covers every game data category that has no specialised panel:
- * modules, skills, NPCs, market, exploration, industry, corporations,
- * contracts, wormholes, planetary operations, security, character
- * creation, and UI theme files.
+ * Provides a table-style browser for any JSON data files loaded from
+ * project data directories.  Categories are discovered dynamically
+ * from the loaded project rather than hardcoded.
  *
  * Usage workflow:
  *   1. LoadCategory() to open a data file or set of files
@@ -57,17 +56,19 @@ public:
 
     // ── Category / file management ───────────────────────────────
 
-    /** Known data categories that map to data/ subdirectories. */
-    static constexpr const char* kCategories[] = {
-        "ships", "modules", "skills", "npcs", "market",
-        "missions", "universe", "exploration", "industry",
-        "fleet", "corporations", "contracts", "wormholes",
-        "planetary_operations", "security", "character_creation", "ui"
-    };
-    static constexpr int kCategoryCount = 17;
-
     /** Load all entries for a given category (subdirectory of data/). */
     void LoadCategory(const std::string& category);
+
+    /** Register a data category for the browser to discover.
+     *  Projects call this at startup to populate the category list. */
+    void RegisterCategory(const std::string& category) {
+        m_registeredCategories.push_back(category);
+    }
+
+    /** Get the list of registered categories. */
+    const std::vector<std::string>& RegisteredCategories() const {
+        return m_registeredCategories;
+    }
 
     /** Get current category name. */
     const std::string& CurrentCategory() const { return m_currentCategory; }
@@ -114,6 +115,7 @@ private:
     std::string m_filter;
     int m_categoryIndex = 0;
 
+    std::vector<std::string> m_registeredCategories;
     std::vector<std::string> m_log;
     atlas::PanelState m_panelState;
     float m_scrollOffset = 0.0f;

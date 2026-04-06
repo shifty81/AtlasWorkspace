@@ -236,7 +236,7 @@ TEST_CASE("LaunchService validate nonexistent exe", "[Editor][Launch]") {
 
 TEST_CASE("LaunchService resolve with build directory", "[Editor][Launch]") {
     NF::LaunchService launch;
-    launch.setGameExecutableName("NovaForgeGame");
+    launch.setGameExecutableName("AtlasGame");
     launch.setBuildDirectory("./Builds/debug");
 
     // May or may not find it depending on build state, but should not crash

@@ -9,15 +9,6 @@ void EditorMenuBar::RegisterPanel(EditorPanel* panel) {
     if (panel) m_panels.push_back(panel);
 }
 
-bool EditorMenuBar::IsPCGPanel(const std::string& name) {
-    return name == "PCG Preview"
-        || name == "Ship Archetype"
-        || name == "Generation Style"
-        || name == "Asset Style"
-        || name == "Galaxy Map"
-        || name == "Fleet Formation";
-}
-
 void EditorMenuBar::Build() {
     m_menus.clear();
     m_panelMap.clear();
@@ -44,19 +35,6 @@ void EditorMenuBar::Build() {
         viewMenu.items.push_back({panel->Name(), true, panel->IsVisible()});
     }
     m_menus.push_back(std::move(viewMenu));
-
-    // ── PCG Content menu ─────────────────────────────────────────
-    atlas::Menu pcgMenu;
-    pcgMenu.label = "PCG Content";
-    for (auto* panel : m_panels) {
-        if (!panel) continue;
-        if (IsPCGPanel(panel->Name())) {
-            pcgMenu.items.push_back({panel->Name(), true, panel->IsVisible()});
-        }
-    }
-    if (!pcgMenu.items.empty()) {
-        m_menus.push_back(std::move(pcgMenu));
-    }
 }
 
 float EditorMenuBar::Draw(atlas::AtlasContext* ctx, float windowW) {
@@ -67,15 +45,6 @@ float EditorMenuBar::Draw(atlas::AtlasContext* ctx, float windowW) {
             auto it = m_panelMap.find(item.label);
             if (it != m_panelMap.end()) {
                 item.checked = it->second->IsVisible();
-            }
-        }
-        if (m_menus.size() >= 3) {
-            auto& pcgItems = m_menus[2].items;
-            for (auto& item : pcgItems) {
-                auto it = m_panelMap.find(item.label);
-                if (it != m_panelMap.end()) {
-                    item.checked = it->second->IsVisible();
-                }
             }
         }
     }
@@ -100,18 +69,6 @@ float EditorMenuBar::Draw(atlas::AtlasContext* ctx, float windowW) {
             if (itemIdx >= 0 && itemIdx < static_cast<int>(m_panels.size())) {
                 auto* panel = m_panels[itemIdx];
                 if (panel) panel->SetVisible(!panel->IsVisible());
-            }
-        } else if (menuIdx == 2) {
-            // PCG Content menu — toggle panel visibility + notify callback
-            size_t pi = 0;
-            for (auto* panel : m_panels) {
-                if (!panel || !IsPCGPanel(panel->Name())) continue;
-                if (static_cast<int>(pi) == itemIdx) {
-                    panel->SetVisible(!panel->IsVisible());
-                    if (onPCGContentSelected) onPCGContentSelected(panel->Name());
-                    break;
-                }
-                ++pi;
             }
         }
     }

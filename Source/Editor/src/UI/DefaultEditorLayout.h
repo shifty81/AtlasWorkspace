@@ -8,18 +8,17 @@ namespace atlas::editor {
 /// exists.  The editor UI is self-hosted: the editor shell itself is
 /// described in the same DSL format used for game UI.
 ///
-/// Layout: Left sidebar (Asset Browser) is preserved.  The rest is
-/// reworked around the Ship Editor as the main workspace — ship
-/// viewport, properties, component palette, ship systems, and console.
+/// Layout: Left sidebar (Asset Browser), centre viewport, right
+/// inspector, bottom console — a project-agnostic starting point.
 inline std::string DefaultEditorDSL() {
     return R"(layout "DefaultEditor" {
     split horizontal 0.18 {
         panel "AssetBrowser"
         split vertical 0.75 {
-            panel "ShipEditor"
+            panel "Viewport"
             split horizontal 0.60 {
                 panel "Console"
-                panel "ShipSystems"
+                panel "Inspector"
             }
         }
     }

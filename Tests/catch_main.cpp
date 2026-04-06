@@ -1,4 +1,4 @@
-// NovaForge — Catch2 test entry point.
+// Atlas Workspace — Catch2 test entry point.
 // Linked into every test executable so main() is compiled directly
 // into the binary (avoids MSVC static-lib extraction issue with
 // Catch2::Catch2WithMain on the Visual Studio generator).

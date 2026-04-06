@@ -267,11 +267,11 @@ TEST_CASE("AssetHandle default state", "[Engine][Asset]") {
 
 TEST_CASE("AssetHandle load and access data", "[Engine][Asset]") {
     NF::AssetHandle<std::string> handle(NF::StringID("greeting"));
-    handle.setData(std::make_unique<std::string>("Hello, NovaForge!"));
+    handle.setData(std::make_unique<std::string>("Hello, Atlas!"));
 
     REQUIRE(handle.isLoaded());
     REQUIRE(handle.state() == NF::AssetState::Loaded);
-    REQUIRE(*handle.get() == "Hello, NovaForge!");
+    REQUIRE(*handle.get() == "Hello, Atlas!");
 }
 
 // ── Scene Graph ──────────────────────────────────────────────────

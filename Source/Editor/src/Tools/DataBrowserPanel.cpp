@@ -8,8 +8,7 @@ namespace atlas::editor {
 // ── Construction ───────────────────────────────────────────────────
 
 DataBrowserPanel::DataBrowserPanel() {
-    log("Data Browser initialized — " + std::to_string(kCategoryCount)
-        + " categories available");
+    log("Data Browser initialized");
 }
 
 // ── Draw ───────────────────────────────────────────────────────────
@@ -45,13 +44,13 @@ void DataBrowserPanel::Draw() {
     y += rowH + pad;
     float btnX = b.x + pad;
     const float btnW = 80.0f;
-    for (int i = 0; i < kCategoryCount; ++i) {
+    for (size_t i = 0; i < m_registeredCategories.size(); ++i) {
         if (btnX + btnW > b.x + b.w - pad) {
             btnX = b.x + pad;
             y += rowH + pad;
         }
-        if (atlas::button(ctx, kCategories[i], {btnX, y, btnW, rowH})) {
-            LoadCategory(kCategories[i]);
+        if (atlas::button(ctx, m_registeredCategories[i].c_str(), {btnX, y, btnW, rowH})) {
+            LoadCategory(m_registeredCategories[i]);
         }
         btnX += btnW + pad;
     }
