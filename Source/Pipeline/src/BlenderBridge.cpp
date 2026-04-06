@@ -70,11 +70,11 @@ std::filesystem::path BlenderBridge::resolveAssetPath(
     fs::path p(event.path);
     if (p.is_absolute()) return p;
 
-    // Try relative to the .novaforge directory's parent (workspace root).
+    // Try relative to the .atlas directory's parent (workspace root).
     auto candidate = dirs.root / p;
     if (fs::exists(candidate)) return candidate;
 
-    // Try relative to .novaforge/pipeline.
+    // Try relative to .atlas/pipeline.
     candidate = dirs.pipeline / p;
     if (fs::exists(candidate)) return candidate;
 
@@ -82,7 +82,7 @@ std::filesystem::path BlenderBridge::resolveAssetPath(
     // e.g. "pipeline/assets/foo.glb" → strip "pipeline/" prefix
     const std::string pathStr = event.path;
     if (pathStr.starts_with("pipeline/")) {
-        candidate = dirs.dotNovaForge / p;
+        candidate = dirs.dotAtlas / p;
         if (fs::exists(candidate)) return candidate;
     }
 

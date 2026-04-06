@@ -2,7 +2,7 @@
 //
 // Implements WorkspaceBroker: the AI workspace broker that manages
 // sessions, context indexing, and analysis routing for SwissAgent.
-// All communication uses the .novaforge/pipeline/ directory.
+// All communication uses the .atlas/pipeline/ directory.
 
 #include "NF/Pipeline/Pipeline.h"
 

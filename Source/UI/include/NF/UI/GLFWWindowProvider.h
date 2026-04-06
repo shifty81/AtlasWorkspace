@@ -13,7 +13,7 @@ public:
     struct WindowConfig {
         int width = 1280;
         int height = 800;
-        std::string title = "NovaForge Editor";
+        std::string title = "Atlas Editor";
         bool vsync = true;
         bool maximized = false;
         bool decorated = true;

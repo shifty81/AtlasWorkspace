@@ -3,7 +3,7 @@
 
 namespace atlas::tools {
 
-/// Lightweight in-client editor tool interface (NovaForge-style).
+/// Lightweight in-client editor tool interface.
 ///
 /// Unlike IEditorToolModule (editor kernel tools with panels, menus, and
 /// modes), ITool describes a single, toggleable in-client overlay tool

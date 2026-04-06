@@ -1,6 +1,6 @@
 #pragma once
-// NF::AI — Behavior graphs, memory, NPC logic, faction relationships,
-//          utility AI, agents, tool services, editor AI assistant
+// NF::AI — Generic behavior AI, memory, utility scoring, agents,
+//          tool services, editor AI assistant (project-agnostic)
 #include "NF/Core/Core.h"
 #include "NF/Engine/Engine.h"
 
@@ -22,10 +22,6 @@ enum class AIBehavior : uint8_t {
     Patrol,
     Attack,
     Flee,
-    Mine,
-    Trade,
-    Haul,
-    Guard,
     Explore
 };
 
@@ -35,114 +31,6 @@ struct AIMemory {
     float decayRate = 0.01f;
     float threat = 0.f;
     float friendliness = 0.5f;
-};
-
-// ── Faction System ───────────────────────────────────────────────
-
-using FactionID = uint32_t;
-
-enum class FactionRelation : uint8_t {
-    Allied,
-    Friendly,
-    Neutral,
-    Hostile,
-    AtWar
-};
-
-struct FactionReputation {
-    FactionID       factionId = 0;
-    FactionRelation relation  = FactionRelation::Neutral;
-    float           standing  = 0.f; // -1 to 1
-};
-
-class FactionManager {
-public:
-    FactionID registerFaction(const std::string& name) {
-        FactionID id = m_nextId++;
-        m_names[id] = name;
-        NF_LOG_INFO("AI", "Registered faction: " + name);
-        return id;
-    }
-
-    void setRelation(FactionID a, FactionID b, FactionRelation rel, float standing = 0.f) {
-        auto key = pairKey(a, b);
-        m_relations[key] = FactionReputation{b, rel, clampStanding(standing)};
-    }
-
-    [[nodiscard]] FactionRelation getRelation(FactionID a, FactionID b) const {
-        auto it = m_relations.find(pairKey(a, b));
-        return (it != m_relations.end()) ? it->second.relation : FactionRelation::Neutral;
-    }
-
-    [[nodiscard]] float getStanding(FactionID a, FactionID b) const {
-        auto it = m_relations.find(pairKey(a, b));
-        return (it != m_relations.end()) ? it->second.standing : 0.f;
-    }
-
-    [[nodiscard]] std::vector<std::string> listFactions() const {
-        std::vector<std::string> out;
-        out.reserve(m_names.size());
-        for (auto& [id, name] : m_names) out.push_back(name);
-        return out;
-    }
-
-    [[nodiscard]] size_t factionCount() const { return m_names.size(); }
-
-private:
-    FactionID m_nextId = 1;
-    std::unordered_map<FactionID, std::string> m_names;
-    std::unordered_map<uint64_t, FactionReputation> m_relations;
-
-    static uint64_t pairKey(FactionID a, FactionID b) {
-        return (static_cast<uint64_t>(a) << 32) | static_cast<uint64_t>(b);
-    }
-
-    static float clampStanding(float v) {
-        return (v < -1.f) ? -1.f : (v > 1.f) ? 1.f : v;
-    }
-};
-
-// ── NPC Personality ──────────────────────────────────────────────
-
-enum class PersonalityTrait : uint8_t {
-    Aggressive,
-    Cautious,
-    Greedy,
-    Loyal,
-    Cowardly,
-    Brave,
-    Curious,
-    Diplomatic
-};
-
-class PersonalityProfile {
-public:
-    void addTrait(PersonalityTrait t) {
-        if (!hasTrait(t)) m_traits.push_back(t);
-    }
-
-    void removeTrait(PersonalityTrait t) {
-        m_traits.erase(std::remove(m_traits.begin(), m_traits.end(), t), m_traits.end());
-    }
-
-    [[nodiscard]] bool hasTrait(PersonalityTrait t) const {
-        return std::find(m_traits.begin(), m_traits.end(), t) != m_traits.end();
-    }
-
-    [[nodiscard]] size_t traitCount() const { return m_traits.size(); }
-
-    void setMorale(float v) { m_morale = clamp01(v); }
-    [[nodiscard]] float morale() const { return m_morale; }
-
-    void setConfidence(float v) { m_confidence = clamp01(v); }
-    [[nodiscard]] float confidence() const { return m_confidence; }
-
-private:
-    std::vector<PersonalityTrait> m_traits;
-    float m_morale     = 0.5f;
-    float m_confidence = 0.5f;
-
-    static float clamp01(float v) { return (v < 0.f) ? 0.f : (v > 1.f) ? 1.f : v; }
 };
 
 // ── AI Blackboard ────────────────────────────────────────────────
@@ -239,9 +127,6 @@ public:
 
     [[nodiscard]] EntityID entityId() const { return m_entityId; }
 
-    PersonalityProfile&       personality()       { return m_personality; }
-    [[nodiscard]] const PersonalityProfile& personality() const { return m_personality; }
-
     AIMemory&       memory()       { return m_memory; }
     [[nodiscard]] const AIMemory& memory() const { return m_memory; }
 
@@ -257,7 +142,6 @@ public:
 private:
     EntityID           m_entityId   = INVALID_ENTITY;
     AIBehavior         m_behavior   = AIBehavior::Idle;
-    PersonalityProfile m_personality;
     AIMemory           m_memory;
     Blackboard*        m_blackboard = nullptr;
 };

@@ -3,10 +3,10 @@
 //
 // All tools (editor, Blender bridge, AtlasAI, ContractScanner,
 // ReplayMinimizer) communicate exclusively by reading and writing files under
-// the workspace's .novaforge/pipeline/ directory tree.  No sockets, no RPC.
+// the workspace's .atlas/pipeline/ directory tree.  No sockets, no RPC.
 //
 // Directory layout (relative to workspace root):
-//   .novaforge/
+//   .atlas/
 //     pipeline/
 //       changes/       ← .change.json events dropped here by any tool
 //       assets/        ← imported/generated assets (meshes, textures)
@@ -229,7 +229,7 @@ private:
 
 struct PipelineDirectories {
     std::filesystem::path root;
-    std::filesystem::path dotNovaForge;
+    std::filesystem::path dotAtlas;
     std::filesystem::path pipeline;
     std::filesystem::path changes;
     std::filesystem::path assets;

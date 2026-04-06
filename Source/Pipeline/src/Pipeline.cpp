@@ -466,16 +466,16 @@ PipelineDirectories PipelineDirectories::fromRoot(
 {
     PipelineDirectories d;
     d.root          = workspaceRoot;
-    d.dotNovaForge  = workspaceRoot / ".novaforge";
-    d.pipeline      = d.dotNovaForge / "pipeline";
+    d.dotAtlas      = workspaceRoot / ".atlas";
+    d.pipeline      = d.dotAtlas / "pipeline";
     d.changes       = d.pipeline  / "changes";
     d.assets        = d.pipeline  / "assets";
     d.worlds        = d.pipeline  / "worlds";
     d.scripts       = d.pipeline  / "scripts";
     d.animations    = d.pipeline  / "animations";
     d.sessions      = d.pipeline  / "sessions";
-    d.manifestFile  = d.dotNovaForge / "manifest.json";
-    d.watchLogFile  = d.dotNovaForge / "watch.log";
+    d.manifestFile  = d.dotAtlas / "manifest.json";
+    d.watchLogFile  = d.dotAtlas / "watch.log";
     return d;
 }
 

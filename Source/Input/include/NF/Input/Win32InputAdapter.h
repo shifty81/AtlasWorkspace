@@ -1,7 +1,7 @@
 #pragma once
 // NF::Win32InputAdapter — Maps Win32 window messages to NF::InputSystem calls.
 //
-// Usage in the Win32 message pump (NovaForgeEditor main.cpp):
+// Usage in the Win32 message pump (Editor main.cpp):
 //
 //   NF::InputSystem input;
 //   NF::Win32InputAdapter adapter(input);
