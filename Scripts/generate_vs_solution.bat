@@ -1,10 +1,10 @@
 @echo off
-REM ── NovaForge — Generate Visual Studio Solution ──────────────────
+REM ── AtlasWorkspace — Generate Visual Studio Solution ──────────────────
 REM Usage:
 REM   generate_vs_solution.bat           (VS 2022 by default)
 REM   generate_vs_solution.bat 2019      (VS 2019)
 REM
-REM Output: Builds/vs20XX/NovaForge.sln
+REM Output: Builds/vs20XX/AtlasWorkspace.sln
 
 setlocal enabledelayedexpansion
 
@@ -25,7 +25,7 @@ if "%VS_VERSION%"=="2022" (
 
 echo.
 echo ══════════════════════════════════════════════════════════
-echo   NovaForge — Generating VS %VS_VERSION% Solution
+echo   AtlasWorkspace — Generating VS %VS_VERSION% Solution
 echo ══════════════════════════════════════════════════════════
 echo.
 
@@ -42,7 +42,7 @@ if errorlevel 1 (
 echo.
 echo ══════════════════════════════════════════════════════════
 echo   Solution generated successfully!
-echo   Open: Builds\%PRESET%\NovaForge.sln
+echo   Open: Builds\%PRESET%\AtlasWorkspace.sln
 echo ══════════════════════════════════════════════════════════
 echo.
 

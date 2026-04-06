@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NovaForge — Project Structure Validator
+# AtlasWorkspace — Project Structure Validator
 # Validates that the repository conforms to the hosted project contract.
 # Exit 0 = all checks pass, Exit 1 = one or more checks failed.
 
@@ -32,7 +32,7 @@ file_exists() {
 }
 
 echo "═══════════════════════════════════════════════════"
-echo "  NovaForge Project Validator"
+echo "  AtlasWorkspace Project Validator"
 echo "═══════════════════════════════════════════════════"
 echo ""
 

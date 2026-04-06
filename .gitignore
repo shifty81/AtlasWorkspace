@@ -1,6 +1,9 @@
 # ── Build output ──────────────────────────────────────────────────
 Builds/
 build/
+build_ci/
+build_test/
+build_test_debug/
 out/
 dist/
 cmake-build-*/
@@ -26,6 +29,7 @@ install_manifest.txt
 !CMakePresets.json
 !Source/**/CMakeLists.txt
 !Tests/CMakeLists.txt
+!NovaForge/**/CMakeLists.txt
 !cmake/*.cmake
 
 # ── IDE / Editor ──────────────────────────────────────────────────
@@ -77,8 +81,8 @@ Atlas/Workspace/Sessions/*
 !Atlas/Workspace/Sessions/.gitkeep
 
 # ── Pipeline IPC runtime ─────────────────────────────────────────
-.novaforge/pipeline/
-!.novaforge/.gitkeep
+NovaForge/.novaforge/pipeline/
+!NovaForge/.novaforge/.gitkeep
 
 # ── Package output ────────────────────────────────────────────────
 *.tar.gz

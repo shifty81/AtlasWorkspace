@@ -1,7 +1,7 @@
-# NovaForge — Development task shortcuts
+# AtlasWorkspace — Development task shortcuts
 # Usage: make <target>
 
-.PHONY: help configure build build-debug build-release test clean editor game server
+.PHONY: help configure build build-debug build-release test clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -22,15 +22,6 @@ build: configure ## Build debug (all targets)
 
 build-release: configure-release ## Build release (all targets)
 	cmake --build --preset release --parallel
-
-editor: configure ## Build editor only
-	cmake --build --preset debug --target NovaForgeEditor --parallel
-
-game: configure ## Build game client only
-	cmake --build --preset debug --target NovaForgeGame --parallel
-
-server: configure ## Build server only
-	cmake --build --preset debug --target NovaForgeServer --parallel
 
 # ── Test ──────────────────────────────────────────────────────────
 

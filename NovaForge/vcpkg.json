@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "atlasworkspace",
+  "name": "novaforge",
   "version": "0.1.0",
-  "description": "AtlasWorkspace — generic C++ editor platform",
+  "description": "NovaForge — voxel space game built on AtlasWorkspace",
   "dependencies": [
     {
       "name": "glfw3",
@@ -14,8 +14,14 @@
     },
 
     "vulkan-headers",
+    "openal-soft",
+    "bullet3",
     "nlohmann-json",
     "spdlog",
+    "entt",
+    "cereal",
+    "stb",
+    "assimp",
     "fmt",
     "glm"
   ],

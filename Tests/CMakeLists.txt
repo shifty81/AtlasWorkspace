@@ -1,4 +1,4 @@
-# ── Test suite ────────────────────────────────────────────────────
+# ── Atlas Engine + Workspace test suite ──────────────────────────
 
 include(FetchContent)
 FetchContent_Declare(
@@ -43,38 +43,6 @@ add_executable(NF_PhysicsTests
 target_link_libraries(NF_PhysicsTests PRIVATE NF::Physics NF::Core Catch2::Catch2)
 catch_discover_tests(NF_PhysicsTests)
 
-# Game tests
-add_executable(NF_GameTests
-    Game/test_game.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_GameTests PRIVATE NF::Game NF::Core Catch2::Catch2)
-catch_discover_tests(NF_GameTests)
-
-# GraphVM tests
-add_executable(NF_GraphVMTests
-    GraphVM/test_graphvm.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_GraphVMTests PRIVATE NF::GraphVM NF::Core Catch2::Catch2)
-catch_discover_tests(NF_GraphVMTests)
-
-# Input tests
-add_executable(NF_InputTests
-    Input/test_input.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_InputTests PRIVATE NF::Input NF::Core Catch2::Catch2)
-catch_discover_tests(NF_InputTests)
-
-# Renderer tests
-add_executable(NF_RendererTests
-    Renderer/test_renderer.cpp
-    catch_main.cpp
-)
-target_link_libraries(NF_RendererTests PRIVATE NF::Renderer NF::Core Catch2::Catch2)
-catch_discover_tests(NF_RendererTests)
-
 # Audio tests
 add_executable(NF_AudioTests
     Audio/test_audio.cpp
@@ -92,6 +60,14 @@ add_executable(NF_AnimationTests
 target_link_libraries(NF_AnimationTests PRIVATE NF::Animation NF::Core Catch2::Catch2)
 catch_discover_tests(NF_AnimationTests)
 
+# Input tests
+add_executable(NF_InputTests
+    Input/test_input.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_InputTests PRIVATE NF::Input NF::Core Catch2::Catch2)
+catch_discover_tests(NF_InputTests)
+
 # Networking tests
 add_executable(NF_NetworkingTests
     Networking/test_networking.cpp
@@ -99,6 +75,22 @@ add_executable(NF_NetworkingTests
 )
 target_link_libraries(NF_NetworkingTests PRIVATE NF::Networking NF::Engine NF::Core Catch2::Catch2)
 catch_discover_tests(NF_NetworkingTests)
+
+# GraphVM tests
+add_executable(NF_GraphVMTests
+    GraphVM/test_graphvm.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_GraphVMTests PRIVATE NF::GraphVM NF::Core Catch2::Catch2)
+catch_discover_tests(NF_GraphVMTests)
+
+# Renderer tests
+add_executable(NF_RendererTests
+    Renderer/test_renderer.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_RendererTests PRIVATE NF::Renderer NF::Core Catch2::Catch2)
+catch_discover_tests(NF_RendererTests)
 
 # AI tests
 add_executable(NF_AITests
@@ -157,7 +149,7 @@ add_executable(NF_EditorTests
     catch_main.cpp
 )
 target_link_libraries(NF_EditorTests PRIVATE
-    NF::Editor NF::Game NF::Renderer NF::UI NF::Engine NF::Core NF::GraphVM
+    NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
     Catch2::Catch2
 )
 catch_discover_tests(NF_EditorTests)

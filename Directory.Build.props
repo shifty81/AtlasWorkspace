@@ -14,12 +14,12 @@
 
   <PropertyGroup>
     <!-- Flag if the wrong MSBuild flavour is being used -->
-    <_NF_VCTargetsMissing Condition="'$(VCTargetsPath)' == '' or !Exists('$(VCTargetsPath)\Microsoft.Cpp.Default.props')">true</_NF_VCTargetsMissing>
+    <_AWS_VCTargetsMissing Condition="'$(VCTargetsPath)' == '' or !Exists('$(VCTargetsPath)\Microsoft.Cpp.Default.props')">true</_AWS_VCTargetsMissing>
   </PropertyGroup>
 
-  <Target Name="_NF_CheckVCTargets" BeforeTargets="Build;Rebuild;Clean"
-          Condition="'$(_NF_VCTargetsMissing)' == 'true'">
-    <Error Text="NovaForge requires Visual Studio's MSBuild (not the .NET SDK MSBuild).
+  <Target Name="_AWS_CheckVCTargets" BeforeTargets="Build;Rebuild;Clean"
+          Condition="'$(_AWS_VCTargetsMissing)' == 'true'">
+    <Error Text="AtlasWorkspace requires Visual Studio's MSBuild (not the .NET SDK MSBuild).
 Open a 'Developer Command Prompt for VS 2022' then run build.cmd, or use the VS IDE:
   File &gt; Open &gt; CMake… &gt; CMakeLists.txt
 Do NOT use 'dotnet build' or 'dotnet msbuild' — the .NET SDK MSBuild lacks C++ targets." />
