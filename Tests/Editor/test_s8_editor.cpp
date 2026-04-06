@@ -31,7 +31,7 @@ TEST_CASE("ToolInstanceInfo has sensible defaults", "[Editor][S8]") {
 // 3. ToolEcosystemConfig defaults
 TEST_CASE("ToolEcosystemConfig defaults", "[Editor][S8]") {
     ToolEcosystemConfig cfg;
-    CHECK(cfg.pipelineDir == ".novaforge/pipeline");
+    CHECK(cfg.pipelineDir == ".atlas/pipeline");
     CHECK(cfg.heartbeatIntervalSec == 5.f);
     CHECK(cfg.unhealthyThresholdSec == 15.f);
     CHECK(cfg.crashThresholdSec == 30.f);

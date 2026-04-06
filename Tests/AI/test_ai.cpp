@@ -4,109 +4,6 @@
 
 using Catch::Matchers::WithinAbs;
 
-// ── FactionManager ───────────────────────────────────────────────
-
-TEST_CASE("FactionManager register factions", "[AI][Faction]") {
-    NF::FactionManager fm;
-    auto id1 = fm.registerFaction("Humans");
-    auto id2 = fm.registerFaction("Elves");
-
-    REQUIRE(id1 != id2);
-    REQUIRE(fm.factionCount() == 2);
-}
-
-TEST_CASE("FactionManager list factions", "[AI][Faction]") {
-    NF::FactionManager fm;
-    fm.registerFaction("Dwarves");
-    fm.registerFaction("Orcs");
-
-    auto names = fm.listFactions();
-    REQUIRE(names.size() == 2);
-    bool hasDwarves = std::find(names.begin(), names.end(), "Dwarves") != names.end();
-    bool hasOrcs    = std::find(names.begin(), names.end(), "Orcs") != names.end();
-    REQUIRE(hasDwarves);
-    REQUIRE(hasOrcs);
-}
-
-TEST_CASE("FactionManager set and get relations", "[AI][Faction]") {
-    NF::FactionManager fm;
-    auto h = fm.registerFaction("Humans");
-    auto e = fm.registerFaction("Elves");
-
-    fm.setRelation(h, e, NF::FactionRelation::Allied, 0.9f);
-
-    REQUIRE(fm.getRelation(h, e) == NF::FactionRelation::Allied);
-    REQUIRE_THAT(fm.getStanding(h, e), WithinAbs(0.9f, 1e-5f));
-}
-
-TEST_CASE("FactionManager default relation is Neutral", "[AI][Faction]") {
-    NF::FactionManager fm;
-    auto a = fm.registerFaction("A");
-    auto b = fm.registerFaction("B");
-
-    REQUIRE(fm.getRelation(a, b) == NF::FactionRelation::Neutral);
-    REQUIRE_THAT(fm.getStanding(a, b), WithinAbs(0.f, 1e-5f));
-}
-
-TEST_CASE("FactionManager standing clamp", "[AI][Faction]") {
-    NF::FactionManager fm;
-    auto a = fm.registerFaction("A");
-    auto b = fm.registerFaction("B");
-
-    fm.setRelation(a, b, NF::FactionRelation::AtWar, -5.f);
-    REQUIRE_THAT(fm.getStanding(a, b), WithinAbs(-1.f, 1e-5f));
-
-    fm.setRelation(a, b, NF::FactionRelation::Allied, 5.f);
-    REQUIRE_THAT(fm.getStanding(a, b), WithinAbs(1.f, 1e-5f));
-}
-
-// ── PersonalityProfile ──────────────────────────────────────────
-
-TEST_CASE("PersonalityProfile add and has trait", "[AI][Personality]") {
-    NF::PersonalityProfile pp;
-    pp.addTrait(NF::PersonalityTrait::Brave);
-    pp.addTrait(NF::PersonalityTrait::Curious);
-
-    REQUIRE(pp.hasTrait(NF::PersonalityTrait::Brave));
-    REQUIRE(pp.hasTrait(NF::PersonalityTrait::Curious));
-    REQUIRE_FALSE(pp.hasTrait(NF::PersonalityTrait::Cowardly));
-    REQUIRE(pp.traitCount() == 2);
-}
-
-TEST_CASE("PersonalityProfile remove trait", "[AI][Personality]") {
-    NF::PersonalityProfile pp;
-    pp.addTrait(NF::PersonalityTrait::Aggressive);
-    pp.addTrait(NF::PersonalityTrait::Greedy);
-
-    pp.removeTrait(NF::PersonalityTrait::Aggressive);
-    REQUIRE_FALSE(pp.hasTrait(NF::PersonalityTrait::Aggressive));
-    REQUIRE(pp.traitCount() == 1);
-}
-
-TEST_CASE("PersonalityProfile duplicate trait ignored", "[AI][Personality]") {
-    NF::PersonalityProfile pp;
-    pp.addTrait(NF::PersonalityTrait::Loyal);
-    pp.addTrait(NF::PersonalityTrait::Loyal);
-
-    REQUIRE(pp.traitCount() == 1);
-}
-
-TEST_CASE("PersonalityProfile morale and confidence clamp", "[AI][Personality]") {
-    NF::PersonalityProfile pp;
-
-    pp.setMorale(1.5f);
-    REQUIRE_THAT(pp.morale(), WithinAbs(1.f, 1e-5f));
-
-    pp.setMorale(-0.5f);
-    REQUIRE_THAT(pp.morale(), WithinAbs(0.f, 1e-5f));
-
-    pp.setConfidence(2.f);
-    REQUIRE_THAT(pp.confidence(), WithinAbs(1.f, 1e-5f));
-
-    pp.setConfidence(-1.f);
-    REQUIRE_THAT(pp.confidence(), WithinAbs(0.f, 1e-5f));
-}
-
 // ── Blackboard ──────────────────────────────────────────────────
 
 TEST_CASE("Blackboard set and get values", "[AI][Blackboard]") {
@@ -234,15 +131,6 @@ TEST_CASE("AIAgent set behavior", "[AI][Agent]") {
     NF::AIAgent agent(1);
     agent.setBehavior(NF::AIBehavior::Patrol);
     REQUIRE(agent.currentBehavior() == NF::AIBehavior::Patrol);
-}
-
-TEST_CASE("AIAgent personality access", "[AI][Agent]") {
-    NF::AIAgent agent(1);
-    agent.personality().addTrait(NF::PersonalityTrait::Brave);
-    agent.personality().setMorale(0.8f);
-
-    REQUIRE(agent.personality().hasTrait(NF::PersonalityTrait::Brave));
-    REQUIRE_THAT(agent.personality().morale(), WithinAbs(0.8f, 1e-5f));
 }
 
 TEST_CASE("AIAgent memory access", "[AI][Agent]") {

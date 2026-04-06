@@ -266,15 +266,15 @@ TEST_CASE("PipelineDirectories fromRoot derives correct sub-paths", "[Pipeline][
     auto d = NF::PipelineDirectories::fromRoot(root);
 
     REQUIRE(d.root                  == root);
-    REQUIRE(d.dotNovaForge          == root / ".novaforge");
-    REQUIRE(d.changes               == root / ".novaforge" / "pipeline" / "changes");
-    REQUIRE(d.assets                == root / ".novaforge" / "pipeline" / "assets");
-    REQUIRE(d.worlds                == root / ".novaforge" / "pipeline" / "worlds");
-    REQUIRE(d.scripts               == root / ".novaforge" / "pipeline" / "scripts");
-    REQUIRE(d.animations            == root / ".novaforge" / "pipeline" / "animations");
-    REQUIRE(d.sessions              == root / ".novaforge" / "pipeline" / "sessions");
-    REQUIRE(d.manifestFile          == root / ".novaforge" / "manifest.json");
-    REQUIRE(d.watchLogFile          == root / ".novaforge" / "watch.log");
+    REQUIRE(d.dotAtlas              == root / ".atlas");
+    REQUIRE(d.changes               == root / ".atlas" / "pipeline" / "changes");
+    REQUIRE(d.assets                == root / ".atlas" / "pipeline" / "assets");
+    REQUIRE(d.worlds                == root / ".atlas" / "pipeline" / "worlds");
+    REQUIRE(d.scripts               == root / ".atlas" / "pipeline" / "scripts");
+    REQUIRE(d.animations            == root / ".atlas" / "pipeline" / "animations");
+    REQUIRE(d.sessions              == root / ".atlas" / "pipeline" / "sessions");
+    REQUIRE(d.manifestFile          == root / ".atlas" / "manifest.json");
+    REQUIRE(d.watchLogFile          == root / ".atlas" / "watch.log");
 }
 
 TEST_CASE("PipelineDirectories ensureCreated makes all directories", "[Pipeline][PipelineDirectories]") {
