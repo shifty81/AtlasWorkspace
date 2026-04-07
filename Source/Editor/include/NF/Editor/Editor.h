@@ -152,3 +152,15 @@
 #include "NF/Editor/PerformanceBudgetEditor.h"
 #include "NF/Editor/MemoryProfilerPanel.h"
 #include "NF/Editor/RenderStatsPanel.h"
+// S106
+#include "NF/Editor/AudioMixerEditor.h"
+#include "NF/Editor/SoundEffectEditor.h"
+#include "NF/Editor/MusicSequencer.h"
+// S107
+#include "NF/Editor/LevelDesignToolkit.h"
+#include "NF/Editor/RoomEditor.h"
+#include "NF/Editor/DungeonGenerator.h"
+// S108
+#include "NF/Editor/UIDesignEditor.h"
+#include "NF/Editor/HUDEditor.h"
+#include "NF/Editor/MenuLayoutEditor.h"
