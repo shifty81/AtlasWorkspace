@@ -114,19 +114,19 @@ infrastructure ships before game-specific features.
 |---------|--------|
 | Shell frame (EditorApp + PanelHost) | ✅ Done |
 | Notification center | ✅ Widget + host done |
-| Notification severity / workflow rules | 🔲 Spec'd, not wired |
-| AtlasAI panel host | 🔲 Broker exists, UI missing |
-| Settings / control panel | 🔲 Not started |
+| Notification severity / workflow rules | ✅ WorkflowEngine, RateLimiter, PriorityQueue |
+| AtlasAI panel host | ✅ AIAssistantPanel with ChatSession |
+| Settings / control panel | ✅ SettingsPanel + SettingsRegistry |
 | Project & repo surfaces | 🔲 Not started |
 
-### Phase 3 — Editor Standards & Persistence 🔲
+### Phase 3 — Editor Standards & Persistence 🟡
 
 | Feature | Status |
 |---------|--------|
 | PropertyGrid / TreeView / TableView | ✅ Done |
-| Layout persistence | 🔲 Not started |
+| Layout persistence | ✅ LayoutPersistenceManager + presets |
 | Scroll + virtualization | ✅ ScrollView widget done |
-| Viewport host contract | 🔲 Not started |
+| Viewport host contract | ✅ IViewportHost + registry + session |
 | Graph host contract | 🔲 Not started |
 
 ### Phase 4 — Workflow & Debugging Integration 🟡
