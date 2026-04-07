@@ -20,7 +20,8 @@
       "inherits": "default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "ATLAS_BUILD_TESTS": "ON"
+        "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -29,7 +30,8 @@
       "inherits": "default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "ATLAS_BUILD_TESTS": "OFF"
+        "ATLAS_BUILD_TESTS": "OFF",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -38,7 +40,8 @@
       "inherits": "default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "ATLAS_BUILD_TESTS": "OFF"
+        "ATLAS_BUILD_TESTS": "OFF",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -53,7 +56,8 @@
       "binaryDir": "${sourceDir}/Builds/vs2022",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "ATLAS_BUILD_TESTS": "ON"
+        "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -68,7 +72,8 @@
       "binaryDir": "${sourceDir}/Builds/vs2019",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "ATLAS_BUILD_TESTS": "ON"
+        "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -83,7 +88,8 @@
       "binaryDir": "${sourceDir}/Builds/windows-x64",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "ATLAS_BUILD_TESTS": "OFF"
+        "ATLAS_BUILD_TESTS": "OFF",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -98,7 +104,8 @@
       "binaryDir": "${sourceDir}/Builds/windows-x64-debug",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "ATLAS_BUILD_TESTS": "OFF"
+        "ATLAS_BUILD_TESTS": "OFF",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -113,7 +120,8 @@
       "binaryDir": "${sourceDir}/Builds/windows-x64-debug-tests",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "ATLAS_BUILD_TESTS": "ON"
+        "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -125,7 +133,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "ATLAS_BUILD_TESTS": "ON"
+        "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
     {
@@ -137,7 +146,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "ATLAS_BUILD_TESTS": "OFF"
+        "ATLAS_BUILD_TESTS": "OFF",
+        "ATLAS_BUILD_WORKSPACE": "ON"
       }
     }
   ],
