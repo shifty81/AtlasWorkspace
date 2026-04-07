@@ -46,7 +46,8 @@ foreach(CFG Debug Release RelWithDebInfo MinSizeRel)
 endforeach()
 
 # ── Build options ─────────────────────────────────────────────────
-option(ATLAS_BUILD_TESTS "Build workspace test suite" OFF)
+option(ATLAS_BUILD_TESTS     "Build workspace test suite"     OFF)
+option(ATLAS_BUILD_WORKSPACE "Build AtlasWorkspace executable" OFF)
 
 # ── Atlas Engine subsystems (static libraries) ────────────────────
 # The flagship engine that powers all projects loaded in Atlas Workspace.
@@ -66,6 +67,10 @@ add_subdirectory(Source/AI)
 add_subdirectory(Source/Pipeline)
 add_subdirectory(Source/Editor)
 
+if(ATLAS_BUILD_WORKSPACE)
+    add_subdirectory(Source/Programs/AtlasWorkspace)
+endif()
+
 if(ATLAS_BUILD_TESTS)
     enable_testing()
     add_subdirectory(Tests)
@@ -73,5 +78,6 @@ endif()
 
 message(STATUS "")
 message(STATUS "=== AtlasWorkspace ${PROJECT_VERSION} ===")
-message(STATUS "  Build Tests:   ${ATLAS_BUILD_TESTS}")
+message(STATUS "  Build Workspace: ${ATLAS_BUILD_WORKSPACE}")
+message(STATUS "  Build Tests:     ${ATLAS_BUILD_TESTS}")
 message(STATUS "")
