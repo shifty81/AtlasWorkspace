@@ -188,3 +188,15 @@
 #include "NF/Editor/ReplaySystemEditor.h"
 #include "NF/Editor/MatchReplayEditor.h"
 #include "NF/Editor/SpectatorEditor.h"
+// S115
+#include "NF/Editor/LeaderboardEditor.h"
+#include "NF/Editor/AchievementEditor.h"
+#include "NF/Editor/TrophyEditor.h"
+// S116
+#include "NF/Editor/ModdingToolkit.h"
+#include "NF/Editor/ContentPackEditor.h"
+#include "NF/Editor/ScriptingConsole.h"
+// S117
+#include "NF/Editor/TelemetryEditor.h"
+#include "NF/Editor/AnalyticsDashboard.h"
+#include "NF/Editor/PlaytestRecorder.h"
