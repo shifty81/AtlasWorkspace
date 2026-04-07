@@ -192,6 +192,11 @@ add_executable(NF_EditorTests
     Editor/test_s83_editor.cpp
     Editor/test_s84_editor.cpp
     Editor/test_s85_editor.cpp
+    Editor/test_s86_editor.cpp
+    Editor/test_s87_editor.cpp
+    Editor/test_s88_editor.cpp
+    Editor/test_s89_editor.cpp
+    Editor/test_s90_editor.cpp
     Editor/test_m1c_editor.cpp
     Editor/test_tool_modules.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ConsoleToolModule.cpp
