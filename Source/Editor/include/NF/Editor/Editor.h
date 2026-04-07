@@ -176,3 +176,15 @@
 #include "NF/Editor/VFXGraphEditor.h"
 #include "NF/Editor/TrailEditor.h"
 #include "NF/Editor/ImpactEffectEditor.h"
+// S112
+#include "NF/Editor/CharacterCreatorEditor.h"
+#include "NF/Editor/CostumeEditor.h"
+#include "NF/Editor/MorphTargetEditor.h"
+// S113
+#include "NF/Editor/MiniGameEditor.h"
+#include "NF/Editor/PuzzleEditor.h"
+#include "NF/Editor/ArcadeGameEditor.h"
+// S114
+#include "NF/Editor/ReplaySystemEditor.h"
+#include "NF/Editor/MatchReplayEditor.h"
+#include "NF/Editor/SpectatorEditor.h"
