@@ -164,3 +164,15 @@
 #include "NF/Editor/UIDesignEditor.h"
 #include "NF/Editor/HUDEditor.h"
 #include "NF/Editor/MenuLayoutEditor.h"
+// S109
+#include "NF/Editor/AbilitySystemEditor.h"
+#include "NF/Editor/InventoryEditor.h"
+#include "NF/Editor/ProgressionEditor.h"
+// S110
+#include "NF/Editor/BiomeEditor.h"
+#include "NF/Editor/WeatherSystemEditor.h"
+#include "NF/Editor/EcosystemEditor.h"
+// S111
+#include "NF/Editor/VFXGraphEditor.h"
+#include "NF/Editor/TrailEditor.h"
+#include "NF/Editor/ImpactEffectEditor.h"
