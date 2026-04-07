@@ -1,18 +1,14 @@
 #include "NF/UI/AtlasUI/Widgets/PropertyGrid.h"
 #include "NF/UI/AtlasUI/WidgetHelpers.h"
 
-#include <sstream>
+#include <string>
 
 namespace NF::UI::AtlasUI {
 
 std::string PropertyValue::asString() const {
     struct Visitor {
         std::string operator()(const std::string& v) const { return v; }
-        std::string operator()(float v) const {
-            std::ostringstream oss;
-            oss << v;
-            return oss.str();
-        }
+        std::string operator()(float v) const { return std::to_string(v); }
         std::string operator()(int v) const { return std::to_string(v); }
         std::string operator()(bool v) const { return v ? "true" : "false"; }
     };

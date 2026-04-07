@@ -59,9 +59,7 @@ void TreeView::flattenNodes(std::vector<TreeNode>& nodes, int depth) {
 bool TreeView::selectInNodes(std::vector<TreeNode>& nodes, const std::string& id) {
     for (auto& node : nodes) {
         node.selected = (node.id == id);
-        if (selectInNodes(node.children, id) && !node.selected) {
-            // keep going
-        }
+        selectInNodes(node.children, id);
         if (node.selected) return true;
     }
     return false;
