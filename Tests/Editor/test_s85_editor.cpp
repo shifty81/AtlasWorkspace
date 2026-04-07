@@ -112,7 +112,7 @@ TEST_CASE("SpriteEditor animatedCount and playingCount", "[Editor][S85]") {
 TEST_CASE("SpriteEditor countByBlendMode and countByOrigin", "[Editor][S85]") {
     SpriteEditor editor;
     SpriteAsset a("a"); a.setBlendMode(SpriteBlendMode::Additive); a.setOrigin(SpriteOrigin::TopLeft);
-    SpriteAsset b("b"); a.setBlendMode(SpriteBlendMode::Normal);   b.setOrigin(SpriteOrigin::TopLeft);
+    SpriteAsset b("b"); b.setBlendMode(SpriteBlendMode::Normal);   b.setOrigin(SpriteOrigin::TopLeft);
     SpriteAsset c("c"); c.setBlendMode(SpriteBlendMode::Additive); c.setOrigin(SpriteOrigin::Center);
     editor.addSprite(a); editor.addSprite(b); editor.addSprite(c);
     REQUIRE(editor.countByOrigin(SpriteOrigin::TopLeft) == 2);
