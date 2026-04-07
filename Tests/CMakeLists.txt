@@ -173,6 +173,10 @@ add_executable(NF_EditorTests
     Editor/test_s64_editor.cpp
     Editor/test_s65_editor.cpp
     Editor/test_s66_editor.cpp
+    Editor/test_s67_editor.cpp
+    Editor/test_s68_editor.cpp
+    Editor/test_s69_editor.cpp
+    Editor/test_s70_editor.cpp
     Editor/test_m1c_editor.cpp
     Editor/test_tool_modules.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ConsoleToolModule.cpp
