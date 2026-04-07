@@ -178,17 +178,9 @@ add_executable(NF_EditorTests
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/MaterialEditorToolModule.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/MeshViewerToolModule.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/PrefabEditorToolModule.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/NetInspectorToolModule.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/AIDebuggerToolModule.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/WorldGraphToolModule.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/SceneGraphToolModule.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/RuleGraphEditorToolModule.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/CIDashboardToolModule.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/JobTraceToolModule.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ProofViewerToolModule.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/DesyncVisualizerToolModule.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/StateHashDiffToolModule.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/DataBrowserToolModule.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/PhysicsTunerToolModule.cpp
     catch_main.cpp
 )
