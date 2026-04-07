@@ -90,6 +90,70 @@ all sit in `NovaForge/Source/` and link against the workspace-provided engine.
 
 See `/NovaForge/CMakeLists.txt` for the standalone NovaForge build.
 
+## Roadmap
+
+Development follows a **tooling-first** priority: framework and editor
+infrastructure ships before game-specific features.
+
+### Phase 1 — AtlasUI Foundation ✅
+
+| Feature | Status |
+|---------|--------|
+| Backend abstraction (GDI / OpenGL / Null) | ✅ Done |
+| Widget kit (Button, Label, TextInput, Dropdown, …) | ✅ 19 widgets |
+| Theme & token system | ✅ Done |
+| Tabs / chrome | ✅ Done |
+| Docking layout | ✅ Done |
+| Tooltips | ✅ Done |
+| Command & shortcut layer | ✅ Done |
+| Menu layer | ✅ Done (ContextMenu widget added) |
+
+### Phase 2 — Workspace Shell & Core Surfaces 🟡
+
+| Feature | Status |
+|---------|--------|
+| Shell frame (EditorApp + PanelHost) | ✅ Done |
+| Notification center | ✅ Widget + host done |
+| Notification severity / workflow rules | ✅ WorkflowEngine, RateLimiter, PriorityQueue |
+| AtlasAI panel host | ✅ AIAssistantPanel with ChatSession |
+| Settings / control panel | ✅ SettingsPanel + SettingsRegistry |
+| Project & repo surfaces | 🔲 Not started |
+
+### Phase 3 — Editor Standards & Persistence 🟡
+
+| Feature | Status |
+|---------|--------|
+| PropertyGrid / TreeView / TableView | ✅ Done |
+| Layout persistence | ✅ LayoutPersistenceManager + presets |
+| Scroll + virtualization | ✅ ScrollView widget done |
+| Viewport host contract | ✅ IViewportHost + registry + session |
+| Graph host contract | 🔲 Not started |
+
+### Phase 4 — Workflow & Debugging Integration 🟡
+
+| Feature | Status |
+|---------|--------|
+| Logging route (Console → Codex) | ✅ ConsolePanel + PipelineMonitor |
+| AtlasAI debug path | 🔲 Not started |
+| File intake / drop pipeline | 🔲 Not started |
+| Codex / snippet mirroring | 🔲 Not started |
+
+### Phase 5 — Hosted Project Support 🔲
+
+| Feature | Status |
+|---------|--------|
+| Project templates | 🔲 Not started |
+| Import / export flows | 🔲 Not started |
+| Build / package workflows | 🔲 Not started |
+| Repo tooling polish | 🔲 Not started |
+
+### Phase 6–7 — Game Development (deferred)
+
+Game-specific work (combat, world content, fleet features, missions, etc.) is
+intentionally deferred until the tooling foundation is solid.
+
+> Full details: [`Docs/SpecRollup/`](Docs/SpecRollup/)
+
 ## Key Principles
 
 - The Atlas Engine is owned by the workspace — all projects use it

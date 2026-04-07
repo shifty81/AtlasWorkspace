@@ -73,3 +73,8 @@
 #include "NF/Editor/PrefabEditor.h"
 #include "NF/Editor/AnimBlueprintEditor.h"
 #include "NF/Editor/AdvancedViewports.h"
+#include "NF/Editor/LayoutPersistence.h"
+#include "NF/Editor/NotificationWorkflow.h"
+#include "NF/Editor/ViewportHostContract.h"
+#include "NF/Editor/SettingsPanel.h"
+#include "NF/Editor/AIAssistantPanel.h"

@@ -152,6 +152,11 @@ add_executable(NF_EditorTests
     Editor/test_s48_editor.cpp
     Editor/test_s49_editor.cpp
     Editor/test_s50_editor.cpp
+    Editor/test_s51_editor.cpp
+    Editor/test_s52_editor.cpp
+    Editor/test_s53_editor.cpp
+    Editor/test_s54_editor.cpp
+    Editor/test_s55_editor.cpp
     Editor/test_m1c_editor.cpp
     Editor/test_tool_modules.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ConsoleToolModule.cpp
@@ -201,6 +206,7 @@ add_executable(NF_UITests
     UI/test_ui.cpp
     UI/test_atlasui.cpp
     UI/test_m1_editor.cpp
+    UI/test_widgets_v2.cpp
     catch_main.cpp
 )
 target_link_libraries(NF_UITests PRIVATE NF::UI NF::Core NF::Input Catch2::Catch2)
