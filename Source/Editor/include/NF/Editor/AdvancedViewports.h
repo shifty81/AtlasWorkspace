@@ -177,14 +177,14 @@ public:
         m_cameraMode = ViewportCameraMode::Orbit;
     }
 
-    [[nodiscard]] bool addMesh(const MeshViewerAsset& mesh) {
+    bool addMesh(const MeshViewerAsset& mesh) {
         if (m_meshes.size() >= MAX_MESHES) return false;
         for (auto& m : m_meshes) if (m.name == mesh.name) return false;
         m_meshes.push_back(mesh);
         return true;
     }
 
-    [[nodiscard]] bool removeMesh(const std::string& name) {
+    bool removeMesh(const std::string& name) {
         for (auto it = m_meshes.begin(); it != m_meshes.end(); ++it) {
             if (it->name == name) {
                 if (m_activeMesh == name) m_activeMesh.clear();
@@ -200,7 +200,7 @@ public:
         return nullptr;
     }
 
-    [[nodiscard]] bool setActiveMesh(const std::string& name) {
+    bool setActiveMesh(const std::string& name) {
         for (auto& m : m_meshes)
             if (m.name == name) { m_activeMesh = name; return true; }
         return false;
@@ -254,14 +254,14 @@ public:
 
     MaterialEditorPanel() : NFRenderViewport("MaterialEditor") {}
 
-    [[nodiscard]] bool addMaterial(const MaterialAsset& mat) {
+    bool addMaterial(const MaterialAsset& mat) {
         if (m_materials.size() >= MAX_MATERIALS) return false;
         for (auto& m : m_materials) if (m.name() == mat.name()) return false;
         m_materials.push_back(mat);
         return true;
     }
 
-    [[nodiscard]] bool removeMaterial(const std::string& name) {
+    bool removeMaterial(const std::string& name) {
         for (auto it = m_materials.begin(); it != m_materials.end(); ++it) {
             if (it->name() == name) {
                 if (m_activeMaterial == name) m_activeMaterial.clear();
@@ -277,7 +277,7 @@ public:
         return nullptr;
     }
 
-    [[nodiscard]] bool setActiveMaterial(const std::string& name) {
+    bool setActiveMaterial(const std::string& name) {
         for (auto& m : m_materials)
             if (m.name() == name) { m_activeMaterial = name; return true; }
         return false;
@@ -361,13 +361,13 @@ struct SkeletalAsset {
 
     explicit SkeletalAsset(const std::string& n) : name(n) {}
 
-    [[nodiscard]] bool addBone(const SkeletalBone& bone) {
+    bool addBone(const SkeletalBone& bone) {
         for (auto& b : bones) if (b.name == bone.name) return false;
         bones.push_back(bone);
         return true;
     }
 
-    [[nodiscard]] bool removeBone(const std::string& n) {
+    bool removeBone(const std::string& n) {
         for (auto it = bones.begin(); it != bones.end(); ++it) {
             if (it->name == n) { bones.erase(it); return true; }
         }
@@ -398,14 +398,14 @@ public:
 
     SkeletalEditorPanel() : NFRenderViewport("SkeletalEditor") {}
 
-    [[nodiscard]] bool addSkeleton(const SkeletalAsset& skel) {
+    bool addSkeleton(const SkeletalAsset& skel) {
         if (m_skeletons.size() >= MAX_SKELETONS) return false;
         for (auto& s : m_skeletons) if (s.name == skel.name) return false;
         m_skeletons.push_back(skel);
         return true;
     }
 
-    [[nodiscard]] bool removeSkeleton(const std::string& name) {
+    bool removeSkeleton(const std::string& name) {
         for (auto it = m_skeletons.begin(); it != m_skeletons.end(); ++it) {
             if (it->name == name) {
                 if (m_activeSkeleton == name) m_activeSkeleton.clear();
@@ -421,7 +421,7 @@ public:
         return nullptr;
     }
 
-    [[nodiscard]] bool setActiveSkeleton(const std::string& name) {
+    bool setActiveSkeleton(const std::string& name) {
         for (auto& s : m_skeletons)
             if (s.name == name) { m_activeSkeleton = name; return true; }
         return false;
@@ -519,14 +519,14 @@ public:
 
     AnimationEditorPanel() : NFRenderViewport("AnimationEditor") {}
 
-    [[nodiscard]] bool addClip(const AnimClipAsset& clip) {
+    bool addClip(const AnimClipAsset& clip) {
         if (m_clips.size() >= MAX_CLIPS) return false;
         for (auto& c : m_clips) if (c.name == clip.name) return false;
         m_clips.push_back(clip);
         return true;
     }
 
-    [[nodiscard]] bool removeClip(const std::string& name) {
+    bool removeClip(const std::string& name) {
         for (auto it = m_clips.begin(); it != m_clips.end(); ++it) {
             if (it->name == name) {
                 if (m_activeClip == name) m_activeClip.clear();
@@ -542,7 +542,7 @@ public:
         return nullptr;
     }
 
-    [[nodiscard]] bool setActiveClip(const std::string& name) {
+    bool setActiveClip(const std::string& name) {
         for (auto& c : m_clips)
             if (c.name == name) { m_activeClip = name; return true; }
         return false;
@@ -635,14 +635,14 @@ public:
 
     PrefabEditorPanel() : NFRenderViewport("PrefabEditor") {}
 
-    [[nodiscard]] bool addInstance(const PrefabInstance& inst) {
+    bool addInstance(const PrefabInstance& inst) {
         if (m_instances.size() >= MAX_INSTANCES) return false;
         for (auto& i : m_instances) if (i.name == inst.name) return false;
         m_instances.push_back(inst);
         return true;
     }
 
-    [[nodiscard]] bool removeInstance(const std::string& name) {
+    bool removeInstance(const std::string& name) {
         for (auto it = m_instances.begin(); it != m_instances.end(); ++it) {
             if (it->name == name) {
                 if (m_activeInstance == name) m_activeInstance.clear();
@@ -658,7 +658,7 @@ public:
         return nullptr;
     }
 
-    [[nodiscard]] bool setActiveInstance(const std::string& name) {
+    bool setActiveInstance(const std::string& name) {
         for (auto& i : m_instances)
             if (i.name == name) { m_activeInstance = name; return true; }
         return false;

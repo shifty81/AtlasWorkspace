@@ -8,6 +8,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
+# On MSVC, force serialised PDB writes so parallel builds don't corrupt Catch2d.pdb
+if(MSVC)
+    target_compile_options(Catch2 PRIVATE /FS)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(CTest)
 include(Catch)
