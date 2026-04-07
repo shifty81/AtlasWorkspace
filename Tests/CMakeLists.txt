@@ -201,6 +201,7 @@ add_executable(NF_UITests
     UI/test_ui.cpp
     UI/test_atlasui.cpp
     UI/test_m1_editor.cpp
+    UI/test_widgets_v2.cpp
     catch_main.cpp
 )
 target_link_libraries(NF_UITests PRIVATE NF::UI NF::Core NF::Input Catch2::Catch2)

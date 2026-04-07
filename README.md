@@ -100,13 +100,13 @@ infrastructure ships before game-specific features.
 | Feature | Status |
 |---------|--------|
 | Backend abstraction (GDI / OpenGL / Null) | ✅ Done |
-| Widget kit (Button, Label, TextInput, Dropdown, …) | ✅ 14 widgets |
+| Widget kit (Button, Label, TextInput, Dropdown, …) | ✅ 19 widgets |
 | Theme & token system | ✅ Done |
 | Tabs / chrome | ✅ Done |
 | Docking layout | ✅ Done |
 | Tooltips | ✅ Done |
 | Command & shortcut layer | ✅ Done |
-| Menu layer | 🟡 Partial — context menu widget needed |
+| Menu layer | ✅ Done (ContextMenu widget added) |
 
 ### Phase 2 — Workspace Shell & Core Surfaces 🟡
 
@@ -123,9 +123,9 @@ infrastructure ships before game-specific features.
 
 | Feature | Status |
 |---------|--------|
-| PropertyGrid / TreeView / TableView | 🔲 PropertyRow exists; advanced widgets needed |
+| PropertyGrid / TreeView / TableView | ✅ Done |
 | Layout persistence | 🔲 Not started |
-| Scroll + virtualization | 🔲 Not started |
+| Scroll + virtualization | ✅ ScrollView widget done |
 | Viewport host contract | 🔲 Not started |
 | Graph host contract | 🔲 Not started |
 

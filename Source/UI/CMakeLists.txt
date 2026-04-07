@@ -22,6 +22,11 @@ add_library(NF_UI STATIC
     src/AtlasUI/Widgets/Dropdown.cpp
     src/AtlasUI/Widgets/PropertyRow.cpp
     src/AtlasUI/Widgets/NotificationCard.cpp
+    src/AtlasUI/Widgets/ContextMenu.cpp
+    src/AtlasUI/Widgets/TreeView.cpp
+    src/AtlasUI/Widgets/ScrollView.cpp
+    src/AtlasUI/Widgets/PropertyGrid.cpp
+    src/AtlasUI/Widgets/TableView.cpp
 
     # AtlasUI — Commands
     src/AtlasUI/Commands/CommandTypes.cpp

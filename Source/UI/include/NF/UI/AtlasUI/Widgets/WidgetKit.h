@@ -2,7 +2,12 @@
 
 #include "NF/UI/AtlasUI/Widgets/Button.h"
 #include "NF/UI/AtlasUI/Widgets/Container.h"
+#include "NF/UI/AtlasUI/Widgets/ContextMenu.h"
 #include "NF/UI/AtlasUI/Widgets/Label.h"
+#include "NF/UI/AtlasUI/Widgets/PropertyGrid.h"
+#include "NF/UI/AtlasUI/Widgets/ScrollView.h"
 #include "NF/UI/AtlasUI/Widgets/Splitter.h"
 #include "NF/UI/AtlasUI/Widgets/StackPanel.h"
+#include "NF/UI/AtlasUI/Widgets/TableView.h"
 #include "NF/UI/AtlasUI/Widgets/Tabs.h"
+#include "NF/UI/AtlasUI/Widgets/TreeView.h"
