@@ -200,3 +200,15 @@
 #include "NF/Editor/TelemetryEditor.h"
 #include "NF/Editor/AnalyticsDashboard.h"
 #include "NF/Editor/PlaytestRecorder.h"
+// S118
+#include "NF/Editor/CloudSyncEditor.h"
+#include "NF/Editor/OnlineServicesPanel.h"
+#include "NF/Editor/LiveOpsEditor.h"
+// S119
+#include "NF/Editor/AccessibilityEditor.h"
+#include "NF/Editor/ColorblindSimulator.h"
+#include "NF/Editor/SubtitleEditor.h"
+// S120
+#include "NF/Editor/BenchmarkSuiteEditor.h"
+#include "NF/Editor/StressTestEditor.h"
+#include "NF/Editor/LoadTestEditor.h"
