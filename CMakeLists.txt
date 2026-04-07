@@ -47,7 +47,7 @@ endforeach()
 
 # ── Build options ─────────────────────────────────────────────────
 option(ATLAS_BUILD_TESTS     "Build workspace test suite"     OFF)
-option(ATLAS_BUILD_WORKSPACE "Build AtlasWorkspace executable" OFF)
+option(ATLAS_BUILD_WORKSPACE "Build AtlasWorkspace executable" ON)
 
 # ── Atlas Engine subsystems (static libraries) ────────────────────
 # The flagship engine that powers all projects loaded in Atlas Workspace.
