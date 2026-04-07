@@ -21,13 +21,23 @@ jobs:
             build-essential cmake ninja-build g++
 
       - name: Configure
-        run: cmake --preset ci-debug
+        run: |
+          mkdir -p Logs
+          cmake --preset ci-debug 2>&1 | tee Logs/configure-linux-debug.log
 
       - name: Build
-        run: cmake --build --preset ci-debug
+        run: cmake --build --preset ci-debug 2>&1 | tee Logs/build-linux-debug.log
 
       - name: Test
-        run: ctest --preset ci-debug
+        run: ctest --preset ci-debug --output-on-failure 2>&1 | tee Logs/test-linux-debug.log
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-linux-debug
+          path: Logs/
+          retention-days: 7
 
   build-linux-release:
     name: Linux Release (ci-release)
@@ -42,10 +52,20 @@ jobs:
             build-essential cmake ninja-build g++
 
       - name: Configure
-        run: cmake --preset ci-release
+        run: |
+          mkdir -p Logs
+          cmake --preset ci-release 2>&1 | tee Logs/configure-linux-release.log
 
       - name: Build
-        run: cmake --build --preset ci-release
+        run: cmake --build --preset ci-release 2>&1 | tee Logs/build-linux-release.log
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-linux-release
+          path: Logs/
+          retention-days: 7
 
   build-multiconfig:
     name: Multi-Config (VS .sln equivalent)
@@ -61,18 +81,28 @@ jobs:
 
       - name: Configure
         run: |
+          mkdir -p Logs
           cmake -G "Ninja Multi-Config" -B Builds/multiconfig \
             -DATLAS_BUILD_TESTS=ON \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            2>&1 | tee Logs/configure-multiconfig.log
 
       - name: Build Debug
-        run: cmake --build Builds/multiconfig --config Debug
+        run: cmake --build Builds/multiconfig --config Debug 2>&1 | tee Logs/build-multiconfig-debug.log
 
       - name: Build Release
-        run: cmake --build Builds/multiconfig --config Release
+        run: cmake --build Builds/multiconfig --config Release 2>&1 | tee Logs/build-multiconfig-release.log
 
       - name: Test (Debug)
-        run: cd Builds/multiconfig && ctest -C Debug --output-on-failure
+        run: cd Builds/multiconfig && ctest -C Debug --output-on-failure 2>&1 | tee ../../Logs/test-multiconfig-debug.log
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-multiconfig
+          path: Logs/
+          retention-days: 7
 
   build-windows:
     name: Windows (VS 2022 / MSVC)
@@ -86,13 +116,23 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Configure (VS 2022 preset)
-        run: cmake --preset vs2022
+        run: |
+          New-Item -ItemType Directory -Force -Path Logs | Out-Null
+          cmake --preset vs2022 2>&1 | Tee-Object -FilePath Logs\configure-windows-debug.log
 
       - name: Build Debug
-        run: cmake --build --preset vs2022-debug
+        run: cmake --build --preset vs2022-debug 2>&1 | Tee-Object -FilePath Logs\build-windows-debug.log
 
       - name: Test (Debug)
-        run: ctest --preset vs2022
+        run: ctest --preset vs2022 --output-on-failure 2>&1 | Tee-Object -FilePath Logs\test-windows-debug.log
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-windows-debug
+          path: Logs/
+          retention-days: 7
 
   build-windows-release:
     name: Windows Release (VS 2022 / MSVC)
@@ -106,7 +146,17 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Configure (windows-x64 preset)
-        run: cmake --preset windows-x64
+        run: |
+          New-Item -ItemType Directory -Force -Path Logs | Out-Null
+          cmake --preset windows-x64 2>&1 | Tee-Object -FilePath Logs\configure-windows-release.log
 
       - name: Build Release
-        run: cmake --build --preset windows-x64-release
+        run: cmake --build --preset windows-x64-release 2>&1 | Tee-Object -FilePath Logs\build-windows-release.log
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-windows-release
+          path: Logs/
+          retention-days: 7
