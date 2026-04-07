@@ -146,7 +146,29 @@ add_executable(NF_EditorTests
     Editor/test_s42_editor.cpp
     Editor/test_s43_editor.cpp
     Editor/test_m1c_editor.cpp
+    Editor/test_tool_modules.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ConsoleToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ProfilerToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ECSInspectorToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/MaterialEditorToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/MeshViewerToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/PrefabEditorToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/NetInspectorToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/AIDebuggerToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/WorldGraphToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/SceneGraphToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/RuleGraphEditorToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/CIDashboardToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/JobTraceToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ProofViewerToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/DesyncVisualizerToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/StateHashDiffToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/DataBrowserToolModule.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/PhysicsTunerToolModule.cpp
     catch_main.cpp
+)
+target_include_directories(NF_EditorTests PRIVATE
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src
 )
 target_link_libraries(NF_EditorTests PRIVATE
     NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
