@@ -25,7 +25,7 @@ TEST_CASE("GLFWWindowProvider config defaults", "[UI][M1][GLFW]") {
     NF::GLFWWindowProvider::WindowConfig cfg;
     REQUIRE(cfg.width == 1280);
     REQUIRE(cfg.height == 800);
-    REQUIRE(cfg.title == "NovaForge Editor");
+    REQUIRE(cfg.title == "Atlas Editor");
     REQUIRE(cfg.vsync == true);
     REQUIRE(cfg.maximized == false);
     REQUIRE(cfg.decorated == true);

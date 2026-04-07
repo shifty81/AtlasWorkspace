@@ -542,13 +542,13 @@ TEST_CASE("JsonValue object operations", "[Core][Serialization]") {
     REQUIRE(obj.isObject());
     REQUIRE(obj.size() == 0);
 
-    obj.set("name", NF::JsonValue("NovaForge"));
+    obj.set("name", NF::JsonValue("Atlas"));
     obj.set("version", NF::JsonValue(1));
     obj.set("active", NF::JsonValue(true));
 
     REQUIRE(obj.size() == 3);
     REQUIRE(obj.hasKey("name"));
-    REQUIRE(obj["name"].asString() == "NovaForge");
+    REQUIRE(obj["name"].asString() == "Atlas");
     REQUIRE(obj["version"].asInt() == 1);
     REQUIRE(obj["active"].asBool() == true);
     REQUIRE_FALSE(obj.hasKey("missing"));
@@ -601,9 +601,9 @@ TEST_CASE("JsonParser parse primitives", "[Core][Serialization]") {
 }
 
 TEST_CASE("JsonParser parse object", "[Core][Serialization]") {
-    auto obj = NF::JsonParser::parse(R"({"name": "NovaForge", "version": 1, "active": true})");
+    auto obj = NF::JsonParser::parse(R"({"name": "Atlas", "version": 1, "active": true})");
     REQUIRE(obj.isObject());
-    REQUIRE(obj["name"].asString() == "NovaForge");
+    REQUIRE(obj["name"].asString() == "Atlas");
     REQUIRE(obj["version"].asInt() == 1);
     REQUIRE(obj["active"].asBool() == true);
 }

@@ -4,7 +4,6 @@
 #include "NF/Engine/Engine.h"
 #include "NF/Renderer/Renderer.h"
 #include "NF/UI/UI.h"
-#include "NF/Game/Game.h"
 #include "NF/GraphVM/GraphVM.h"
 #include "NF/Input/Input.h"
 #include "NF/UI/UIWidgets.h"
@@ -193,7 +192,7 @@ private:
 
 class ProjectPathService {
 public:
-    static constexpr const char* kProjectFileName = "novaforge.project.json";
+    static constexpr const char* kProjectFileName = "atlas.project.json";
 
     void init(const std::string& executablePath) {
         m_executablePath = executablePath;
@@ -298,7 +297,7 @@ public:
     }
 
 private:
-    std::string m_gameExeName = "NovaForgeGame";
+    std::string m_gameExeName = "AtlasGame";
     std::string m_buildDir;
 };
 
@@ -3658,7 +3657,7 @@ public:
         // ── Load persisted layout from Saved/ ───────────────────────
         loadEditorState();
 
-        NF_LOG_INFO("Editor", "NovaForge Editor initialized");
+        NF_LOG_INFO("Editor", "Atlas Editor initialized");
         return true;
     }
 
@@ -3683,7 +3682,7 @@ public:
         m_editorPanels.clear();
         m_ui.shutdown();
         m_renderer.shutdown();
-        NF_LOG_INFO("Editor", "NovaForge Editor shutdown");
+        NF_LOG_INFO("Editor", "Atlas Editor shutdown");
     }
 
     void update() {}
@@ -5000,7 +4999,7 @@ struct ToolInstanceInfo {
 };
 
 struct ToolEcosystemConfig {
-    std::string pipelineDir = ".novaforge/pipeline";
+    std::string pipelineDir = ".atlas/pipeline";
     float heartbeatIntervalSec = 5.f;
     float unhealthyThresholdSec = 15.f;
     float crashThresholdSec = 30.f;
@@ -5498,7 +5497,7 @@ private:
 
 class AIPipelineBridge {
 public:
-    explicit AIPipelineBridge(const std::string& pipelineDir = ".novaforge/pipeline")
+    explicit AIPipelineBridge(const std::string& pipelineDir = ".atlas/pipeline")
         : m_pipelineDir(pipelineDir) {}
 
     void processEvent(const std::string& eventType, const std::string& path,
@@ -5547,7 +5546,7 @@ private:
 };
 
 struct AtlasAIConfig {
-    std::string pipelineDir = ".novaforge/pipeline";
+    std::string pipelineDir = ".atlas/pipeline";
     bool proactiveSuggestions = true;
     size_t suggestionInterval = 5;
     float analysisTickRate = 1.f;
@@ -12052,229 +12051,6 @@ private:
     float                      m_timelineZoom  = 1.0f;
     bool                       m_onionSkinning = false;
     bool                       m_showBlendTree = false;
-};
-
-// ── M1-C — ShipEditorPanel ────────────────────────────────────────
-
-enum class ShipEditorTool : uint8_t {
-    Select, PlaceModule, RotateModule, RemoveModule, WireConnect
-};
-
-inline const char* shipEditorToolName(ShipEditorTool t) {
-    switch (t) {
-        case ShipEditorTool::Select:       return "Select";
-        case ShipEditorTool::PlaceModule:  return "PlaceModule";
-        case ShipEditorTool::RotateModule: return "RotateModule";
-        case ShipEditorTool::RemoveModule: return "RemoveModule";
-        case ShipEditorTool::WireConnect:  return "WireConnect";
-    }
-    return "Unknown";
-}
-
-struct ShipModuleEntry {
-    std::string name;
-    std::string category;
-    uint32_t    slotIndex  = 0;
-    float       mass       = 1.0f;
-    float       powerDraw  = 0.0f;
-    bool        placed     = false;
-    bool        connected  = false;
-
-    [[nodiscard]] bool isHeavy()      const { return mass >= 100.0f; }
-    [[nodiscard]] bool isPowered()    const { return powerDraw > 0.0f; }
-    [[nodiscard]] bool isOperational() const { return placed && connected; }
-};
-
-class ShipEditorPanel : public NFRenderViewport {
-public:
-    static constexpr size_t MAX_MODULES = 512;
-
-    ShipEditorPanel() : NFRenderViewport("ShipEditor") {}
-
-    [[nodiscard]] bool addModule(const ShipModuleEntry& mod) {
-        if (m_modules.size() >= MAX_MODULES) return false;
-        for (auto& m : m_modules) if (m.name == mod.name) return false;
-        m_modules.push_back(mod);
-        return true;
-    }
-
-    [[nodiscard]] bool removeModule(const std::string& name) {
-        for (auto it = m_modules.begin(); it != m_modules.end(); ++it) {
-            if (it->name == name) {
-                if (m_activeModule == name) m_activeModule.clear();
-                m_modules.erase(it);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    [[nodiscard]] ShipModuleEntry* findModule(const std::string& name) {
-        for (auto& m : m_modules) if (m.name == name) return &m;
-        return nullptr;
-    }
-
-    [[nodiscard]] bool setActiveModule(const std::string& name) {
-        for (auto& m : m_modules)
-            if (m.name == name) { m_activeModule = name; return true; }
-        return false;
-    }
-
-    void setTool(ShipEditorTool t)      { m_tool = t; }
-    void setShipName(const std::string& n) { m_shipName = n; }
-    void setSymmetryEnabled(bool v)     { m_symmetry = v; }
-
-    [[nodiscard]] ShipEditorTool      tool()         const { return m_tool; }
-    [[nodiscard]] const std::string&  shipName()     const { return m_shipName; }
-    [[nodiscard]] bool                symmetry()     const { return m_symmetry; }
-    [[nodiscard]] const std::string&  activeModule() const { return m_activeModule; }
-    [[nodiscard]] size_t              moduleCount()  const { return m_modules.size(); }
-
-    [[nodiscard]] size_t placedCount() const {
-        size_t n = 0; for (auto& m : m_modules) if (m.placed) ++n; return n;
-    }
-    [[nodiscard]] size_t connectedCount() const {
-        size_t n = 0; for (auto& m : m_modules) if (m.connected) ++n; return n;
-    }
-    [[nodiscard]] size_t operationalCount() const {
-        size_t n = 0; for (auto& m : m_modules) if (m.isOperational()) ++n; return n;
-    }
-    [[nodiscard]] size_t heavyCount() const {
-        size_t n = 0; for (auto& m : m_modules) if (m.isHeavy()) ++n; return n;
-    }
-    [[nodiscard]] size_t poweredCount() const {
-        size_t n = 0; for (auto& m : m_modules) if (m.isPowered()) ++n; return n;
-    }
-    [[nodiscard]] float totalMass() const {
-        float t = 0.0f; for (auto& m : m_modules) t += m.mass; return t;
-    }
-    [[nodiscard]] float totalPowerDraw() const {
-        float t = 0.0f; for (auto& m : m_modules) t += m.powerDraw; return t;
-    }
-
-private:
-    std::vector<ShipModuleEntry> m_modules;
-    std::string                  m_activeModule;
-    std::string                  m_shipName;
-    ShipEditorTool               m_tool     = ShipEditorTool::Select;
-    bool                         m_symmetry = false;
-};
-
-// ── M1-C — CharacterEditorPanel ───────────────────────────────────
-
-enum class CharacterEditorTab : uint8_t {
-    Appearance, Skeleton, Equipment, Stats, Preview
-};
-
-inline const char* characterEditorTabName(CharacterEditorTab t) {
-    switch (t) {
-        case CharacterEditorTab::Appearance: return "Appearance";
-        case CharacterEditorTab::Skeleton:   return "Skeleton";
-        case CharacterEditorTab::Equipment:  return "Equipment";
-        case CharacterEditorTab::Stats:      return "Stats";
-        case CharacterEditorTab::Preview:    return "Preview";
-    }
-    return "Unknown";
-}
-
-struct CharacterSlot {
-    std::string slotName;
-    std::string equippedItem;
-    bool        locked = false;
-    bool        visible = true;
-
-    [[nodiscard]] bool isEmpty() const { return equippedItem.empty(); }
-};
-
-struct CharacterPreset {
-    std::string name;
-    std::string meshPath;
-    std::string materialPath;
-    uint32_t    slotCount    = 0;
-    bool        dirty        = false;
-    bool        loaded       = false;
-    std::vector<CharacterSlot> slots;
-
-    explicit CharacterPreset(const std::string& n) : name(n) {}
-
-    [[nodiscard]] bool addSlot(const CharacterSlot& slot) {
-        for (auto& s : slots) if (s.slotName == slot.slotName) return false;
-        slots.push_back(slot);
-        slotCount = static_cast<uint32_t>(slots.size());
-        return true;
-    }
-
-    [[nodiscard]] size_t equippedCount() const {
-        size_t c = 0; for (auto& s : slots) if (!s.isEmpty()) ++c; return c;
-    }
-    [[nodiscard]] size_t visibleSlotCount() const {
-        size_t c = 0; for (auto& s : slots) if (s.visible) ++c; return c;
-    }
-    [[nodiscard]] bool isFullyEquipped() const {
-        if (slots.empty()) return false;
-        for (auto& s : slots) if (s.isEmpty()) return false;
-        return true;
-    }
-};
-
-class CharacterEditorPanel : public NFRenderViewport {
-public:
-    static constexpr size_t MAX_PRESETS = 128;
-
-    CharacterEditorPanel() : NFRenderViewport("CharacterEditor") {}
-
-    [[nodiscard]] bool addPreset(const CharacterPreset& preset) {
-        if (m_presets.size() >= MAX_PRESETS) return false;
-        for (auto& p : m_presets) if (p.name == preset.name) return false;
-        m_presets.push_back(preset);
-        return true;
-    }
-
-    [[nodiscard]] bool removePreset(const std::string& name) {
-        for (auto it = m_presets.begin(); it != m_presets.end(); ++it) {
-            if (it->name == name) {
-                if (m_activePreset == name) m_activePreset.clear();
-                m_presets.erase(it);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    [[nodiscard]] CharacterPreset* findPreset(const std::string& name) {
-        for (auto& p : m_presets) if (p.name == name) return &p;
-        return nullptr;
-    }
-
-    [[nodiscard]] bool setActivePreset(const std::string& name) {
-        for (auto& p : m_presets)
-            if (p.name == name) { m_activePreset = name; return true; }
-        return false;
-    }
-
-    void setActiveTab(CharacterEditorTab t) { m_activeTab = t; }
-    void setAutoRotate(bool v)              { m_autoRotate = v; }
-
-    [[nodiscard]] CharacterEditorTab   activeTab()    const { return m_activeTab; }
-    [[nodiscard]] bool                 autoRotate()   const { return m_autoRotate; }
-    [[nodiscard]] const std::string&   activePreset() const { return m_activePreset; }
-    [[nodiscard]] size_t               presetCount()  const { return m_presets.size(); }
-
-    [[nodiscard]] size_t dirtyCount() const {
-        size_t n = 0; for (auto& p : m_presets) if (p.dirty) ++n; return n;
-    }
-    [[nodiscard]] size_t loadedCount() const {
-        size_t n = 0; for (auto& p : m_presets) if (p.loaded) ++n; return n;
-    }
-    [[nodiscard]] size_t fullyEquippedCount() const {
-        size_t n = 0; for (auto& p : m_presets) if (p.isFullyEquipped()) ++n; return n;
-    }
-
-private:
-    std::vector<CharacterPreset> m_presets;
-    std::string                  m_activePreset;
-    CharacterEditorTab           m_activeTab  = CharacterEditorTab::Appearance;
-    bool                         m_autoRotate = false;
 };
 
 // ── M1-C — PrefabEditorPanel ──────────────────────────────────────

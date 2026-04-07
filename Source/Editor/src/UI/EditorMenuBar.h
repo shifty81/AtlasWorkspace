@@ -15,7 +15,6 @@ namespace atlas::editor {
  * Provides top-level menus:
  *   File        — Save Layout, Load Layout, Exit
  *   View        — Toggle visibility of each registered panel
- *   PCG Content — Quick-switch to PCG editing panels
  *
  * The menu bar occupies a thin strip at the top of the editor window.
  * EditorLayout draws it before the dock tree and offsets dock content
@@ -62,10 +61,6 @@ public:
     /** Called when "Exit" is selected. */
     std::function<void()> onExit;
 
-    /** Called when a PCG content panel is selected.
-     *  Receives the panel name. */
-    std::function<void(const std::string&)> onPCGContentSelected;
-
 private:
     std::vector<EditorPanel*> m_panels;
     std::vector<atlas::Menu>  m_menus;
@@ -73,9 +68,6 @@ private:
 
     // Fast panel lookup by name — built once during Build()
     std::unordered_map<std::string, EditorPanel*> m_panelMap;
-
-    // Panel names that belong to the PCG Content menu
-    static bool IsPCGPanel(const std::string& name);
 };
 
 } // namespace atlas::editor

@@ -298,10 +298,10 @@ TEST_CASE("SkeletalEditorPanel add/remove/find skeletons and weight paint", "[Ed
 
 TEST_CASE("SkeletalEditorPanel openAsset sets active", "[Editor][M1C]") {
     SkeletalEditorPanel panel;
-    SkeletalAsset skel("ShipHull_01");
+    SkeletalAsset skel("CharacterRig_01");
     REQUIRE(panel.addSkeleton(skel));
-    panel.openAsset("ShipHull_01");
-    REQUIRE(panel.activeSkeleton() == "ShipHull_01");
+    panel.openAsset("CharacterRig_01");
+    REQUIRE(panel.activeSkeleton() == "CharacterRig_01");
 }
 
 // ── AnimationEditorPanel ──────────────────────────────────────────
@@ -403,116 +403,6 @@ TEST_CASE("AnimationEditorPanel openAsset sets active clip", "[Editor][M1C]") {
     REQUIRE(panel.activeClip() == "PlayerRun");
 }
 
-// ── ShipEditorPanel ───────────────────────────────────────────────
-
-TEST_CASE("ShipEditorTool names cover all 5 values", "[Editor][M1C]") {
-    REQUIRE(std::string(shipEditorToolName(ShipEditorTool::Select))       == "Select");
-    REQUIRE(std::string(shipEditorToolName(ShipEditorTool::PlaceModule))  == "PlaceModule");
-    REQUIRE(std::string(shipEditorToolName(ShipEditorTool::RotateModule)) == "RotateModule");
-    REQUIRE(std::string(shipEditorToolName(ShipEditorTool::RemoveModule)) == "RemoveModule");
-    REQUIRE(std::string(shipEditorToolName(ShipEditorTool::WireConnect))  == "WireConnect");
-}
-
-TEST_CASE("ShipEditorPanel inherits NFRenderViewport and manages modules", "[Editor][M1C]") {
-    ShipEditorPanel panel;
-    REQUIRE(panel.name() == "ShipEditor");
-    REQUIRE(panel.tool() == ShipEditorTool::Select);
-
-    ShipModuleEntry a; a.name = "Engine"; a.mass = 150.0f; a.powerDraw = 50.0f; a.placed = true; a.connected = true;
-    ShipModuleEntry b; b.name = "Shield"; b.mass = 30.0f; b.powerDraw = 20.0f; b.placed = true; b.connected = false;
-    ShipModuleEntry c; c.name = "Hull"; c.mass = 200.0f; c.placed = false;
-
-    REQUIRE(panel.addModule(a));
-    REQUIRE(panel.addModule(b));
-    REQUIRE(panel.addModule(c));
-    REQUIRE_FALSE(panel.addModule(ShipModuleEntry{.name = "Engine"}));
-    REQUIRE(panel.moduleCount() == 3);
-
-    REQUIRE(panel.placedCount()      == 2);
-    REQUIRE(panel.connectedCount()   == 1);
-    REQUIRE(panel.operationalCount() == 1);
-    REQUIRE(panel.heavyCount()       == 2); // Engine + Hull
-    REQUIRE(panel.poweredCount()     == 2); // Engine + Shield
-    REQUIRE(panel.totalMass()        == Catch::Approx(380.0f));
-    REQUIRE(panel.totalPowerDraw()   == Catch::Approx(70.0f));
-
-    panel.setShipName("Destroyer");
-    panel.setSymmetryEnabled(true);
-    REQUIRE(panel.shipName() == "Destroyer");
-    REQUIRE(panel.symmetry());
-
-    panel.setActiveModule("Engine");
-    panel.removeModule("Engine");
-    REQUIRE(panel.activeModule().empty());
-}
-
-TEST_CASE("ShipEditorPanel MAX_MODULES limit enforced", "[Editor][M1C]") {
-    ShipEditorPanel panel;
-    for (size_t i = 0; i < ShipEditorPanel::MAX_MODULES; ++i) {
-        ShipModuleEntry m; m.name = "Mod" + std::to_string(i);
-        REQUIRE(panel.addModule(m));
-    }
-    ShipModuleEntry overflow; overflow.name = "Overflow";
-    REQUIRE_FALSE(panel.addModule(overflow));
-    REQUIRE(panel.moduleCount() == ShipEditorPanel::MAX_MODULES);
-}
-
-// ── CharacterEditorPanel ──────────────────────────────────────────
-
-TEST_CASE("CharacterEditorTab names cover all 5 values", "[Editor][M1C]") {
-    REQUIRE(std::string(characterEditorTabName(CharacterEditorTab::Appearance)) == "Appearance");
-    REQUIRE(std::string(characterEditorTabName(CharacterEditorTab::Skeleton))   == "Skeleton");
-    REQUIRE(std::string(characterEditorTabName(CharacterEditorTab::Equipment))  == "Equipment");
-    REQUIRE(std::string(characterEditorTabName(CharacterEditorTab::Stats))      == "Stats");
-    REQUIRE(std::string(characterEditorTabName(CharacterEditorTab::Preview))    == "Preview");
-}
-
-TEST_CASE("CharacterPreset slot management and fully equipped", "[Editor][M1C]") {
-    CharacterPreset preset("Warrior");
-    CharacterSlot head; head.slotName = "Head"; head.equippedItem = "Helmet";
-    CharacterSlot body; body.slotName = "Body"; body.equippedItem = "Armor";
-    CharacterSlot feet; feet.slotName = "Feet";
-
-    REQUIRE(preset.addSlot(head));
-    REQUIRE(preset.addSlot(body));
-    REQUIRE(preset.addSlot(feet));
-    REQUIRE_FALSE(preset.addSlot(CharacterSlot{.slotName = "Head"}));
-    REQUIRE(preset.slotCount == 3);
-    REQUIRE(preset.equippedCount() == 2);
-    REQUIRE_FALSE(preset.isFullyEquipped());
-
-    feet.equippedItem = "Boots";
-    // Need to find and update
-    REQUIRE(preset.visibleSlotCount() == 3);
-}
-
-TEST_CASE("CharacterEditorPanel add/remove/find presets", "[Editor][M1C]") {
-    CharacterEditorPanel panel;
-    REQUIRE(panel.name() == "CharacterEditor");
-    REQUIRE(panel.activeTab() == CharacterEditorTab::Appearance);
-
-    CharacterPreset a("Warrior"); a.dirty = true; a.loaded = true;
-    CharacterPreset b("Mage"); b.loaded = true;
-
-    REQUIRE(panel.addPreset(a));
-    REQUIRE(panel.addPreset(b));
-    REQUIRE_FALSE(panel.addPreset(CharacterPreset("Warrior")));
-    REQUIRE(panel.presetCount() == 2);
-
-    REQUIRE(panel.dirtyCount()  == 1);
-    REQUIRE(panel.loadedCount() == 2);
-
-    panel.setActivePreset("Warrior");
-    REQUIRE(panel.activePreset() == "Warrior");
-    panel.removePreset("Warrior");
-    REQUIRE(panel.activePreset().empty());
-
-    panel.setActiveTab(CharacterEditorTab::Equipment);
-    REQUIRE(panel.activeTab() == CharacterEditorTab::Equipment);
-    panel.setAutoRotate(true);
-    REQUIRE(panel.autoRotate());
-}
-
 // ── PrefabEditorPanel ─────────────────────────────────────────────
 
 TEST_CASE("PrefabEditMode names cover all 5 values", "[Editor][M1C]") {
@@ -577,8 +467,6 @@ TEST_CASE("All M1-C editors inherit NFRenderViewport with gizmo and render mode"
     MaterialEditorPanel mat;
     SkeletalEditorPanel skel;
     AnimationEditorPanel anim;
-    ShipEditorPanel ship;
-    CharacterEditorPanel chr;
     PrefabEditorPanel pref;
 
     // All share the NFRenderViewport interface
@@ -586,16 +474,12 @@ TEST_CASE("All M1-C editors inherit NFRenderViewport with gizmo and render mode"
     mat.setGizmoMode(ViewportGizmoMode::Rotate);
     skel.setGizmoMode(ViewportGizmoMode::Scale);
     anim.setRenderMode(ViewportRenderMode::Wireframe);
-    ship.setRenderMode(ViewportRenderMode::Solid);
-    chr.setRenderMode(ViewportRenderMode::Textured);
     pref.setRenderMode(ViewportRenderMode::Unlit);
 
     REQUIRE(mesh.isGizmoActive());
     REQUIRE(mat.isGizmoActive());
     REQUIRE(skel.isGizmoActive());
     REQUIRE(anim.renderMode() == ViewportRenderMode::Wireframe);
-    REQUIRE(ship.renderMode() == ViewportRenderMode::Solid);
-    REQUIRE(chr.renderMode()  == ViewportRenderMode::Textured);
     REQUIRE(pref.renderMode() == ViewportRenderMode::Unlit);
 
     // All support frame ticking

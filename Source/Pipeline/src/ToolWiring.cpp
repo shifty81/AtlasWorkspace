@@ -2,7 +2,7 @@
 //
 // Implements ToolAdapter, five concrete tool adapters, and ToolRegistry.
 // All tools communicate exclusively through .change.json files in the
-// shared .novaforge/pipeline/changes/ directory.
+// shared .atlas/pipeline/changes/ directory.
 
 #include "NF/Pipeline/Pipeline.h"
 
