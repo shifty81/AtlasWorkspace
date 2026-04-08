@@ -212,3 +212,15 @@
 #include "NF/Editor/BenchmarkSuiteEditor.h"
 #include "NF/Editor/StressTestEditor.h"
 #include "NF/Editor/LoadTestEditor.h"
+// S121
+#include "NF/Editor/RuntimeConfigEditor.h"
+#include "NF/Editor/FeatureFlagEditor.h"
+#include "NF/Editor/ExperimentEditor.h"
+// S122
+#include "NF/Editor/GameEconomyEditor.h"
+#include "NF/Editor/VirtualCurrencyEditor.h"
+#include "NF/Editor/ItemShopEditor.h"
+// S123
+#include "NF/Editor/AssetBundleEditor.h"
+#include "NF/Editor/PackagingEditor.h"
+#include "NF/Editor/DeploymentEditor.h"
