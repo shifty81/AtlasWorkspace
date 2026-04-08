@@ -29,9 +29,8 @@ void DrawListDispatcher::dispatch(const DrawList& drawList) const {
                     m_renderer->drawText(c.rect.x, c.rect.y, c.text, col);
                 }
             }
-            // PushClipCmd / PopClipCmd: not implemented in GDI batch path.
-            // The GDI path doesn't support clip rectangles on the batched quad
-            // pipeline; ignore silently so panel paint never crashes.
+            // PushClipCmd / PopClipCmd: see dispatch() documentation in the header.
+            // The GDI batch path has no clip support; silently skipped.
         }, cmd);
     }
 }

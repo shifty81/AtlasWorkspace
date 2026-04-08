@@ -20,6 +20,11 @@ public:
     [[nodiscard]] NF::UIRenderer* renderer() const { return m_renderer; }
 
     /// Walk every command in drawList and dispatch to the renderer/backend.
+    /// FillRectCmd  → UIRenderer::drawRect
+    /// DrawRectCmd  → UIRenderer::drawRectOutline (1px border)
+    /// DrawTextCmd  → UIBackend::drawTextNative if backend present, else UIRenderer::drawText
+    /// PushClipCmd / PopClipCmd — intentionally ignored: the GDI batched-quad
+    ///   pipeline has no clip-rect support; silently no-ops so panel paint never crashes.
     void dispatch(const DrawList& drawList) const;
 
 private:
