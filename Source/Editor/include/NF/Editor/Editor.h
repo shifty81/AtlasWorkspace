@@ -356,3 +356,15 @@
 #include "NF/Editor/ProfilerViewV1.h"
 #include "NF/Editor/MemoryTrackerV1.h"
 #include "NF/Editor/DiagnosticPanelV1.h"
+// S157
+#include "NF/Editor/EventTimelineV1.h"
+#include "NF/Editor/StateGraphV1.h"
+#include "NF/Editor/TriggerEditorV1.h"
+// S158
+#include "NF/Editor/CurveLibraryV1.h"
+#include "NF/Editor/SplineEditorV1.h"
+#include "NF/Editor/GradientEditorV1.h"
+// S159
+#include "NF/Editor/ConstraintEditorV1.h"
+#include "NF/Editor/RigidBodyEditorV1.h"
+#include "NF/Editor/ColliderEditorV1.h"
