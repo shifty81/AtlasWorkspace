@@ -4,6 +4,7 @@ add_library(NF_UI STATIC
     # AtlasUI — Core
     src/AtlasUI/AtlasUI.cpp
     src/AtlasUI/PanelHost.cpp
+    src/AtlasUI/DrawListDispatcher.cpp
 
     # AtlasUI — Theme
     src/AtlasUI/Theme/ThemeDefaults.cpp
@@ -11,6 +12,7 @@ add_library(NF_UI STATIC
 
     # AtlasUI — Widgets
     src/AtlasUI/Widgets/Button.cpp
+    src/AtlasUI/Widgets/Checkbox.cpp
     src/AtlasUI/Widgets/Panel.cpp
     src/AtlasUI/Widgets/TabBar.cpp
     src/AtlasUI/Widgets/Tabs.cpp
@@ -27,6 +29,11 @@ add_library(NF_UI STATIC
     src/AtlasUI/Widgets/ScrollView.cpp
     src/AtlasUI/Widgets/PropertyGrid.cpp
     src/AtlasUI/Widgets/TableView.cpp
+    src/AtlasUI/Widgets/MenuBar.cpp
+    src/AtlasUI/Widgets/StatusBar.cpp
+    src/AtlasUI/Widgets/RadioButton.cpp
+    src/AtlasUI/Widgets/Slider.cpp
+    src/AtlasUI/Widgets/ProgressBar.cpp
 
     # AtlasUI — Commands
     src/AtlasUI/Commands/CommandTypes.cpp

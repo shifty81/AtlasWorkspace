@@ -315,3 +315,11 @@ add_executable(NF_UITests
 )
 target_link_libraries(NF_UITests PRIVATE NF::UI NF::Core NF::Input Catch2::Catch2)
 catch_discover_tests(NF_UITests)
+
+# Workspace wiring tests (DrawListDispatcher, InputBridge, new widgets)
+add_executable(NF_WorkspaceWiringTests
+    UI/test_workspace_wiring.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_WorkspaceWiringTests PRIVATE NF::Editor NF::UI NF::Core NF::Input Catch2::Catch2)
+catch_discover_tests(NF_WorkspaceWiringTests)

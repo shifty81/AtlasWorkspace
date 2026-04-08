@@ -32,6 +32,14 @@ public:
         (void)fontName; (void)fontSize;
     }
 
+    // Draw text natively at pixel coordinates using the platform backend.
+    // Called by DrawListDispatcher for AtlasUI DrawTextCmd commands.
+    // The color is in RRGGBBAA format (same as UIVertex color).
+    // Override in platform backends (e.g. GDIBackend) for proper text rendering.
+    virtual void drawTextNative(float x, float y, std::string_view text, uint32_t color) {
+        (void)x; (void)y; (void)text; (void)color; // default: no-op
+    }
+
     // Measure text extents (for layout calculations).
     [[nodiscard]] virtual Vec2 measureText(std::string_view text, float fontSize) const {
         (void)fontSize;
