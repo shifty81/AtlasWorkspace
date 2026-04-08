@@ -115,7 +115,7 @@ TEST_CASE("SaveDataEntry defaults", "[Editor][S128]") {
     REQUIRE(e.name()         == "slot_auto");
     REQUIRE(e.slot()         == SaveDataSlot::Auto);
     REQUIRE(e.state()        == SaveDataState::Empty);
-    REQUIRE(e.sizKB()         == 0u);
+    REQUIRE(e.sizeKB()         == 0u);
     REQUIRE(e.isCompressed());
     REQUIRE(e.isEnabled());
 }
@@ -123,11 +123,11 @@ TEST_CASE("SaveDataEntry defaults", "[Editor][S128]") {
 TEST_CASE("SaveDataEntry mutation", "[Editor][S128]") {
     SaveDataEntry e(2, "slot_manual", SaveDataSlot::Manual);
     e.setState(SaveDataState::Valid);
-    e.setSizKB(512u);
+    e.setSizeKB(512u);
     e.setIsCompressed(false);
     e.setIsEnabled(false);
     REQUIRE(e.state()        == SaveDataState::Valid);
-    REQUIRE(e.sizKB()         == 512u);
+    REQUIRE(e.sizeKB()         == 512u);
     REQUIRE(!e.isCompressed());
     REQUIRE(!e.isEnabled());
 }

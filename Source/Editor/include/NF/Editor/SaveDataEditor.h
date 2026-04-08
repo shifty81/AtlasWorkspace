@@ -46,7 +46,7 @@ public:
         : m_id(id), m_name(name), m_slot(slot) {}
 
     void setState(SaveDataState v)   { m_state        = v; }
-    void setSizKB(uint32_t v)        { m_sizKB         = v; }
+    void setSizeKB(uint32_t v)        { m_sizeKB         = v; }
     void setIsCompressed(bool v)     { m_isCompressed  = v; }
     void setIsEnabled(bool v)        { m_isEnabled     = v; }
 
@@ -54,7 +54,7 @@ public:
     [[nodiscard]] const std::string& name()         const { return m_name;         }
     [[nodiscard]] SaveDataSlot       slot()         const { return m_slot;         }
     [[nodiscard]] SaveDataState      state()        const { return m_state;        }
-    [[nodiscard]] uint32_t           sizKB()         const { return m_sizKB;         }
+    [[nodiscard]] uint32_t           sizeKB()        const { return m_sizeKB;         }
     [[nodiscard]] bool               isCompressed() const { return m_isCompressed; }
     [[nodiscard]] bool               isEnabled()    const { return m_isEnabled;    }
 
@@ -63,7 +63,7 @@ private:
     std::string   m_name;
     SaveDataSlot  m_slot;
     SaveDataState m_state        = SaveDataState::Empty;
-    uint32_t      m_sizKB         = 0u;
+    uint32_t      m_sizeKB         = 0u;
     bool          m_isCompressed  = true;
     bool          m_isEnabled    = true;
 };
