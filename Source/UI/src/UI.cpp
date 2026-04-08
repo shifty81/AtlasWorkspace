@@ -3,12 +3,18 @@
 
 namespace NF {
 
-void UIRenderer::endFrame() {
-    // Flush batched geometry to the active backend (if any).
+void UIRenderer::flush() {
     if (m_backend && !m_vertices.empty()) {
         m_backend->flush(m_vertices.data(), m_vertices.size(),
                          m_indices.data(), m_indices.size());
+        m_vertices.clear();
+        m_indices.clear();
     }
+}
+
+void UIRenderer::endFrame() {
+    // Flush any remaining batched geometry to the active backend.
+    flush();
     m_lastFrameQuadCount = m_quadCount;
     m_lastFrameTextCount = m_textDrawCount;
 }

@@ -155,6 +155,13 @@ public:
         ++m_quadCount;
     }
 
+    // ── Mid-frame flush ──────────────────────────────────────────
+    // Flushes all buffered geometry to the backend and clears the vertex
+    // buffer.  Use this to ensure earlier draw calls (e.g. backgrounds) are
+    // written to the GDI memDC before later draw calls (e.g. text) that must
+    // appear on top, without ending the frame.
+    void flush();
+
     // ── End frame — flush to backend ─────────────────────────────
     void endFrame();
 
