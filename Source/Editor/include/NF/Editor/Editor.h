@@ -272,3 +272,15 @@
 #include "NF/Editor/ProfilingSessionEditor.h"
 #include "NF/Editor/CpuProfilerEditor.h"
 #include "NF/Editor/GpuProfilerEditor.h"
+// S136
+#include "NF/Editor/NetworkTopologyEditor.h"
+#include "NF/Editor/BandwidthProfileEditor.h"
+#include "NF/Editor/LatencySimEditor.h"
+// S137
+#include "NF/Editor/AIPathfindEditor.h"
+#include "NF/Editor/AIPerceptionEditor.h"
+#include "NF/Editor/AIDecisionEditor.h"
+// S138
+#include "NF/Editor/PhysicsMaterialEditor.h"
+#include "NF/Editor/PhysicsConstraintEditor.h"
+#include "NF/Editor/PhysicsTriggerEditor.h"
