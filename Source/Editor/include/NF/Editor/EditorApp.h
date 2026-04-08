@@ -43,6 +43,7 @@
 #include "NF/Editor/AssetDatabase.h"
 #include "NF/Editor/AssetImporters.h"
 #include "NF/Editor/BlenderImporter.h"
+#include "NF/Editor/WorkspacePanelHost.h"
 
 namespace NF {
 
@@ -310,6 +311,9 @@ public:
         // M2/S1 undo system
         m_editorUndo = std::make_unique<EditorUndoSystem>(m_commandStack);
 
+        // Bind WorkspacePanelHost dispatcher to the shared UIRenderer
+        m_workspacePanelHost.setRenderer(&m_ui);
+
         // M3/S2 Play-in-Editor
         m_playInEditor = std::make_unique<PlayInEditorSystem>(
             &m_entityPlacement, pcgTuningPanel(), viewportPanel());
@@ -547,13 +551,16 @@ public:
             }
         }
 
-        // Panels
+        // Panels (legacy EditorPanel loop)
         for (auto& panel : m_editorPanels) {
             if (!panel->isVisible()) continue;
             auto* dp = m_dockLayout.findPanel(panel->name());
             if (!dp || !dp->visible) continue;
             panel->render(m_ui, dp->bounds, m_theme);
         }
+
+        // AtlasUI panels — render on top of legacy panels using proper widgets
+        m_workspacePanelHost.renderPanels(m_dockLayout);
 
         // Splitter dividers
         for (auto& dp : m_dockLayout.panels()) {
@@ -609,6 +616,9 @@ public:
             m_commandStack.isDirty(),
             static_cast<int>(m_selection.selectionCount()),
             m_frameStats.stats().fps);
+
+        // Route input to AtlasUI panels
+        m_workspacePanelHost.handleInput(m_dockLayout, input);
     }
 
     // Process a hotkey string and dispatch matching commands.
@@ -685,6 +695,10 @@ public:
     [[nodiscard]] GraphVM* graphVM() const { return m_graphVM; }
 
     IDEService& ideService() { return m_ideService; }
+
+    // AtlasUI workspace panel host accessor
+    [[nodiscard]] WorkspacePanelHost& workspacePanelHost() { return m_workspacePanelHost; }
+    [[nodiscard]] const WorkspacePanelHost& workspacePanelHost() const { return m_workspacePanelHost; }
 
     // M2/S1 accessors
     EntityPlacementTool& entityPlacementTool() { return m_entityPlacement; }
@@ -849,6 +863,9 @@ private:
 
     // S4 Blender Bridge
     BlenderAutoImporter m_blenderImporter;
+
+    // AtlasUI workspace panel host (owns the 8 core AtlasUI panels)
+    WorkspacePanelHost m_workspacePanelHost;
 
     // ── State persistence ───────────────────────────────────────
 

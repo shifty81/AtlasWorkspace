@@ -142,6 +142,11 @@ public:
                  text.data(), static_cast<int>(text.size()));
     }
 
+    // UIBackend override: route AtlasUI DrawTextCmd directly to GDI TextOutA.
+    void drawTextNative(float x, float y, std::string_view text, uint32_t color) override {
+        drawTextGDI(x, y, text, color);
+    }
+
     // Direct access to the memory DC for advanced rendering
     [[nodiscard]] HDC memDC() const { return m_memDC; }
 

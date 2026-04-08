@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NF/UI/AtlasUI/Contexts.h"
+#include "NF/UI/AtlasUI/DrawListDispatcher.h"
 #include "NF/UI/AtlasUI/DrawPrimitives.h"
 #include "NF/UI/AtlasUI/Interfaces.h"
 #include "NF/UI/AtlasUI/PanelBase.h"
