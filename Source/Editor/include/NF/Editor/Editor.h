@@ -308,3 +308,15 @@
 #include "NF/Editor/ScrollVirtualizerV1.h"
 #include "NF/Editor/GraphHostContractV1.h"
 #include "NF/Editor/WorkspaceShellContract.h"
+// S145
+#include "NF/Editor/LoggingRouteV1.h"
+#include "NF/Editor/AIDebugPathV1.h"
+#include "NF/Editor/CodexSnippetMirror.h"
+// S146
+#include "NF/Editor/WidgetKitV1.h"
+#include "NF/Editor/TooltipSystemV1.h"
+#include "NF/Editor/TabBarV1.h"
+// S147
+#include "NF/Editor/SettingsControlPanelV1.h"
+#include "NF/Editor/ProjectSurfaceV1.h"
+#include "NF/Editor/RepoSurfaceV1.h"
