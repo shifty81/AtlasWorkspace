@@ -92,7 +92,8 @@ public:
         ++m_turnCount;
     }
 
-    void receiveAssistantTurn(const std::string& message) {
+    // Receive an assistant response for the current turn (does not increment turnCount)
+    void receiveAssistantResponse(const std::string& message) {
         m_chatSession.addAssistantMessage(message);
     }
 

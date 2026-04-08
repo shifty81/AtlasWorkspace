@@ -199,7 +199,7 @@ TEST_CASE("AIPanelSession clearUnpinnedContexts", "[Editor][S141]") {
 TEST_CASE("AIPanelSession user and assistant turns", "[Editor][S141]") {
     AIPanelSession session;
     session.submitUserTurn("Fix the shader error");
-    session.receiveAssistantTurn("Here is the fix: ...");
+    session.receiveAssistantResponse("Here is the fix: ...");
     REQUIRE(session.turnCount()    == 1u);
     REQUIRE(session.messageCount() == 2u);
 }
