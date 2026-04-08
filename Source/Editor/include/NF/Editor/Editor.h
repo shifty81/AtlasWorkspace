@@ -296,3 +296,15 @@
 #include "NF/Editor/AtlasAIPanelHost.h"
 #include "NF/Editor/AIPanelSession.h"
 #include "NF/Editor/AIActionSurface.h"
+// S142
+#include "NF/Editor/PropertyGridV1.h"
+#include "NF/Editor/TreeViewV1.h"
+#include "NF/Editor/TableViewV1.h"
+// S143
+#include "NF/Editor/PanelStateSerializer.h"
+#include "NF/Editor/DockTreeSerializer.h"
+#include "NF/Editor/LayoutManagerV1.h"
+// S144
+#include "NF/Editor/ScrollVirtualizerV1.h"
+#include "NF/Editor/GraphHostContractV1.h"
+#include "NF/Editor/WorkspaceShellContract.h"
