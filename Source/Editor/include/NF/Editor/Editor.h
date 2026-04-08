@@ -260,3 +260,15 @@
 #include "NF/Editor/LocalizationKeyEditor.h"
 #include "NF/Editor/TranslationEditor.h"
 #include "NF/Editor/LanguagePackEditor.h"
+// S133
+#include "NF/Editor/InputActionEditor.h"
+#include "NF/Editor/AxisMappingEditor.h"
+#include "NF/Editor/ControlSchemeEditor.h"
+// S134
+#include "NF/Editor/CameraRigEditor.h"
+#include "NF/Editor/CameraBlendEditor.h"
+#include "NF/Editor/CameraShakeEditor.h"
+// S135
+#include "NF/Editor/ProfilingSessionEditor.h"
+#include "NF/Editor/CpuProfilerEditor.h"
+#include "NF/Editor/GpuProfilerEditor.h"
