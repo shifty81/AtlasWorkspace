@@ -64,6 +64,7 @@ private:
 
 class FontEditorV1 {
 public:
+    FontEditorV1() = default;
     explicit FontEditorV1(uint32_t id, const std::string& familyName)
         : m_id(id), m_familyName(familyName) {}
 

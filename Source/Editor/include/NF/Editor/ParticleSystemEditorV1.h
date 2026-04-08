@@ -14,15 +14,15 @@
 
 namespace NF {
 
-enum class PsEmitterShape : uint8_t { Point, Sphere, Box, Cone, Disk, Mesh };
-inline const char* psEmitterShapeName(PsEmitterShape v) {
+enum class Psv1EmitterShape : uint8_t { Point, Sphere, Box, Cone, Disk, Mesh };
+inline const char* psv1EmitterShapeName(Psv1EmitterShape v) {
     switch (v) {
-        case PsEmitterShape::Point:  return "Point";
-        case PsEmitterShape::Sphere: return "Sphere";
-        case PsEmitterShape::Box:    return "Box";
-        case PsEmitterShape::Cone:   return "Cone";
-        case PsEmitterShape::Disk:   return "Disk";
-        case PsEmitterShape::Mesh:   return "Mesh";
+        case Psv1EmitterShape::Point:  return "Point";
+        case Psv1EmitterShape::Sphere: return "Sphere";
+        case Psv1EmitterShape::Box:    return "Box";
+        case Psv1EmitterShape::Cone:   return "Cone";
+        case Psv1EmitterShape::Disk:   return "Disk";
+        case Psv1EmitterShape::Mesh:   return "Mesh";
     }
     return "Unknown";
 }
@@ -40,7 +40,7 @@ class PsEmitter {
 public:
     explicit PsEmitter(uint32_t id, const std::string& name) : m_id(id), m_name(name) {}
 
-    void setShape(PsEmitterShape v) { m_shape    = v; }
+    void setShape(Psv1EmitterShape v) { m_shape    = v; }
     void setSimSpace(PsSimSpace v)  { m_simSpace = v; }
     void setRate(float v)           { m_rate     = v; }
     void setLifetime(float v)       { m_lifetime = v; }
@@ -49,7 +49,7 @@ public:
 
     [[nodiscard]] uint32_t           id()       const { return m_id;       }
     [[nodiscard]] const std::string& name()     const { return m_name;     }
-    [[nodiscard]] PsEmitterShape     shape()    const { return m_shape;    }
+    [[nodiscard]] Psv1EmitterShape     shape()    const { return m_shape;    }
     [[nodiscard]] PsSimSpace         simSpace() const { return m_simSpace; }
     [[nodiscard]] float              rate()     const { return m_rate;     }
     [[nodiscard]] float              lifetime() const { return m_lifetime; }
@@ -59,7 +59,7 @@ public:
 private:
     uint32_t       m_id;
     std::string    m_name;
-    PsEmitterShape m_shape    = PsEmitterShape::Point;
+    Psv1EmitterShape m_shape    = Psv1EmitterShape::Point;
     PsSimSpace     m_simSpace = PsSimSpace::World;
     float          m_rate     = 10.0f;
     float          m_lifetime = 2.0f;
@@ -94,7 +94,7 @@ public:
         for (auto& e : m_emitters) if (e.looping()) ++n;
         return n;
     }
-    [[nodiscard]] std::vector<PsEmitter> filterByShape(PsEmitterShape shape) const {
+    [[nodiscard]] std::vector<PsEmitter> filterByShape(Psv1EmitterShape shape) const {
         std::vector<PsEmitter> result;
         for (auto& e : m_emitters) if (e.shape() == shape) result.push_back(e);
         return result;

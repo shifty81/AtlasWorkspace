@@ -14,13 +14,13 @@
 
 namespace NF {
 
-enum class BuildTarget : uint8_t { Debug, Release, RelWithDebInfo, MinSizeRel };
-inline const char* buildTargetName(BuildTarget v) {
+enum class BpeBuildTarget : uint8_t { Debug, Release, RelWithDebInfo, MinSizeRel };
+inline const char* bpeBuildTargetName(BpeBuildTarget v) {
     switch (v) {
-        case BuildTarget::Debug:          return "Debug";
-        case BuildTarget::Release:        return "Release";
-        case BuildTarget::RelWithDebInfo: return "RelWithDebInfo";
-        case BuildTarget::MinSizeRel:     return "MinSizeRel";
+        case BpeBuildTarget::Debug:          return "Debug";
+        case BpeBuildTarget::Release:        return "Release";
+        case BpeBuildTarget::RelWithDebInfo: return "RelWithDebInfo";
+        case BpeBuildTarget::MinSizeRel:     return "MinSizeRel";
     }
     return "Unknown";
 }
@@ -87,8 +87,8 @@ public:
         for (auto& s : m_steps) if (s.enabled()) ++n;
         return n;
     }
-    void setTarget(BuildTarget t) { m_target = t; }
-    [[nodiscard]] BuildTarget target() const { return m_target; }
+    void setTarget(BpeBuildTarget t) { m_target = t; }
+    [[nodiscard]] BpeBuildTarget target() const { return m_target; }
     [[nodiscard]] std::vector<BuildStep> stepsForStage(BuildStage stage) const {
         std::vector<BuildStep> result;
         for (auto& s : m_steps) if (s.stage() == stage) result.push_back(s);
@@ -99,7 +99,7 @@ public:
 
 private:
     std::vector<BuildStep> m_steps;
-    BuildTarget            m_target = BuildTarget::Debug;
+    BpeBuildTarget            m_target = BpeBuildTarget::Debug;
 };
 
 } // namespace NF
