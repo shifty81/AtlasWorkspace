@@ -284,3 +284,15 @@
 #include "NF/Editor/PhysicsMaterialEditor.h"
 #include "NF/Editor/PhysicsConstraintEditor.h"
 #include "NF/Editor/PhysicsTriggerEditor.h"
+// S139
+#include "NF/Editor/TypographySystem.h"
+#include "NF/Editor/IconographySpec.h"
+#include "NF/Editor/FontRegistryEditor.h"
+// S140
+#include "NF/Editor/FileIntakePipeline.h"
+#include "NF/Editor/DropTargetHandler.h"
+#include "NF/Editor/AssetImportQueue.h"
+// S141
+#include "NF/Editor/AtlasAIPanelHost.h"
+#include "NF/Editor/AIPanelSession.h"
+#include "NF/Editor/AIActionSurface.h"

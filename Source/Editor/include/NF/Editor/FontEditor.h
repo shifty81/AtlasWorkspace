@@ -31,7 +31,7 @@ inline const char* fontStyleName(FontStyle s) {
 }
 
 enum class FontWeight : uint8_t {
-    Thin, ExtraLight, Light, Regular, Medium, Bold
+    Thin, ExtraLight, Light, Regular, Medium, SemiBold, Bold, ExtraBold, Black
 };
 
 inline const char* fontWeightName(FontWeight w) {
@@ -41,7 +41,10 @@ inline const char* fontWeightName(FontWeight w) {
         case FontWeight::Light:      return "Light";
         case FontWeight::Regular:    return "Regular";
         case FontWeight::Medium:     return "Medium";
+        case FontWeight::SemiBold:   return "SemiBold";
         case FontWeight::Bold:       return "Bold";
+        case FontWeight::ExtraBold:  return "ExtraBold";
+        case FontWeight::Black:      return "Black";
     }
     return "Unknown";
 }
