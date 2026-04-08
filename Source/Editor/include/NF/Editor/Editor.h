@@ -368,3 +368,15 @@
 #include "NF/Editor/ConstraintEditorV1.h"
 #include "NF/Editor/RigidBodyEditorV1.h"
 #include "NF/Editor/ColliderEditorV1.h"
+// S160
+#include "NF/Editor/TerrainBrushV1.h"
+#include "NF/Editor/FoliagePainterV1.h"
+#include "NF/Editor/RoadToolV1.h"
+// S161
+#include "NF/Editor/AINavMeshEditorV1.h"
+#include "NF/Editor/AISpawnEditorV1.h"
+#include "NF/Editor/AIGoalEditorV1.h"
+// S162
+#include "NF/Editor/NetworkSyncEditorV1.h"
+#include "NF/Editor/RpcInspectorV1.h"
+#include "NF/Editor/LagCompEditorV1.h"
