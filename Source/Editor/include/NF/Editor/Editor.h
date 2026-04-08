@@ -236,3 +236,15 @@
 #include "NF/Editor/NotificationCenterEditor.h"
 #include "NF/Editor/AlertRuleEditor.h"
 #include "NF/Editor/BroadcastEditor.h"
+// S127
+#include "NF/Editor/MatchmakingEditor.h"
+#include "NF/Editor/LobbyEditor.h"
+#include "NF/Editor/TournamentEditor.h"
+// S128
+#include "NF/Editor/CloudStorageEditor.h"
+#include "NF/Editor/SaveDataEditor.h"
+#include "NF/Editor/SyncConflictEditor.h"
+// S129
+#include "NF/Editor/TagSystemEditor.h"
+#include "NF/Editor/FilterEditor.h"
+#include "NF/Editor/SearchIndexEditor.h"
