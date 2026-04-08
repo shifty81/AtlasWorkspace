@@ -224,3 +224,15 @@
 #include "NF/Editor/AssetBundleEditor.h"
 #include "NF/Editor/PackagingEditor.h"
 #include "NF/Editor/DeploymentEditor.h"
+// S124
+#include "NF/Editor/SandboxEditor.h"
+#include "NF/Editor/SceneIsolationEditor.h"
+#include "NF/Editor/PlaymodeEditor.h"
+// S125
+#include "NF/Editor/RewardSystemEditor.h"
+#include "NF/Editor/DailyQuestEditor.h"
+#include "NF/Editor/SeasonPassEditor.h"
+// S126
+#include "NF/Editor/NotificationCenterEditor.h"
+#include "NF/Editor/AlertRuleEditor.h"
+#include "NF/Editor/BroadcastEditor.h"
