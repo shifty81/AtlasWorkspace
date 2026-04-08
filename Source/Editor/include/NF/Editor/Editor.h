@@ -248,3 +248,15 @@
 #include "NF/Editor/TagSystemEditor.h"
 #include "NF/Editor/FilterEditor.h"
 #include "NF/Editor/SearchIndexEditor.h"
+// S130
+#include "NF/Editor/EventBusEditor.h"
+#include "NF/Editor/MessageQueueEditor.h"
+#include "NF/Editor/PubSubEditor.h"
+// S131
+#include "NF/Editor/GraphicsSettingsEditor.h"
+#include "NF/Editor/DisplayModeEditor.h"
+#include "NF/Editor/ResolutionEditor.h"
+// S132
+#include "NF/Editor/LocalizationKeyEditor.h"
+#include "NF/Editor/TranslationEditor.h"
+#include "NF/Editor/LanguagePackEditor.h"
