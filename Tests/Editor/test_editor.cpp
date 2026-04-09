@@ -608,7 +608,7 @@ TEST_CASE("ContentBrowserPanel wraps ContentBrowser", "[Editor][Panel]") {
     NF::ContentBrowserPanel panel(&browser);
 
     REQUIRE(panel.name() == "ContentBrowser");
-    REQUIRE(panel.slot() == NF::DockSlot::Left);
+    REQUIRE(panel.slot() == NF::DockSlot::Bottom);
     REQUIRE(panel.contentBrowser() == &browser);
     REQUIRE(panel.viewMode() == NF::ContentViewMode::Grid);
 

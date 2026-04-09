@@ -112,7 +112,17 @@ public:
         }, "Deselect All", "Ctrl+D");
 
         m_commands.registerCommand("view.reset_layout", [this]() {
-            NF_LOG_INFO("Editor", "Reset panel layout");
+            m_dockLayout.resetSizes();
+            m_dockLayout.setPanelVisible("Viewport",       true);
+            m_dockLayout.setPanelVisible("Inspector",      true);
+            m_dockLayout.setPanelVisible("Hierarchy",      true);
+            m_dockLayout.setPanelVisible("Console",        true);
+            m_dockLayout.setPanelVisible("ContentBrowser", true);
+            m_dockLayout.setPanelVisible("GraphEditor",    false);
+            m_dockLayout.setPanelVisible("PCGTuning",      false);
+            m_dockLayout.selectTab("Console");
+            NF_LOG_INFO("Editor", "Panel layout reset to defaults");
+            m_notifications.push(NotificationType::Info, "Panel layout reset");
         }, "Reset Layout", "");
 
         // View toggle commands
@@ -308,6 +318,12 @@ public:
             m_editorPanels.push_back(std::move(pcg));
         }
 
+        // Set up tab group for the Bottom slot so Console and ContentBrowser share
+        // the zone without overlapping; Console is the default active tab.
+        m_dockLayout.addTab("Console",        DockSlot::Bottom);
+        m_dockLayout.addTab("ContentBrowser", DockSlot::Bottom);
+        m_dockLayout.selectTab("Console");
+
         // M2/S1 undo system
         m_editorUndo = std::make_unique<EditorUndoSystem>(m_commandStack);
 
@@ -355,6 +371,32 @@ public:
         m_commands.registerCommand("tools.voxel_paint", [this]() {
             NF_LOG_INFO("Editor", "Voxel Paint tool activated");
         }, "Voxel Paint Tool", "");
+
+        // Stub commands for Tools menu items not yet fully implemented
+        m_commands.registerCommand("tools.launch_blender_bridge", [this]() {
+            NF_LOG_INFO("Editor", "Blender Bridge: not yet implemented");
+            m_notifications.push(NotificationType::Info, "Blender Bridge - coming soon");
+        }, "Launch Blender Bridge", "");
+
+        m_commands.registerCommand("tools.launch_contract_scanner", [this]() {
+            NF_LOG_INFO("Editor", "Contract Scanner: not yet implemented");
+            m_notifications.push(NotificationType::Info, "Contract Scanner - coming soon");
+        }, "Launch Contract Scanner", "");
+
+        m_commands.registerCommand("tools.launch_replay_minimizer", [this]() {
+            NF_LOG_INFO("Editor", "Replay Minimizer: not yet implemented");
+            m_notifications.push(NotificationType::Info, "Replay Minimizer - coming soon");
+        }, "Launch Replay Minimizer", "");
+
+        m_commands.registerCommand("tools.launch_atlas_ai", [this]() {
+            NF_LOG_INFO("Editor", "Atlas AI: not yet implemented");
+            m_notifications.push(NotificationType::Info, "Atlas AI - coming soon");
+        }, "Launch Atlas AI", "");
+
+        m_commands.registerCommand("tools.pipeline_monitor", [this]() {
+            NF_LOG_INFO("Editor", "Pipeline Monitor: not yet implemented");
+            m_notifications.push(NotificationType::Info, "Pipeline Monitor - coming soon");
+        }, "Pipeline Monitor", "");
 
         // M4/S3 Asset Pipeline commands
         m_commands.registerCommand("assets.scan", [this]() {
@@ -527,6 +569,8 @@ public:
     // Render the full editor UI through the UIRenderer pipeline.
     // Replaces the old paintEditorGDI() function.
     void renderAll(float width, float height) {
+        m_lastWidth  = width;
+        m_lastHeight = height;
         m_dockLayout.computeLayout(width, height, 56.f, 24.f);
         m_ui.beginFrame(width, height);
 
@@ -564,21 +608,98 @@ public:
             }
         }
 
-        // Panels (legacy EditorPanel loop)
+        // Panels (legacy EditorPanel loop — tab-aware)
         for (auto& panel : m_editorPanels) {
             if (!panel->isVisible()) continue;
             auto* dp = m_dockLayout.findPanel(panel->name());
             if (!dp || !dp->visible) continue;
-            panel->render(m_ui, dp->bounds, m_theme);
+            if (!m_dockLayout.isPanelActive(panel->name())) continue;
+            Rect bounds = m_dockLayout.adjustedBoundsForPanel(*dp);
+            panel->render(m_ui, bounds, m_theme);
         }
 
         // AtlasUI panels — render on top of legacy panels using proper widgets
         m_workspacePanelHost.renderPanels(m_dockLayout);
 
-        // Splitter dividers
+        // ── Panel border outlines ─────────────────────────────────
         for (auto& dp : m_dockLayout.panels()) {
             if (!dp.visible) continue;
             m_ui.drawRectOutline(dp.bounds, m_theme.panelBorder, 1.f);
+        }
+
+        // ── Splitter bars (draggable dividers between panel zones) ──
+        constexpr float kSplitterW = 4.f;
+        constexpr float kToolbarH  = 56.f;
+        constexpr float kStatusH   = 24.f;
+        float usableH = height - kToolbarH - kStatusH;
+
+        // Left splitter (right edge of the Left zone)
+        if (auto* lp = m_dockLayout.findPanel("Hierarchy")) {
+            if (lp->visible) {
+                float sx = lp->bounds.x + lp->bounds.w;
+                bool active = m_dockLayout.isResizing() &&
+                              m_dockLayout.resizingSlot() == DockSlot::Left;
+                uint32_t col = (active || m_splitterHoveredSlot == DockSlot::Left)
+                               ? m_theme.buttonBackground : m_theme.toolbarSeparator;
+                m_ui.drawRect({sx - kSplitterW * 0.5f, kToolbarH, kSplitterW, usableH}, col);
+            }
+        }
+        // Right splitter (left edge of the Right zone)
+        if (auto* rp = m_dockLayout.findPanel("Inspector")) {
+            if (rp->visible) {
+                float sx = rp->bounds.x;
+                bool active = m_dockLayout.isResizing() &&
+                              m_dockLayout.resizingSlot() == DockSlot::Right;
+                uint32_t col = (active || m_splitterHoveredSlot == DockSlot::Right)
+                               ? m_theme.buttonBackground : m_theme.toolbarSeparator;
+                m_ui.drawRect({sx - kSplitterW * 0.5f, kToolbarH, kSplitterW, usableH}, col);
+            }
+        }
+        // Bottom splitter (top edge of the Bottom zone)
+        for (auto& dp : m_dockLayout.panels()) {
+            if (dp.slot == DockSlot::Bottom && dp.visible) {
+                float sy = dp.bounds.y;
+                float cx = m_dockLayout.leftWidth();
+                float cw = width - m_dockLayout.leftWidth() - m_dockLayout.rightWidth();
+                bool active = m_dockLayout.isResizing() &&
+                              m_dockLayout.resizingSlot() == DockSlot::Bottom;
+                uint32_t col = (active || m_splitterHoveredSlot == DockSlot::Bottom)
+                               ? m_theme.buttonBackground : m_theme.toolbarSeparator;
+                m_ui.drawRect({cx, sy - kSplitterW * 0.5f, cw, kSplitterW}, col);
+                break;
+            }
+        }
+
+        // ── Tab bars for tabbed dock zones ────────────────────────
+        for (int s = 0; s < DockLayout::kDockSlotCount; ++s) {
+            auto slot = static_cast<DockSlot>(s);
+            const auto& tabs = m_dockLayout.tabGroup(slot);
+            if (tabs.empty()) continue;
+            // Find zone bounds from the first visible panel in this slot
+            Rect zoneBounds{};
+            bool found = false;
+            for (auto& dp : m_dockLayout.panels()) {
+                if (dp.slot == slot && dp.visible) {
+                    zoneBounds = dp.bounds;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) continue;
+            // Background strip for the tab bar
+            m_ui.drawRect({zoneBounds.x, zoneBounds.y, zoneBounds.w, DockLayout::kTabBarHeight},
+                          m_theme.toolbarBackground);
+            float tx = zoneBounds.x;
+            for (const auto& tabName : tabs) {
+                float tw = DockLayout::tabLabelWidth(tabName);
+                bool active = (m_dockLayout.activeTab(slot) == tabName);
+                uint32_t tabBg = active ? m_theme.panelBackground : m_theme.toolbarBackground;
+                m_ui.drawRect({tx, zoneBounds.y, tw, DockLayout::kTabBarHeight}, tabBg);
+                m_ui.drawRectOutline({tx, zoneBounds.y, tw, DockLayout::kTabBarHeight},
+                                     m_theme.panelBorder, 1.f);
+                m_ui.drawText(tx + 6.f, zoneBounds.y + 4.f, tabName, m_theme.panelText);
+                tx += tw;
+            }
         }
 
         // Status bar
@@ -661,7 +782,10 @@ public:
         // Route input to AtlasUI panels
         m_workspacePanelHost.handleInput(m_dockLayout, input);
 
-        // Handle menu bar and toolbar clicks
+        // Handle splitter drag-resize (must run before menu/toolbar input)
+        handleSplitterInput(input);
+
+        // Handle menu bar, toolbar clicks and tab bar clicks
         handleMenuToolbarInput(input);
     }
 
@@ -808,12 +932,16 @@ private:
         return {dropX, 28.f, dropW, dropH};
     }
 
-    // Handle mouse clicks on the menu bar (top 28px) and toolbar (28..56px).
+    // Handle mouse clicks on the menu bar (top 28px), toolbar (28..56px), and tab bars.
     // Called once per frame from update().
     void handleMenuToolbarInput(const InputSystem& input) {
         bool mouseLeft   = input.isKeyDown(KeyCode::Mouse1);
         bool justClicked = mouseLeft && !m_prevMouseLeft;
         m_prevMouseLeft  = mouseLeft;
+
+        // Suppress menu/toolbar clicks while a splitter drag is active
+        if (m_dockLayout.isResizing()) return;
+
         if (!justClicked) return;
 
         float mx = input.state().mouse.x;
@@ -883,8 +1011,103 @@ private:
             return;
         }
 
+        // ── Tab bar clicks ────────────────────────────────────────
+        for (int s = 0; s < DockLayout::kDockSlotCount; ++s) {
+            auto slot = static_cast<DockSlot>(s);
+            const auto& tabs = m_dockLayout.tabGroup(slot);
+            if (tabs.empty()) continue;
+            // Find zone bounds
+            Rect zoneBounds{};
+            bool found = false;
+            for (auto& dp : m_dockLayout.panels()) {
+                if (dp.slot == slot && dp.visible) {
+                    zoneBounds = dp.bounds;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) continue;
+            if (mx >= zoneBounds.x && mx < zoneBounds.x + zoneBounds.w &&
+                my >= zoneBounds.y && my < zoneBounds.y + DockLayout::kTabBarHeight) {
+                float tx = zoneBounds.x;
+                for (const auto& tabName : tabs) {
+                    float tw = DockLayout::tabLabelWidth(tabName);
+                    if (mx >= tx && mx < tx + tw) {
+                        m_dockLayout.selectTab(tabName);
+                        return;
+                    }
+                    tx += tw;
+                }
+            }
+        }
+
         // Click elsewhere — close any open menu
         m_openMenuCategoryIdx = -1;
+    }
+
+    // Handle splitter drag-resize between dock zones.
+    // Must be called before handleMenuToolbarInput() so m_prevMouseLeft reflects last frame.
+    void handleSplitterInput(const InputSystem& input) {
+        constexpr float kHitZone  = 5.f;   // pixels either side of the splitter line
+        constexpr float kToolbarH = 56.f;
+        constexpr float kStatusH  = 24.f;
+
+        float mx       = input.state().mouse.x;
+        float my       = input.state().mouse.y;
+        bool  mouseDown = input.isKeyDown(KeyCode::Mouse1);
+
+        // End an active resize when the mouse button is released
+        if (m_dockLayout.isResizing() && !mouseDown) {
+            m_dockLayout.endResize();
+            saveEditorState();
+            m_splitterHoveredSlot = DockSlot::Center;
+            return;
+        }
+
+        // Continue updating an active resize
+        if (m_dockLayout.isResizing()) {
+            DockSlot slot   = m_dockLayout.resizingSlot();
+            bool    isVert  = (slot == DockSlot::Left || slot == DockSlot::Right);
+            m_dockLayout.updateResize(isVert ? mx : my);
+            return;
+        }
+
+        // Hover detection — drives the highlight in renderAll
+        float usableH = m_lastHeight - kToolbarH - kStatusH;
+        m_splitterHoveredSlot = DockSlot::Center; // no hover by default
+
+        if (auto* lp = m_dockLayout.findPanel("Hierarchy")) {
+            if (lp->visible) {
+                float sx = lp->bounds.x + lp->bounds.w;
+                if (std::abs(mx - sx) <= kHitZone && my >= kToolbarH && my < kToolbarH + usableH)
+                    m_splitterHoveredSlot = DockSlot::Left;
+            }
+        }
+        if (auto* rp = m_dockLayout.findPanel("Inspector")) {
+            if (rp->visible) {
+                float sx = rp->bounds.x;
+                if (std::abs(mx - sx) <= kHitZone && my >= kToolbarH && my < kToolbarH + usableH)
+                    m_splitterHoveredSlot = DockSlot::Right;
+            }
+        }
+        for (auto& dp : m_dockLayout.panels()) {
+            if (dp.slot == DockSlot::Bottom && dp.visible) {
+                float sy = dp.bounds.y;
+                float cx = m_dockLayout.leftWidth();
+                float cw = m_lastWidth - m_dockLayout.leftWidth() - m_dockLayout.rightWidth();
+                if (std::abs(my - sy) <= kHitZone && mx >= cx && mx < cx + cw)
+                    m_splitterHoveredSlot = DockSlot::Bottom;
+                break;
+            }
+        }
+
+        // Begin a new resize on mouse-button press over a splitter
+        bool justPressed = mouseDown && !m_prevMouseLeft;
+        if (justPressed && m_splitterHoveredSlot != DockSlot::Center) {
+            bool isVert = (m_splitterHoveredSlot == DockSlot::Left ||
+                           m_splitterHoveredSlot == DockSlot::Right);
+            m_dockLayout.beginResize(m_splitterHoveredSlot, isVert ? mx : my);
+        }
     }
 
     void initMenuBar() {
@@ -1020,6 +1243,11 @@ private:
     // ── Menu / toolbar interaction state ────────────────────────
     int  m_openMenuCategoryIdx = -1; // -1 = no open dropdown
     bool m_prevMouseLeft = false;    // left-button state last frame
+
+    // ── Splitter resize state ────────────────────────────────────
+    float    m_lastWidth           = 1280.f;  // cached from last renderAll()
+    float    m_lastHeight          = 800.f;   // cached from last renderAll()
+    DockSlot m_splitterHoveredSlot = DockSlot::Center; // Center = none
 
     // ── State persistence ───────────────────────────────────────
 

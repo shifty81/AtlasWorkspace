@@ -72,9 +72,9 @@ public:
             auto it = m_nameMap.find(panel->panelId());
             if (it != m_nameMap.end()) {
                 auto* dp = dock.findPanel(it->second);
-                if (dp && dp->visible) {
+                if (dp && dp->visible && dock.isPanelActive(it->second)) {
                     panel->setVisible(true);
-                    panel->arrange(dp->bounds);
+                    panel->arrange(dock.adjustedBoundsForPanel(*dp));
                 } else {
                     panel->setVisible(false);
                     continue;

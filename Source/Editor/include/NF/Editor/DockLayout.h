@@ -97,7 +97,8 @@ public:
     [[nodiscard]] size_t panelCount() const { return m_panels.size(); }
     [[nodiscard]] const std::vector<DockPanel>& panels() const { return m_panels; }
 
-    static constexpr int kDockSlotCount = 5;
+    static constexpr int   kDockSlotCount  = 5;
+    static constexpr float kTabBarHeight   = 22.f;
 
     // ── Splitter resizing ────────────────────────────────────────
     void beginResize(DockSlot slot, float mousePos) {
@@ -161,6 +162,20 @@ public:
         return m_tabGroups[static_cast<int>(slot)];
     }
 
+    /// Returns true if the panel is not in any tab group, or is the currently active tab.
+    [[nodiscard]] bool isPanelActive(const std::string& name) const {
+        for (int s = 0; s < kDockSlotCount; ++s) {
+            for (size_t i = 0; i < m_tabGroups[s].size(); ++i) {
+                if (m_tabGroups[s][i] == name) {
+                    auto it = m_activeTabIndex.find(s);
+                    int activeIdx = (it != m_activeTabIndex.end()) ? it->second : 0;
+                    return static_cast<int>(i) == activeIdx;
+                }
+            }
+        }
+        return true; // not in any tab group → always active
+    }
+
     // Accessors for current sizes
     [[nodiscard]] float leftWidth()    const { return m_leftWidth; }
     [[nodiscard]] float rightWidth()   const { return m_rightWidth; }
@@ -173,7 +188,23 @@ public:
     void setTopHeight(float h)    { m_topHeight    = std::clamp(h, kMinPanelSize, 500.f); }
     void setBottomHeight(float h) { m_bottomHeight = std::clamp(h, kMinPanelSize, 500.f); }
 
-    static constexpr float kMinPanelSize = 100.f;
+    static constexpr float kTabCharWidth = 8.f;   ///< pixels per character in tab labels
+    static constexpr float kTabPadding   = 16.f;  ///< total horizontal padding per tab
+
+    /// Width of a tab label button for the given panel name.
+    [[nodiscard]] static float tabLabelWidth(const std::string& name) {
+        return static_cast<float>(name.size()) * kTabCharWidth + kTabPadding;
+    }
+
+    /// Returns panel bounds adjusted to sit below the tab bar when the panel is in a tab group.
+    /// If the panel is not in a tab group the bounds are returned unchanged.
+    [[nodiscard]] Rect adjustedBoundsForPanel(const DockPanel& dp) const {
+        if (tabGroup(dp.slot).empty()) return dp.bounds;
+        Rect b = dp.bounds;
+        b.y += kTabBarHeight;
+        b.h  = std::max(0.f, b.h - kTabBarHeight);
+        return b;
+    }
     static constexpr float kDefaultLeftWidth   = 250.f;
     static constexpr float kDefaultRightWidth  = 300.f;
     static constexpr float kDefaultTopHeight   = 200.f;
