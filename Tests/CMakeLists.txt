@@ -304,6 +304,9 @@ add_executable(NF_EditorTests
     Editor/test_s181_editor.cpp
     Editor/test_s182_editor.cpp
     Editor/test_s183_editor.cpp
+    Editor/test_s184_editor.cpp
+    Editor/test_s185_editor.cpp
+    Editor/test_s186_editor.cpp
     Editor/test_m1c_editor.cpp
     Editor/test_tool_modules.cpp
     Editor/test_workspace_shell.cpp
