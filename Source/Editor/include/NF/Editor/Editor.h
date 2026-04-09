@@ -40,3 +40,6 @@
 
 // ── Tool ecosystem and registration ─────────────────────────────
 #include "NF/Editor/EditorToolRegistry.h"
+
+// ── Primary hosted tools (Phase 3 consolidation) ─────────────────
+#include "NF/Editor/SceneEditorTool.h"

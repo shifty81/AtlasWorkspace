@@ -2,6 +2,7 @@
 // Comprehensive tests for Phase 1 workspace core stabilization:
 //   IHostedTool, ToolRegistry, PanelRegistry, WorkspaceShell
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include "NF/Editor/WorkspaceShell.h"
 #include "NF/Editor/ToolRegistry.h"
 #include "NF/Editor/PanelRegistry.h"
@@ -561,4 +562,286 @@ TEST_CASE("WorkspaceShell: update with no active tool does not crash", "[workspa
 TEST_CASE("WorkspaceShell: update before init does nothing", "[workspace][shell]") {
     NF::WorkspaceShell shell;
     shell.update(0.016f); // no crash
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 3 Consolidation: SceneEditorTool tests
+// These test the first real NF::IHostedTool from Phase 3 consolidation.
+// ─────────────────────────────────────────────────────────────────────────────
+#include "NF/Editor/SceneEditorTool.h"
+
+// ── SceneEditorTool identity ──────────────────────────────────────
+
+TEST_CASE("SceneEditorTool: toolId matches constant", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    REQUIRE(tool.toolId() == NF::SceneEditorTool::kToolId);
+    REQUIRE(tool.toolId() == "workspace.scene_editor");
+}
+
+TEST_CASE("SceneEditorTool: descriptor is valid and primary", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    const auto& d = tool.descriptor();
+    REQUIRE(d.isValid());
+    REQUIRE(d.isPrimary);
+    REQUIRE(d.category == NF::HostedToolCategory::SceneEditing);
+    REQUIRE(d.displayName == "Scene Editor");
+    REQUIRE(d.acceptsProjectExtensions);
+}
+
+TEST_CASE("SceneEditorTool: declares expected shared panels", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    const auto& panels = tool.descriptor().supportedPanels;
+    REQUIRE(panels.size() >= 4);
+
+    auto has = [&](const std::string& id) {
+        for (const auto& p : panels) if (p == id) return true;
+        return false;
+    };
+    REQUIRE(has("panel.viewport"));
+    REQUIRE(has("panel.outliner"));
+    REQUIRE(has("panel.inspector"));
+    REQUIRE(has("panel.console"));
+}
+
+TEST_CASE("SceneEditorTool: declares expected commands", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    const auto& cmds = tool.descriptor().commands;
+    REQUIRE(cmds.size() >= 6);
+
+    auto has = [&](const std::string& id) {
+        for (const auto& c : cmds) if (c == id) return true;
+        return false;
+    };
+    REQUIRE(has("scene.create_entity"));
+    REQUIRE(has("scene.delete_entity"));
+    REQUIRE(has("scene.save_scene"));
+    REQUIRE(has("scene.enter_play"));
+    REQUIRE(has("scene.exit_play"));
+}
+
+// ── SceneEditorTool lifecycle ─────────────────────────────────────
+
+TEST_CASE("SceneEditorTool: initial state is Unloaded", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    REQUIRE(tool.state() == NF::HostedToolState::Unloaded);
+}
+
+TEST_CASE("SceneEditorTool: initialize transitions to Ready", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    REQUIRE(tool.initialize());
+    REQUIRE(tool.state() == NF::HostedToolState::Ready);
+}
+
+TEST_CASE("SceneEditorTool: double initialize returns false", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    REQUIRE(tool.initialize());
+    REQUIRE_FALSE(tool.initialize());
+    REQUIRE(tool.state() == NF::HostedToolState::Ready);
+}
+
+TEST_CASE("SceneEditorTool: activate transitions Ready to Active", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.activate();
+    REQUIRE(tool.state() == NF::HostedToolState::Active);
+}
+
+TEST_CASE("SceneEditorTool: suspend transitions Active to Suspended", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.activate();
+    tool.suspend();
+    REQUIRE(tool.state() == NF::HostedToolState::Suspended);
+}
+
+TEST_CASE("SceneEditorTool: activate from Suspended transitions to Active", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.activate();
+    tool.suspend();
+    tool.activate();
+    REQUIRE(tool.state() == NF::HostedToolState::Active);
+}
+
+TEST_CASE("SceneEditorTool: shutdown resets to Unloaded", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.activate();
+    tool.shutdown();
+    REQUIRE(tool.state() == NF::HostedToolState::Unloaded);
+}
+
+TEST_CASE("SceneEditorTool: update while Active records frame time", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.activate();
+    tool.update(0.016f);
+    REQUIRE(tool.stats().lastFrameMs > 0.0f);
+}
+
+TEST_CASE("SceneEditorTool: update while Suspended does not change frame time", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.activate();
+    tool.update(0.016f);
+    tool.suspend();
+    tool.update(0.032f);
+    // Should not have been updated while suspended
+    REQUIRE(tool.stats().lastFrameMs == Catch::Approx(16.0f));
+}
+
+// ── SceneEditorTool scene state ───────────────────────────────────
+
+TEST_CASE("SceneEditorTool: default edit mode is Select", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    REQUIRE(tool.editMode() == NF::SceneEditMode::Select);
+    REQUIRE(std::string(NF::sceneEditModeName(tool.editMode())) == "Select");
+}
+
+TEST_CASE("SceneEditorTool: setEditMode changes mode", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.setEditMode(NF::SceneEditMode::Translate);
+    REQUIRE(tool.editMode() == NF::SceneEditMode::Translate);
+    tool.setEditMode(NF::SceneEditMode::Rotate);
+    REQUIRE(tool.editMode() == NF::SceneEditMode::Rotate);
+}
+
+TEST_CASE("SceneEditorTool: SceneEditMode names cover all 6 values", "[scene_editor][phase3]") {
+    REQUIRE(std::string(NF::sceneEditModeName(NF::SceneEditMode::Select))    == "Select");
+    REQUIRE(std::string(NF::sceneEditModeName(NF::SceneEditMode::Translate)) == "Translate");
+    REQUIRE(std::string(NF::sceneEditModeName(NF::SceneEditMode::Rotate))    == "Rotate");
+    REQUIRE(std::string(NF::sceneEditModeName(NF::SceneEditMode::Scale))     == "Scale");
+    REQUIRE(std::string(NF::sceneEditModeName(NF::SceneEditMode::Paint))     == "Paint");
+    REQUIRE(std::string(NF::sceneEditModeName(NF::SceneEditMode::Play))      == "Play");
+}
+
+TEST_CASE("SceneEditorTool: dirty flag", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    REQUIRE_FALSE(tool.isDirty());
+    tool.markDirty();
+    REQUIRE(tool.isDirty());
+    tool.clearDirty();
+    REQUIRE_FALSE(tool.isDirty());
+}
+
+TEST_CASE("SceneEditorTool: selection count tracking", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    REQUIRE(tool.selectionCount() == 0);
+    tool.setSelectionCount(5);
+    REQUIRE(tool.selectionCount() == 5);
+    REQUIRE(tool.stats().selectionCount == 5);
+}
+
+TEST_CASE("SceneEditorTool: entity count tracking", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    REQUIRE(tool.stats().entityCount == 0);
+    tool.setEntityCount(128);
+    REQUIRE(tool.stats().entityCount == 128);
+}
+
+TEST_CASE("SceneEditorTool: shutdown resets dirty and counts", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.setEntityCount(10);
+    tool.setSelectionCount(3);
+    tool.markDirty();
+    tool.shutdown();
+    REQUIRE(tool.stats().entityCount == 0);
+    REQUIRE(tool.stats().selectionCount == 0);
+    REQUIRE_FALSE(tool.stats().isDirty);
+}
+
+// ── SceneEditorTool project adapter hooks ─────────────────────────
+
+TEST_CASE("SceneEditorTool: onProjectLoaded clears stats", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.setEntityCount(99);
+    tool.markDirty();
+    tool.onProjectLoaded("my_project");
+    REQUIRE(tool.stats().entityCount == 0);
+    REQUIRE_FALSE(tool.isDirty());
+}
+
+TEST_CASE("SceneEditorTool: onProjectUnloaded clears stats", "[scene_editor][phase3]") {
+    NF::SceneEditorTool tool;
+    tool.initialize();
+    tool.onProjectLoaded("proj");
+    tool.setEntityCount(50);
+    tool.onProjectUnloaded();
+    REQUIRE(tool.stats().entityCount == 0);
+}
+
+// ── SceneEditorTool registered with WorkspaceShell ────────────────
+
+TEST_CASE("SceneEditorTool: registers with ToolRegistry", "[scene_editor][phase3][integration]") {
+    NF::ToolRegistry registry;
+    registry.registerTool(std::make_unique<NF::SceneEditorTool>());
+    REQUIRE(registry.count() == 1);
+    REQUIRE(registry.isRegistered(NF::SceneEditorTool::kToolId));
+    auto* tool = registry.find(NF::SceneEditorTool::kToolId);
+    REQUIRE(tool != nullptr);
+    REQUIRE(tool->descriptor().isPrimary);
+}
+
+TEST_CASE("SceneEditorTool: full lifecycle through ToolRegistry", "[scene_editor][phase3][integration]") {
+    NF::ToolRegistry registry;
+    registry.registerTool(std::make_unique<NF::SceneEditorTool>());
+    registry.initializeAll();
+    REQUIRE(registry.find(NF::SceneEditorTool::kToolId)->state() == NF::HostedToolState::Ready);
+
+    registry.activateTool(NF::SceneEditorTool::kToolId);
+    REQUIRE(registry.find(NF::SceneEditorTool::kToolId)->state() == NF::HostedToolState::Active);
+    REQUIRE(registry.activeToolId() == NF::SceneEditorTool::kToolId);
+
+    registry.updateActive(0.016f);
+
+    registry.shutdownAll();
+    REQUIRE(registry.find(NF::SceneEditorTool::kToolId)->state() == NF::HostedToolState::Unloaded);
+}
+
+TEST_CASE("SceneEditorTool: in WorkspaceShell via ToolRegistry", "[scene_editor][phase3][integration]") {
+    NF::WorkspaceShell shell;
+    shell.toolRegistry().registerTool(std::make_unique<NF::SceneEditorTool>());
+    shell.initialize();
+
+    REQUIRE(shell.toolRegistry().isRegistered(NF::SceneEditorTool::kToolId));
+    shell.toolRegistry().activateTool(NF::SceneEditorTool::kToolId);
+    REQUIRE(shell.toolRegistry().activeToolId() == NF::SceneEditorTool::kToolId);
+
+    shell.update(0.016f);
+    shell.shutdown();
+}
+
+TEST_CASE("SceneEditorTool: byCategory returns it under SceneEditing", "[scene_editor][phase3][integration]") {
+    NF::ToolRegistry registry;
+    registry.registerTool(std::make_unique<NF::SceneEditorTool>());
+    registry.initializeAll();
+    auto tools = registry.byCategory(NF::HostedToolCategory::SceneEditing);
+    REQUIRE(tools.size() == 1);
+    REQUIRE(tools[0]->toolId() == NF::SceneEditorTool::kToolId);
+}
+
+TEST_CASE("SceneEditorTool: primaryTools includes it", "[scene_editor][phase3][integration]") {
+    NF::ToolRegistry registry;
+    registry.registerTool(std::make_unique<NF::SceneEditorTool>());
+    registry.initializeAll();
+    auto primaries = registry.primaryTools();
+    REQUIRE(!primaries.empty());
+    REQUIRE(primaries[0]->descriptor().isPrimary);
+}
+
+TEST_CASE("SceneEditorTool: project events propagate through WorkspaceShell", "[scene_editor][phase3][integration]") {
+    NF::WorkspaceShell shell;
+    shell.toolRegistry().registerTool(std::make_unique<NF::SceneEditorTool>());
+    shell.initialize();
+
+    shell.toolRegistry().notifyProjectLoaded("atlas_project");
+    shell.toolRegistry().notifyProjectUnloaded();
+
+    shell.shutdown();
 }

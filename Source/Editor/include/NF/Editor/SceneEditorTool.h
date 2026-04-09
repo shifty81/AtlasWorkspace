@@ -1,0 +1,106 @@
+#pragma once
+// NF::Editor — SceneEditorTool: primary scene/world editing tool.
+//
+// Implements NF::IHostedTool for the Scene Editor, one of the ~10
+// primary tools in the canonical workspace roster.
+//
+// The Scene Editor hosts:
+//   Shared panels: viewport, outliner/hierarchy, inspector, console
+//   Commands:      scene.create_entity, scene.delete_entity,
+//                  scene.duplicate_entity, scene.save_scene,
+//                  scene.enter_play, scene.exit_play
+//
+// See Docs/Canon/05_EDITOR_STRATEGY.md for the locked tool roster.
+// See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
+
+#include "NF/Editor/IHostedTool.h"
+#include <string>
+
+namespace NF {
+
+// ── Scene editing mode ────────────────────────────────────────────
+
+enum class SceneEditMode : uint8_t {
+    Select,    // selection / inspection
+    Translate, // gizmo: move
+    Rotate,    // gizmo: rotate
+    Scale,     // gizmo: scale
+    Paint,     // foliage / terrain paint
+    Play,      // PIE — play-in-editor
+};
+
+inline const char* sceneEditModeName(SceneEditMode m) {
+    switch (m) {
+        case SceneEditMode::Select:    return "Select";
+        case SceneEditMode::Translate: return "Translate";
+        case SceneEditMode::Rotate:    return "Rotate";
+        case SceneEditMode::Scale:     return "Scale";
+        case SceneEditMode::Paint:     return "Paint";
+        case SceneEditMode::Play:      return "Play";
+    }
+    return "Unknown";
+}
+
+// ── Scene Editor statistics ───────────────────────────────────────
+
+struct SceneEditorStats {
+    uint32_t entityCount      = 0; // entities in the active scene
+    uint32_t selectionCount   = 0; // currently selected entities
+    float    lastFrameMs      = 0.0f;
+    bool     isDirty          = false; // unsaved changes
+};
+
+// ── SceneEditorTool ───────────────────────────────────────────────
+
+class SceneEditorTool final : public IHostedTool {
+public:
+    static constexpr const char* kToolId = "workspace.scene_editor";
+
+    SceneEditorTool();
+    ~SceneEditorTool() override = default;
+
+    // ── IHostedTool identity ──────────────────────────────────────
+    [[nodiscard]] const HostedToolDescriptor& descriptor() const override { return m_descriptor; }
+    [[nodiscard]] const std::string& toolId()              const override { return m_descriptor.toolId; }
+
+    // ── IHostedTool lifecycle ─────────────────────────────────────
+    bool initialize() override;
+    void shutdown()   override;
+    void activate()   override;
+    void suspend()    override;
+    void update(float dt) override;
+
+    [[nodiscard]] HostedToolState state() const override { return m_state; }
+
+    // ── Project adapter hooks ─────────────────────────────────────
+    void onProjectLoaded(const std::string& projectId) override;
+    void onProjectUnloaded() override;
+
+    // ── Scene Editor interface ────────────────────────────────────
+
+    [[nodiscard]] SceneEditMode    editMode() const { return m_editMode; }
+    void                           setEditMode(SceneEditMode mode);
+
+    [[nodiscard]] const SceneEditorStats& stats()   const { return m_stats; }
+    [[nodiscard]] bool                    isDirty() const { return m_stats.isDirty; }
+    void                                  markDirty();
+    void                                  clearDirty();
+
+    // Entity selection (counts only — scene data lives in the runtime)
+    [[nodiscard]] uint32_t selectionCount() const { return m_stats.selectionCount; }
+    void setSelectionCount(uint32_t count);
+
+    // Scene entity count (updated each frame from scene runtime)
+    void setEntityCount(uint32_t count);
+
+private:
+    HostedToolDescriptor m_descriptor;
+    HostedToolState      m_state    = HostedToolState::Unloaded;
+    SceneEditMode        m_editMode = SceneEditMode::Select;
+    SceneEditorStats     m_stats;
+    std::string          m_activeProjectId;
+
+    void buildDescriptor();
+};
+
+} // namespace NF
