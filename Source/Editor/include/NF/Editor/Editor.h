@@ -380,3 +380,15 @@
 #include "NF/Editor/NetworkSyncEditorV1.h"
 #include "NF/Editor/RpcInspectorV1.h"
 #include "NF/Editor/LagCompEditorV1.h"
+// S163
+#include "NF/Editor/LightmapEditorV1.h"
+#include "NF/Editor/ReflectionProbeEditorV1.h"
+#include "NF/Editor/ShadowCasterEditorV1.h"
+// S164
+#include "NF/Editor/CinematicEditorV1.h"
+#include "NF/Editor/SequencerTrackV1.h"
+#include "NF/Editor/TimelineMarkerV1.h"
+// S165
+#include "NF/Editor/AssetTagEditorV1.h"
+#include "NF/Editor/AssetDependencyV1.h"
+#include "NF/Editor/AssetMigratorV1.h"
