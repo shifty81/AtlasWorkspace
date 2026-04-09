@@ -84,6 +84,16 @@ Atlas/Workspace/Sessions/*
 NovaForge/.novaforge/pipeline/
 !NovaForge/.novaforge/.gitkeep
 
+# ── Generated verification ────────────────────────────────────────
+build_verify/
+
+# ── Binaries / Intermediate ──────────────────────────────────────
+Binaries/
+Intermediate/
+x64/
+Debug/
+Release/
+
 # ── Package output ────────────────────────────────────────────────
 *.tar.gz
 *.tar.bz2

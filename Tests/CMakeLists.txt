@@ -1,12 +1,26 @@
 # ── Atlas Engine + Workspace test suite ──────────────────────────
 
-include(FetchContent)
-FetchContent_Declare(
-    Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v3.5.2
-)
-FetchContent_MakeAvailable(Catch2)
+# Guard: if tests are somehow added but online deps are disabled and
+# Catch2 is not already available, fail early with a clear message.
+find_package(Catch2 3 QUIET)
+if(NOT Catch2_FOUND)
+    if(NOT ATLAS_ENABLE_ONLINE_DEPS)
+        message(FATAL_ERROR
+            "Tests requested but Catch2 was not found locally and "
+            "ATLAS_ENABLE_ONLINE_DEPS is OFF. Either:\n"
+            "  - Set ATLAS_ENABLE_ONLINE_DEPS=ON to fetch from GitHub, or\n"
+            "  - Vendor Catch2 locally under ThirdParty/Catch2, or\n"
+            "  - Set ATLAS_BUILD_TESTS=OFF to skip tests.")
+    endif()
+
+    include(FetchContent)
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG        v3.5.2
+    )
+    FetchContent_MakeAvailable(Catch2)
+endif()
 
 # On MSVC, force serialised PDB writes so parallel builds don't corrupt Catch2d.pdb
 if(MSVC)

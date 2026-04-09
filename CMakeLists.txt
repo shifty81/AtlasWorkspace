@@ -46,8 +46,9 @@ foreach(CFG Debug Release RelWithDebInfo MinSizeRel)
 endforeach()
 
 # ── Build options ─────────────────────────────────────────────────
-option(ATLAS_BUILD_TESTS     "Build workspace test suite"     OFF)
-option(ATLAS_BUILD_WORKSPACE "Build AtlasWorkspace executable" ON)
+option(ATLAS_BUILD_TESTS        "Build workspace test suite"                OFF)
+option(ATLAS_BUILD_WORKSPACE    "Build AtlasWorkspace executable"           ON)
+option(ATLAS_ENABLE_ONLINE_DEPS "Allow online dependency fetches (Catch2)" OFF)
 
 # ── Atlas Engine subsystems (static libraries) ────────────────────
 # The flagship engine that powers all projects loaded in Atlas Workspace.
