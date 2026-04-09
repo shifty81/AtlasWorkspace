@@ -24,10 +24,11 @@ void UIRenderer::drawText(float x, float y, std::string_view text, uint32_t colo
     constexpr float kCharWidth  = 8.f;
     constexpr float kCharHeight = 14.f;
     float cx = x;
+    float curY = y; // local Y cursor for multi-line support
     for (char ch : text) {
-        if (ch == '\n') { cx = x; y += kCharHeight + 2.f; continue; }
+        if (ch == '\n') { cx = x; curY += kCharHeight + 2.f; continue; }
         if (ch == ' ')  { cx += kCharWidth; continue; }
-        Rect charRect{cx, y, kCharWidth, kCharHeight};
+        Rect charRect{cx, curY, kCharWidth, kCharHeight};
         drawRect(charRect, color);
         cx += kCharWidth;
     }

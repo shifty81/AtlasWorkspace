@@ -605,45 +605,22 @@ public:
         if (m_openMenuCategoryIdx >= 0 &&
             m_openMenuCategoryIdx < static_cast<int>(m_menuBar.categories().size())) {
             const auto& openCat = m_menuBar.categories()[m_openMenuCategoryIdx];
+            auto db = computeDropdownBounds(m_openMenuCategoryIdx);
 
-            // x position of the open category
-            float dropX = 8.f;
-            for (int ci = 0; ci < m_openMenuCategoryIdx; ++ci) {
-                float cw = static_cast<float>(m_menuBar.categories()[ci].name.size()) * 8.f + 16.f;
-                dropX += cw + 4.f;
-            }
+            m_ui.drawRect({db.x, db.y, db.w, db.h}, m_theme.panelBackground);
+            m_ui.drawRectOutline({db.x, db.y, db.w, db.h}, m_theme.panelBorder, 1.f);
 
-            // dropdown width — fit longest entry
-            float dropW = 120.f;
-            for (auto& item : openCat.items) {
-                if (!item.isSeparator) {
-                    float iw = static_cast<float>(item.name.size()) * 8.f + 24.f;
-                    if (!item.hotkey.empty())
-                        iw += static_cast<float>(item.hotkey.size()) * 8.f + 16.f;
-                    dropW = std::max(dropW, iw);
-                }
-            }
-
-            // dropdown height — 20px per item, 8px per separator
-            float dropH = 0.f;
-            for (auto& item : openCat.items)
-                dropH += item.isSeparator ? 8.f : 20.f;
-
-            constexpr float dropY = 28.f;
-            m_ui.drawRect({dropX, dropY, dropW, dropH}, m_theme.panelBackground);
-            m_ui.drawRectOutline({dropX, dropY, dropW, dropH}, m_theme.panelBorder, 1.f);
-
-            float iy = dropY + 2.f;
+            float iy = db.y + 2.f;
             for (auto& item : openCat.items) {
                 if (item.isSeparator) {
-                    m_ui.drawRect({dropX + 4.f, iy + 3.f, dropW - 8.f, 1.f}, m_theme.panelBorder);
+                    m_ui.drawRect({db.x + 4.f, iy + 3.f, db.w - 8.f, 1.f}, m_theme.panelBorder);
                     iy += 8.f;
                 } else {
                     uint32_t textColor = item.enabled
                         ? m_theme.panelText : m_theme.buttonDisabledText;
-                    m_ui.drawText(dropX + 8.f, iy + 2.f, item.name, textColor);
+                    m_ui.drawText(db.x + 8.f, iy + 2.f, item.name, textColor);
                     if (!item.hotkey.empty()) {
-                        float hkX = dropX + dropW
+                        float hkX = db.x + db.w
                             - static_cast<float>(item.hotkey.size()) * 8.f - 8.f;
                         m_ui.drawText(hkX, iy + 2.f, item.hotkey, m_theme.buttonDisabledText);
                     }
@@ -804,6 +781,33 @@ private:
         }
     }
 
+    struct DropdownBounds { float x, y, w, h; };
+
+    // Compute the screen-space bounds for the dropdown of the given category index.
+    // Shared by renderAll() and handleMenuToolbarInput() to keep layout in sync.
+    [[nodiscard]] DropdownBounds computeDropdownBounds(int catIdx) const {
+        float dropX = 8.f;
+        for (int ci = 0; ci < catIdx; ++ci) {
+            float cw = static_cast<float>(
+                m_menuBar.categories()[ci].name.size()) * 8.f + 16.f;
+            dropX += cw + 4.f;
+        }
+        const auto& cat = m_menuBar.categories()[catIdx];
+        float dropW = 120.f;
+        for (auto& item : cat.items) {
+            if (!item.isSeparator) {
+                float iw = static_cast<float>(item.name.size()) * 8.f + 24.f;
+                if (!item.hotkey.empty())
+                    iw += static_cast<float>(item.hotkey.size()) * 8.f + 16.f;
+                dropW = std::max(dropW, iw);
+            }
+        }
+        float dropH = 0.f;
+        for (auto& item : cat.items)
+            dropH += item.isSeparator ? 8.f : 20.f;
+        return {dropX, 28.f, dropW, dropH};
+    }
+
     // Handle mouse clicks on the menu bar (top 28px) and toolbar (28..56px).
     // Called once per frame from update().
     void handleMenuToolbarInput(const InputSystem& input) {
@@ -819,32 +823,12 @@ private:
         if (m_openMenuCategoryIdx >= 0 &&
             m_openMenuCategoryIdx < static_cast<int>(m_menuBar.categories().size())) {
             const auto& openCat = m_menuBar.categories()[m_openMenuCategoryIdx];
+            auto db = computeDropdownBounds(m_openMenuCategoryIdx);
 
-            // Recompute dropdown x (same formula as renderAll)
-            float dropX = 8.f;
-            for (int ci = 0; ci < m_openMenuCategoryIdx; ++ci) {
-                float cw = static_cast<float>(
-                    m_menuBar.categories()[ci].name.size()) * 8.f + 16.f;
-                dropX += cw + 4.f;
-            }
-            float dropW = 120.f;
-            for (auto& item : openCat.items) {
-                if (!item.isSeparator) {
-                    float iw = static_cast<float>(item.name.size()) * 8.f + 24.f;
-                    if (!item.hotkey.empty())
-                        iw += static_cast<float>(item.hotkey.size()) * 8.f + 16.f;
-                    dropW = std::max(dropW, iw);
-                }
-            }
-            constexpr float dropY = 28.f;
-            float dropH = 0.f;
-            for (auto& item : openCat.items)
-                dropH += item.isSeparator ? 8.f : 20.f;
-
-            if (mx >= dropX && mx < dropX + dropW &&
-                my >= dropY && my < dropY + dropH) {
+            if (mx >= db.x && mx < db.x + db.w &&
+                my >= db.y && my < db.y + db.h) {
                 // Find which entry was hit
-                float iy = dropY + 2.f;
+                float iy = db.y + 2.f;
                 for (auto& item : openCat.items) {
                     float itemH = item.isSeparator ? 8.f : 20.f;
                     if (!item.isSeparator && item.enabled &&
