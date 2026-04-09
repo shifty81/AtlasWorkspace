@@ -74,12 +74,7 @@ public:
                 auto* dp = dock.findPanel(it->second);
                 if (dp && dp->visible && dock.isPanelActive(it->second)) {
                     panel->setVisible(true);
-                    Rect bounds = dp->bounds;
-                    if (!dock.tabGroup(dp->slot).empty()) {
-                        bounds.y += DockLayout::kTabBarHeight;
-                        bounds.h = std::max(0.f, bounds.h - DockLayout::kTabBarHeight);
-                    }
-                    panel->arrange(bounds);
+                    panel->arrange(dock.adjustedBoundsForPanel(*dp));
                 } else {
                     panel->setVisible(false);
                     continue;

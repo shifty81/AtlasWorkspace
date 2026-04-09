@@ -614,11 +614,7 @@ public:
             auto* dp = m_dockLayout.findPanel(panel->name());
             if (!dp || !dp->visible) continue;
             if (!m_dockLayout.isPanelActive(panel->name())) continue;
-            Rect bounds = dp->bounds;
-            if (!m_dockLayout.tabGroup(dp->slot).empty()) {
-                bounds.y += DockLayout::kTabBarHeight;
-                bounds.h  = std::max(0.f, bounds.h - DockLayout::kTabBarHeight);
-            }
+            Rect bounds = m_dockLayout.adjustedBoundsForPanel(*dp);
             panel->render(m_ui, bounds, m_theme);
         }
 
@@ -695,7 +691,7 @@ public:
                           m_theme.toolbarBackground);
             float tx = zoneBounds.x;
             for (const auto& tabName : tabs) {
-                float tw = static_cast<float>(tabName.size()) * 8.f + 16.f;
+                float tw = DockLayout::tabLabelWidth(tabName);
                 bool active = (m_dockLayout.activeTab(slot) == tabName);
                 uint32_t tabBg = active ? m_theme.panelBackground : m_theme.toolbarBackground;
                 m_ui.drawRect({tx, zoneBounds.y, tw, DockLayout::kTabBarHeight}, tabBg);
@@ -1024,14 +1020,18 @@ private:
             Rect zoneBounds{};
             bool found = false;
             for (auto& dp : m_dockLayout.panels()) {
-                if (dp.slot == slot && dp.visible) { zoneBounds = dp.bounds; found = true; break; }
+                if (dp.slot == slot && dp.visible) {
+                    zoneBounds = dp.bounds;
+                    found = true;
+                    break;
+                }
             }
             if (!found) continue;
             if (mx >= zoneBounds.x && mx < zoneBounds.x + zoneBounds.w &&
                 my >= zoneBounds.y && my < zoneBounds.y + DockLayout::kTabBarHeight) {
                 float tx = zoneBounds.x;
                 for (const auto& tabName : tabs) {
-                    float tw = static_cast<float>(tabName.size()) * 8.f + 16.f;
+                    float tw = DockLayout::tabLabelWidth(tabName);
                     if (mx >= tx && mx < tx + tw) {
                         m_dockLayout.selectTab(tabName);
                         return;

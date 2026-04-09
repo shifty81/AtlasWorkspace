@@ -188,7 +188,23 @@ public:
     void setTopHeight(float h)    { m_topHeight    = std::clamp(h, kMinPanelSize, 500.f); }
     void setBottomHeight(float h) { m_bottomHeight = std::clamp(h, kMinPanelSize, 500.f); }
 
-    static constexpr float kMinPanelSize = 100.f;
+    static constexpr float kTabCharWidth = 8.f;   ///< pixels per character in tab labels
+    static constexpr float kTabPadding   = 16.f;  ///< total horizontal padding per tab
+
+    /// Width of a tab label button for the given panel name.
+    [[nodiscard]] static float tabLabelWidth(const std::string& name) {
+        return static_cast<float>(name.size()) * kTabCharWidth + kTabPadding;
+    }
+
+    /// Returns panel bounds adjusted to sit below the tab bar when the panel is in a tab group.
+    /// If the panel is not in a tab group the bounds are returned unchanged.
+    [[nodiscard]] Rect adjustedBoundsForPanel(const DockPanel& dp) const {
+        if (tabGroup(dp.slot).empty()) return dp.bounds;
+        Rect b = dp.bounds;
+        b.y += kTabBarHeight;
+        b.h  = std::max(0.f, b.h - kTabBarHeight);
+        return b;
+    }
     static constexpr float kDefaultLeftWidth   = 250.f;
     static constexpr float kDefaultRightWidth  = 300.f;
     static constexpr float kDefaultTopHeight   = 200.f;
