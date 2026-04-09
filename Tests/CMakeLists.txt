@@ -129,9 +129,12 @@ add_executable(NF_EditorTests
     Editor/test_tool_modules.cpp
     Editor/test_workspace_shell.cpp
     Editor/test_asset_editor_tool.cpp
-    Editor/test_s187_editor.cpp
-    Editor/test_s188_editor.cpp
-    Editor/test_s189_editor.cpp
+    Editor/test_material_editor_tool.cpp
+    Editor/test_animation_editor_tool.cpp
+    Editor/test_data_editor_tool.cpp
+    Editor/test_visual_logic_editor_tool.cpp
+    Editor/test_build_tool.cpp
+    Editor/test_atlas_ai_tool.cpp
     catch_main.cpp
 )
 target_include_directories(NF_EditorTests PRIVATE

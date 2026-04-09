@@ -93,12 +93,12 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - [x] Remove archived tests from active CMakeLists build
 - [x] Implement SceneEditorTool as first real NF::IHostedTool
 - [x] Implement AssetEditorTool as NF::IHostedTool
-- [ ] Implement MaterialEditorTool as NF::IHostedTool
-- [ ] Implement AnimationEditorTool as NF::IHostedTool
-- [ ] Implement DataEditorTool as NF::IHostedTool
-- [ ] Implement VisualLogicEditorTool as NF::IHostedTool
-- [ ] Implement BuildTool as NF::IHostedTool
-- [ ] Implement AtlasAITool as NF::IHostedTool
+- [x] Implement MaterialEditorTool as NF::IHostedTool
+- [x] Implement AnimationEditorTool as NF::IHostedTool
+- [x] Implement DataEditorTool as NF::IHostedTool
+- [x] Implement VisualLogicEditorTool as NF::IHostedTool
+- [x] Implement BuildTool as NF::IHostedTool
+- [x] Implement AtlasAITool as NF::IHostedTool
 - [ ] Wire all primary tools into WorkspaceShell at bootstrap
 - [ ] Extract shared panels (Outliner, Inspector, ContentBrowser) from standalone editors
 - [ ] Remove one-off tools from active registry

@@ -1,0 +1,109 @@
+#pragma once
+// NF::Editor — AnimationEditorTool: primary animation and sequencer authoring tool.
+//
+// Implements NF::IHostedTool for the Animation Editor, one of the ~10
+// primary tools in the canonical workspace roster.
+//
+// The Animation Editor hosts:
+//   Shared panels: viewport_animation, timeline, outliner, inspector, console
+//   Commands:      animation.play, animation.pause, animation.stop,
+//                  animation.record, animation.add_keyframe,
+//                  animation.delete_keyframe, animation.export_clip
+//
+// See Docs/Canon/05_EDITOR_STRATEGY.md for the locked tool roster.
+// See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
+
+#include "NF/Editor/IHostedTool.h"
+#include <string>
+
+namespace NF {
+
+// ── Animation editing mode ────────────────────────────────────────
+
+enum class AnimationEditMode : uint8_t {
+    Timeline,    // keyframe timeline view
+    Curves,      // animation curve editor
+    Retargeting, // bone retargeting / rig remapping
+    Preview,     // isolated pose / clip preview
+};
+
+inline const char* animationEditModeName(AnimationEditMode m) {
+    switch (m) {
+        case AnimationEditMode::Timeline:    return "Timeline";
+        case AnimationEditMode::Curves:      return "Curves";
+        case AnimationEditMode::Retargeting: return "Retargeting";
+        case AnimationEditMode::Preview:     return "Preview";
+    }
+    return "Unknown";
+}
+
+// ── Animation Editor statistics ───────────────────────────────────
+
+struct AnimationEditorStats {
+    float    clipDurationMs    = 0.0f; // active clip length in milliseconds
+    uint32_t frameCount        = 0;    // total keyframes in clip
+    uint32_t selectedBoneCount = 0;    // selected bones in the rig
+    bool     isPlaying         = false;
+    bool     isRecording       = false;
+    bool     isDirty           = false;
+};
+
+// ── AnimationEditorTool ───────────────────────────────────────────
+
+class AnimationEditorTool final : public IHostedTool {
+public:
+    static constexpr const char* kToolId = "workspace.animation_editor";
+
+    AnimationEditorTool();
+    ~AnimationEditorTool() override = default;
+
+    // ── IHostedTool identity ──────────────────────────────────────
+    [[nodiscard]] const HostedToolDescriptor& descriptor() const override { return m_descriptor; }
+    [[nodiscard]] const std::string& toolId()              const override { return m_descriptor.toolId; }
+
+    // ── IHostedTool lifecycle ─────────────────────────────────────
+    bool initialize() override;
+    void shutdown()   override;
+    void activate()   override;
+    void suspend()    override;
+    void update(float dt) override;
+
+    [[nodiscard]] HostedToolState state() const override { return m_state; }
+
+    // ── Project adapter hooks ─────────────────────────────────────
+    void onProjectLoaded(const std::string& projectId) override;
+    void onProjectUnloaded() override;
+
+    // ── Animation Editor interface ────────────────────────────────
+
+    [[nodiscard]] AnimationEditMode           editMode() const { return m_editMode; }
+    void                                      setEditMode(AnimationEditMode mode);
+
+    [[nodiscard]] const AnimationEditorStats& stats()      const { return m_stats; }
+    [[nodiscard]] bool                        isDirty()    const { return m_stats.isDirty; }
+    [[nodiscard]] bool                        isPlaying()  const { return m_stats.isPlaying; }
+    [[nodiscard]] bool                        isRecording() const { return m_stats.isRecording; }
+
+    void markDirty();
+    void clearDirty();
+
+    void play();
+    void pause();
+    void stop();
+    void record(bool enable);
+
+    void setClipDurationMs(float ms);
+    void setFrameCount(uint32_t count);
+    void setSelectedBoneCount(uint32_t count);
+
+private:
+    HostedToolDescriptor  m_descriptor;
+    HostedToolState       m_state    = HostedToolState::Unloaded;
+    AnimationEditMode     m_editMode = AnimationEditMode::Timeline;
+    AnimationEditorStats  m_stats;
+    std::string           m_activeProjectId;
+
+    void buildDescriptor();
+};
+
+} // namespace NF

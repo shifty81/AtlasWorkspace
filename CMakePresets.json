@@ -21,6 +21,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_ENABLE_ONLINE_DEPS": "ON",
         "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
@@ -57,6 +58,7 @@
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_ENABLE_ONLINE_DEPS": "ON",
         "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
@@ -73,6 +75,7 @@
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_ENABLE_ONLINE_DEPS": "ON",
         "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
@@ -121,6 +124,7 @@
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_ENABLE_ONLINE_DEPS": "ON",
         "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },
@@ -134,6 +138,7 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_ENABLE_ONLINE_DEPS": "ON",
         "ATLAS_BUILD_WORKSPACE": "ON"
       }
     },

@@ -2,6 +2,12 @@ add_library(NF_Editor STATIC
     src/Editor.cpp
     src/SceneEditorTool.cpp
     src/AssetEditorTool.cpp
+    src/MaterialEditorTool.cpp
+    src/AnimationEditorTool.cpp
+    src/DataEditorTool.cpp
+    src/VisualLogicEditorTool.cpp
+    src/BuildTool.cpp
+    src/AtlasAITool.cpp
     src/Tools/ConsoleToolModule.cpp
     src/Tools/ProfilerToolModule.cpp
     src/Tools/ECSInspectorToolModule.cpp

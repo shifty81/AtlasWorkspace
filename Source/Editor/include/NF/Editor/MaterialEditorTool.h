@@ -1,0 +1,98 @@
+#pragma once
+// NF::Editor — MaterialEditorTool: primary material/shader authoring tool.
+//
+// Implements NF::IHostedTool for the Material Editor, one of the ~10
+// primary tools in the canonical workspace roster.
+//
+// The Material Editor hosts:
+//   Shared panels: viewport_material, inspector, asset_preview, console
+//   Commands:      material.create, material.save, material.set_shader,
+//                  material.add_texture, material.duplicate, material.open
+//
+// See Docs/Canon/05_EDITOR_STRATEGY.md for the locked tool roster.
+// See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
+
+#include "NF/Editor/IHostedTool.h"
+#include <string>
+
+namespace NF {
+
+// ── Material editing mode ─────────────────────────────────────────
+
+enum class MaterialEditMode : uint8_t {
+    Properties, // flat property sheet for parameters
+    NodeGraph,  // node-based shader graph
+    Preview,    // fullscreen material preview
+};
+
+inline const char* materialEditModeName(MaterialEditMode m) {
+    switch (m) {
+        case MaterialEditMode::Properties: return "Properties";
+        case MaterialEditMode::NodeGraph:  return "NodeGraph";
+        case MaterialEditMode::Preview:    return "Preview";
+    }
+    return "Unknown";
+}
+
+// ── Material Editor statistics ────────────────────────────────────
+
+struct MaterialEditorStats {
+    uint32_t nodeCount        = 0; // shader-graph node count
+    uint32_t textureSlotCount = 0; // bound texture slots
+    bool     isDirty          = false;
+};
+
+// ── MaterialEditorTool ────────────────────────────────────────────
+
+class MaterialEditorTool final : public IHostedTool {
+public:
+    static constexpr const char* kToolId = "workspace.material_editor";
+
+    MaterialEditorTool();
+    ~MaterialEditorTool() override = default;
+
+    // ── IHostedTool identity ──────────────────────────────────────
+    [[nodiscard]] const HostedToolDescriptor& descriptor() const override { return m_descriptor; }
+    [[nodiscard]] const std::string& toolId()              const override { return m_descriptor.toolId; }
+
+    // ── IHostedTool lifecycle ─────────────────────────────────────
+    bool initialize() override;
+    void shutdown()   override;
+    void activate()   override;
+    void suspend()    override;
+    void update(float dt) override;
+
+    [[nodiscard]] HostedToolState state() const override { return m_state; }
+
+    // ── Project adapter hooks ─────────────────────────────────────
+    void onProjectLoaded(const std::string& projectId) override;
+    void onProjectUnloaded() override;
+
+    // ── Material Editor interface ─────────────────────────────────
+
+    [[nodiscard]] MaterialEditMode          editMode() const { return m_editMode; }
+    void                                    setEditMode(MaterialEditMode mode);
+
+    [[nodiscard]] const MaterialEditorStats& stats()   const { return m_stats; }
+    [[nodiscard]] bool                       isDirty() const { return m_stats.isDirty; }
+    void                                     markDirty();
+    void                                     clearDirty();
+
+    void setNodeCount(uint32_t count);
+    void setTextureSlotCount(uint32_t count);
+
+    [[nodiscard]] const std::string& openAssetPath() const { return m_openAssetPath; }
+    void                             setOpenAssetPath(const std::string& path);
+
+private:
+    HostedToolDescriptor  m_descriptor;
+    HostedToolState       m_state        = HostedToolState::Unloaded;
+    MaterialEditMode      m_editMode     = MaterialEditMode::Properties;
+    MaterialEditorStats   m_stats;
+    std::string           m_openAssetPath;
+    std::string           m_activeProjectId;
+
+    void buildDescriptor();
+};
+
+} // namespace NF
