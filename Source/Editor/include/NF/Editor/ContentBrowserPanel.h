@@ -26,7 +26,7 @@ public:
     explicit ContentBrowserPanel(ContentBrowser* browser) : m_browser(browser) {}
 
     [[nodiscard]] const std::string& name() const override { return m_name; }
-    [[nodiscard]] DockSlot slot() const override { return DockSlot::Left; }
+    [[nodiscard]] DockSlot slot() const override { return DockSlot::Bottom; }
     void update(float /*dt*/) override {}
     void render(UIRenderer& ui, const Rect& bounds, const EditorTheme& theme) override {
         ui.drawRect(bounds, theme.panelBackground);

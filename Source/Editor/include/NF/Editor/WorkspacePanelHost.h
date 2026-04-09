@@ -72,9 +72,14 @@ public:
             auto it = m_nameMap.find(panel->panelId());
             if (it != m_nameMap.end()) {
                 auto* dp = dock.findPanel(it->second);
-                if (dp && dp->visible) {
+                if (dp && dp->visible && dock.isPanelActive(it->second)) {
                     panel->setVisible(true);
-                    panel->arrange(dp->bounds);
+                    Rect bounds = dp->bounds;
+                    if (!dock.tabGroup(dp->slot).empty()) {
+                        bounds.y += DockLayout::kTabBarHeight;
+                        bounds.h = std::max(0.f, bounds.h - DockLayout::kTabBarHeight);
+                    }
+                    panel->arrange(bounds);
                 } else {
                     panel->setVisible(false);
                     continue;

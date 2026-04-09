@@ -97,7 +97,8 @@ public:
     [[nodiscard]] size_t panelCount() const { return m_panels.size(); }
     [[nodiscard]] const std::vector<DockPanel>& panels() const { return m_panels; }
 
-    static constexpr int kDockSlotCount = 5;
+    static constexpr int   kDockSlotCount  = 5;
+    static constexpr float kTabBarHeight   = 22.f;
 
     // ── Splitter resizing ────────────────────────────────────────
     void beginResize(DockSlot slot, float mousePos) {
@@ -159,6 +160,20 @@ public:
 
     [[nodiscard]] const std::vector<std::string>& tabGroup(DockSlot slot) const {
         return m_tabGroups[static_cast<int>(slot)];
+    }
+
+    /// Returns true if the panel is not in any tab group, or is the currently active tab.
+    [[nodiscard]] bool isPanelActive(const std::string& name) const {
+        for (int s = 0; s < kDockSlotCount; ++s) {
+            for (size_t i = 0; i < m_tabGroups[s].size(); ++i) {
+                if (m_tabGroups[s][i] == name) {
+                    auto it = m_activeTabIndex.find(s);
+                    int activeIdx = (it != m_activeTabIndex.end()) ? it->second : 0;
+                    return static_cast<int>(i) == activeIdx;
+                }
+            }
+        }
+        return true; // not in any tab group → always active
     }
 
     // Accessors for current sizes
