@@ -1,6 +1,9 @@
 // S102 editor tests: WaterSimEditor, FluidSimEditor, ParticleSystemEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ParticleSystemEditor.h"
+#include "NF/Editor/FluidSimEditor.h"
+#include "NF/Editor/WaterSimEditor.h"
 
 using namespace NF;
 

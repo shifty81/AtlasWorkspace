@@ -17,7 +17,7 @@ static fs::path makeTempDir(std::string_view name) {
     std::string unique = std::string(name) + "_" +
                          std::to_string(ts)  + "_" +
                          std::to_string(idx);
-    auto dir = fs::temp_directory_path() / "nf_arbiter_tests" / unique;
+    auto dir = fs::temp_directory_path() / "nf_atlas_ai_tests" / unique;
     std::error_code ec;
     fs::create_directories(dir, ec);
     return dir;
@@ -32,7 +32,7 @@ static NF::PipelineDirectories makeTempPipeline(std::string_view name) {
 
 // ── RuleSeverity ──────────────────────────────────────────────────────────
 
-TEST_CASE("RuleSeverity name strings", "[Pipeline][ArbiterReasoner]") {
+TEST_CASE("RuleSeverity name strings", "[Pipeline][AtlasAIReasoner]") {
     REQUIRE(std::string(NF::ruleSeverityName(NF::RuleSeverity::Info))     == "Info");
     REQUIRE(std::string(NF::ruleSeverityName(NF::RuleSeverity::Warning))  == "Warning");
     REQUIRE(std::string(NF::ruleSeverityName(NF::RuleSeverity::Error))    == "Error");
@@ -41,18 +41,18 @@ TEST_CASE("RuleSeverity name strings", "[Pipeline][ArbiterReasoner]") {
 
 // ── AB-1: Rule management ─────────────────────────────────────────────────
 
-TEST_CASE("ArbiterReasoner constructs with empty state", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner constructs with empty state", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
     REQUIRE(reasoner.ruleCount() == 0);
     REQUIRE(reasoner.violationCount() == 0);
     REQUIRE(reasoner.eventsProcessed() == 0);
     REQUIRE(reasoner.passesGate());
 }
 
-TEST_CASE("ArbiterReasoner adds and finds rules", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner adds and finds rules", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
 
-    NF::ArbiterRule rule;
+    NF::AtlasAIRule rule;
     rule.id          = "R001";
     rule.description = "Test rule";
     rule.severity    = NF::RuleSeverity::Warning;
@@ -71,8 +71,8 @@ TEST_CASE("ArbiterReasoner adds and finds rules", "[Pipeline][ArbiterReasoner]")
     REQUIRE(reasoner.findRule("nonexistent") == nullptr);
 }
 
-TEST_CASE("ArbiterReasoner loads rules from JSON", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner loads rules from JSON", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
 
     std::string json = R"([
         {
@@ -109,10 +109,10 @@ TEST_CASE("ArbiterReasoner loads rules from JSON", "[Pipeline][ArbiterReasoner]"
 
 // ── AB-2: Rule evaluation ─────────────────────────────────────────────────
 
-TEST_CASE("ArbiterReasoner evaluates matching rules", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner evaluates matching rules", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
 
-    NF::ArbiterRule rule;
+    NF::AtlasAIRule rule;
     rule.id          = "R001";
     rule.description = "Contract violation in source";
     rule.severity    = NF::RuleSeverity::Error;
@@ -135,10 +135,10 @@ TEST_CASE("ArbiterReasoner evaluates matching rules", "[Pipeline][ArbiterReasone
     REQUIRE(violations[0].suggestion == "Review the file");
 }
 
-TEST_CASE("ArbiterReasoner skips non-matching event types", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner skips non-matching event types", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
 
-    NF::ArbiterRule rule;
+    NF::AtlasAIRule rule;
     rule.id        = "R001";
     rule.eventType = NF::ChangeEventType::ContractIssue;
     rule.pathPattern = "*.cpp";
@@ -152,10 +152,10 @@ TEST_CASE("ArbiterReasoner skips non-matching event types", "[Pipeline][ArbiterR
     REQUIRE(violations.empty());
 }
 
-TEST_CASE("ArbiterReasoner skips non-matching paths", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner skips non-matching paths", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
 
-    NF::ArbiterRule rule;
+    NF::AtlasAIRule rule;
     rule.id          = "R001";
     rule.eventType   = NF::ChangeEventType::ContractIssue;
     rule.pathPattern = "*.h";
@@ -169,10 +169,10 @@ TEST_CASE("ArbiterReasoner skips non-matching paths", "[Pipeline][ArbiterReasone
     REQUIRE(violations.empty());
 }
 
-TEST_CASE("ArbiterReasoner matches wildcard paths", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner matches wildcard paths", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
 
-    NF::ArbiterRule rule;
+    NF::AtlasAIRule rule;
     rule.id          = "R010";
     rule.eventType   = NF::ChangeEventType::WorldChanged;
     rule.pathPattern = "worlds/*";
@@ -186,10 +186,10 @@ TEST_CASE("ArbiterReasoner matches wildcard paths", "[Pipeline][ArbiterReasoner]
     REQUIRE(violations.size() == 1);
 }
 
-TEST_CASE("ArbiterReasoner rule with empty path matches all paths", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner rule with empty path matches all paths", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
 
-    NF::ArbiterRule rule;
+    NF::AtlasAIRule rule;
     rule.id        = "R099";
     rule.eventType = NF::ChangeEventType::ScriptUpdated;
     // pathPattern is empty — matches everything
@@ -203,16 +203,16 @@ TEST_CASE("ArbiterReasoner rule with empty path matches all paths", "[Pipeline][
     REQUIRE(violations.size() == 1);
 }
 
-TEST_CASE("ArbiterReasoner evaluates multiple rules simultaneously", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner evaluates multiple rules simultaneously", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
 
-    NF::ArbiterRule r1;
+    NF::AtlasAIRule r1;
     r1.id        = "R001";
     r1.eventType = NF::ChangeEventType::ContractIssue;
     r1.pathPattern = "*.cpp";
     reasoner.addRule(r1);
 
-    NF::ArbiterRule r2;
+    NF::AtlasAIRule r2;
     r2.id        = "R002";
     r2.eventType = NF::ChangeEventType::ContractIssue;
     // empty path — matches all
@@ -228,8 +228,8 @@ TEST_CASE("ArbiterReasoner evaluates multiple rules simultaneously", "[Pipeline]
 
 // ── AB-3: Default rules ───────────────────────────────────────────────────
 
-TEST_CASE("ArbiterReasoner loads default game balance rules", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner loads default game balance rules", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
     REQUIRE(reasoner.ruleCount() >= 8);
 
@@ -240,8 +240,8 @@ TEST_CASE("ArbiterReasoner loads default game balance rules", "[Pipeline][Arbite
     REQUIRE(reasoner.findRule("R030") != nullptr);
 }
 
-TEST_CASE("Default rules trigger on matching events", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("Default rules trigger on matching events", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ChangeEvent ev;
@@ -255,9 +255,9 @@ TEST_CASE("Default rules trigger on matching events", "[Pipeline][ArbiterReasone
 
 // ── AB-4: Violation tracking ──────────────────────────────────────────────
 
-TEST_CASE("ArbiterReasoner processEvent tracks violations", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_process");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner processEvent tracks violations", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_process");
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ChangeEvent ev;
@@ -275,9 +275,9 @@ TEST_CASE("ArbiterReasoner processEvent tracks violations", "[Pipeline][ArbiterR
     REQUIRE(pathViolations.size() >= 1);
 }
 
-TEST_CASE("ArbiterReasoner processEvent emits AIAnalysis response", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_emit");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner processEvent emits AIAnalysis response", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_emit");
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ChangeEvent ev;
@@ -296,9 +296,9 @@ TEST_CASE("ArbiterReasoner processEvent emits AIAnalysis response", "[Pipeline][
     REQUIRE(fileCount >= 1);
 }
 
-TEST_CASE("ArbiterReasoner processEvent with no matching rules produces no violations", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_nomatch");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner processEvent with no matching rules produces no violations", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_nomatch");
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ChangeEvent ev;
@@ -312,14 +312,14 @@ TEST_CASE("ArbiterReasoner processEvent with no matching rules produces no viola
 
 // ── AB-5: CI gate ─────────────────────────────────────────────────────────
 
-TEST_CASE("ArbiterReasoner gate passes with no violations", "[Pipeline][ArbiterReasoner]") {
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner gate passes with no violations", "[Pipeline][AtlasAIReasoner]") {
+    NF::AtlasAIReasoner reasoner;
     REQUIRE(reasoner.passesGate());
 }
 
-TEST_CASE("ArbiterReasoner gate fails with Error violations", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_gate");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner gate fails with Error violations", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_gate");
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     // R001 is severity Error, matches ContractIssue on *.cpp
@@ -332,12 +332,12 @@ TEST_CASE("ArbiterReasoner gate fails with Error violations", "[Pipeline][Arbite
     REQUIRE_FALSE(reasoner.passesGate());
 }
 
-TEST_CASE("ArbiterReasoner gate passes with only Info/Warning violations", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_gate_pass");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner gate passes with only Info/Warning violations", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_gate_pass");
+    NF::AtlasAIReasoner reasoner;
 
     // Add only a Warning-severity rule.
-    NF::ArbiterRule rule;
+    NF::AtlasAIRule rule;
     rule.id        = "W001";
     rule.severity  = NF::RuleSeverity::Warning;
     rule.eventType = NF::ChangeEventType::AssetImported;
@@ -353,9 +353,9 @@ TEST_CASE("ArbiterReasoner gate passes with only Info/Warning violations", "[Pip
     REQUIRE(reasoner.passesGate());  // Warning doesn't fail the gate
 }
 
-TEST_CASE("ArbiterReasoner summary includes violation counts", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_summary");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner summary includes violation counts", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_summary");
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ChangeEvent ev;
@@ -366,15 +366,15 @@ TEST_CASE("ArbiterReasoner summary includes violation counts", "[Pipeline][Arbit
     reasoner.processEvent(ev, dirs);
 
     auto s = reasoner.summary();
-    REQUIRE(s.find("ArbiterAI:") != std::string::npos);
+    REQUIRE(s.find("AtlasAI:") != std::string::npos);
     REQUIRE(s.find("FAIL") != std::string::npos);  // Error violations cause FAIL
 }
 
 // ── Pipeline integration ──────────────────────────────────────────────────
 
-TEST_CASE("ArbiterReasoner attaches to PipelineWatcher", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_attach");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner attaches to PipelineWatcher", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_attach");
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::PipelineWatcher watcher(dirs.changes);
@@ -394,17 +394,17 @@ TEST_CASE("ArbiterReasoner attaches to PipelineWatcher", "[Pipeline][ArbiterReas
     REQUIRE(reasoner.violationCount() >= 1);
 }
 
-TEST_CASE("ArbiterReasoner skips own events to avoid feedback loops", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_noloop");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner skips own events to avoid feedback loops", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_noloop");
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::PipelineWatcher watcher(dirs.changes);
     reasoner.attachToWatcher(watcher, dirs);
 
-    // Write an ArbiterAI event (should be skipped).
+    // Write an AtlasAI event (should be skipped).
     NF::ChangeEvent ev;
-    ev.tool      = "ArbiterAI";
+    ev.tool      = "AtlasAI";
     ev.eventType = NF::ChangeEventType::AIAnalysis;
     ev.path      = "analysis/result.json";
     ev.timestamp = 7000LL;
@@ -415,13 +415,13 @@ TEST_CASE("ArbiterReasoner skips own events to avoid feedback loops", "[Pipeline
     REQUIRE(reasoner.eventsProcessed() == 0);
 }
 
-TEST_CASE("ArbiterReasoner end-to-end with ToolRegistry", "[Pipeline][ArbiterReasoner]") {
-    auto dirs = makeTempPipeline("arbiter_e2e");
-    NF::ArbiterReasoner reasoner;
+TEST_CASE("AtlasAIReasoner end-to-end with ToolRegistry", "[Pipeline][AtlasAIReasoner]") {
+    auto dirs = makeTempPipeline("atlas_ai_e2e");
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ToolRegistry registry;
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
     registry.attach(watcher, dirs);

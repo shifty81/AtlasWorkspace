@@ -2,6 +2,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/RoadToolV1.h"
+#include "NF/Editor/FoliagePainterV1.h"
+#include "NF/Editor/TerrainBrushV1.h"
 
 using namespace NF;
 using Catch::Approx;

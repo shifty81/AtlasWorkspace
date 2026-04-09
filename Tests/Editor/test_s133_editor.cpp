@@ -1,6 +1,9 @@
 // S133 editor tests: InputActionEditor, AxisMappingEditor, ControlSchemeEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ControlSchemeEditor.h"
+#include "NF/Editor/AxisMappingEditor.h"
+#include "NF/Editor/InputActionEditor.h"
 
 using namespace NF;
 

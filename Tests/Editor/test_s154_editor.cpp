@@ -2,6 +2,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/TextureViewerV1.h"
+#include "NF/Editor/MaterialNodeEditorV1.h"
+#include "NF/Editor/ParticleSystemEditorV1.h"
 
 using namespace NF;
 using Catch::Approx;

@@ -1,6 +1,8 @@
 // S96 editor tests: DebugDrawEditor, ConsoleCommandBus, DiagnosticProfiler
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/DiagnosticProfiler.h"
+#include "NF/Editor/DebugDrawEditor.h"
 
 using namespace NF;
 

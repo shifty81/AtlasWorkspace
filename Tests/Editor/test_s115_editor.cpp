@@ -1,6 +1,9 @@
 // S115 editor tests: LeaderboardEditor, AchievementEditor, TrophyEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/TrophyEditor.h"
+#include "NF/Editor/AchievementEditor.h"
+#include "NF/Editor/LeaderboardEditor.h"
 
 using namespace NF;
 

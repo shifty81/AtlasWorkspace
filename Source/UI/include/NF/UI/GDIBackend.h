@@ -1,7 +1,10 @@
 #pragma once
-// NF::GDIBackend — Win32 GDI rendering backend for the UI system.
+// NF::GDIBackend — Win32 GDI fallback rendering backend for the UI system.
 // Renders batched UI quads using double-buffered GDI (FillRect + TextOutA).
 // Only compiled on Windows.
+//
+// NOTE: This is the FALLBACK/BOOTSTRAP backend. The intended primary backend
+// is D3D11 + DirectWrite. GDI is kept for recovery and initial bring-up only.
 #include "NF/UI/UIBackend.h"
 
 #ifdef _WIN32

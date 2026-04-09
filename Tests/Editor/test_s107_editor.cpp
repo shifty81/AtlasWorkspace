@@ -1,6 +1,9 @@
 // S107 editor tests: LevelDesignToolkit, RoomEditor, DungeonGenerator
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/DungeonGenerator.h"
+#include "NF/Editor/RoomEditor.h"
+#include "NF/Editor/LevelDesignToolkit.h"
 
 using namespace NF;
 

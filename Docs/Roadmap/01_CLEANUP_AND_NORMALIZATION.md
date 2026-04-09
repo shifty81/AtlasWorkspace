@@ -1,0 +1,46 @@
+# Cleanup and Normalization
+
+**Phase 0 of the Master Roadmap**
+
+## Purpose
+
+Bring the repo into a clean, normalized, canonical state before any feature expansion.
+
+## Tasks
+
+### Repo Hygiene
+- [x] Add `.gitattributes` with line-ending rules
+- [x] Tighten `.gitignore` (build_verify, Binaries, Intermediate, x64, Debug, Release)
+- [x] Gate test dependencies behind `ATLAS_ENABLE_ONLINE_DEPS`
+- [ ] Verify `vcpkg.json` contains only live dependencies
+
+### Naming Cleanup
+- [ ] Rename active-path Arbiter references to AtlasAI
+- [ ] Rename `Atlas/Workspace/Arbiter/` → `Atlas/Workspace/AtlasAI/`
+- [ ] Clean Arbiter references in Source/Pipeline/
+- [ ] Clean Arbiter references in Tests/Pipeline/
+- [ ] Clean Arbiter references in Source/Editor/
+- [ ] Remove stale Atlas Suite, MasterRepo naming from docs
+
+### Documentation Reset
+- [x] Rewrite README.md
+- [x] Create Docs/Canon/* docs
+- [x] Create Docs/Roadmap/* docs
+- [x] Create Docs/Inventory/* docs
+- [ ] Move stale/conflicting docs to Docs/Archive/
+- [ ] Archive historical SpecPack content if it conflicts with SpecRollup
+
+### Build Hygiene
+- [x] Ensure `ATLAS_BUILD_TESTS` defaults to OFF
+- [x] Ensure `ATLAS_ENABLE_ONLINE_DEPS` defaults to OFF
+- [ ] Verify offline configure works cleanly
+
+## Verification
+
+After completion, run:
+```
+grep -r "Arbiter" Source/ Tests/ --include="*.cpp" --include="*.h"
+grep -r "FetchContent_Declare" Tests/ --include="*.txt"
+```
+
+Expected: zero Arbiter hits in active paths, fetch only in guarded blocks.

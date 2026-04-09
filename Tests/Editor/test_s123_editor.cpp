@@ -1,6 +1,9 @@
 // S123 editor tests: AssetBundleEditor, PackagingEditor, DeploymentEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/DeploymentEditor.h"
+#include "NF/Editor/PackagingEditor.h"
+#include "NF/Editor/AssetBundleEditor.h"
 
 using namespace NF;
 

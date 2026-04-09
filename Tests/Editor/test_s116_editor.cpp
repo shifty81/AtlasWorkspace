@@ -1,6 +1,8 @@
 // S116 editor tests: ModdingToolkit, ContentPackEditor, ScriptingConsole
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ContentPackEditor.h"
+#include "NF/Editor/ModdingToolkit.h"
 
 using namespace NF;
 

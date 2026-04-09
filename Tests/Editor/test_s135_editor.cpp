@@ -1,6 +1,9 @@
 // S135 editor tests: ProfilingSessionEditor, CpuProfilerEditor, GpuProfilerEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/GpuProfilerEditor.h"
+#include "NF/Editor/CpuProfilerEditor.h"
+#include "NF/Editor/ProfilingSessionEditor.h"
 
 using namespace NF;
 

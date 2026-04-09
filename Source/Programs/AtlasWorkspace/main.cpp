@@ -130,6 +130,9 @@ int main(int argc, char* argv[]) {
     input.init();
 
 #if defined(_WIN32)
+    // Backend initialization — currently using GDI fallback backend.
+    // TODO: Replace with UIBackendSelector when D3D11 backend is ready.
+    // See Docs/Canon/04_UI_BACKEND_STRATEGY.md for target direction.
     NF::GDIBackend gdiBackend;
     gdiBackend.init(1280, 800);
     editor.uiRenderer().setBackend(&gdiBackend);

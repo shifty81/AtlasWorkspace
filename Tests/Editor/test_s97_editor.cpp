@@ -1,6 +1,8 @@
 // S97 editor tests: SceneStreaming, LODEditorPanel, WorldPartition
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/WorldPartition.h"
+#include "NF/Editor/SceneStreaming.h"
 
 using namespace NF;
 

@@ -1,6 +1,9 @@
 // S124 editor tests: SandboxEditor, SceneIsolationEditor, PlaymodeEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/PlaymodeEditor.h"
+#include "NF/Editor/SceneIsolationEditor.h"
+#include "NF/Editor/SandboxEditor.h"
 
 using namespace NF;
 

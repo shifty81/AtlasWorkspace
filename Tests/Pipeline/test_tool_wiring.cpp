@@ -165,11 +165,11 @@ TEST_CASE("SwissAgentAdapter handles event and emits AIAnalysis", "[Pipeline][To
     REQUIRE(adapter.handledCount() == 1);
 }
 
-// ── ArbiterAdapter ────────────────────────────────────────────────────────
+// ── AtlasAIAdapter ────────────────────────────────────────────────────────
 
-TEST_CASE("ArbiterAdapter accepts ContractIssue and WorldChanged", "[Pipeline][ToolAdapter]") {
-    NF::ArbiterAdapter adapter;
-    REQUIRE(std::string(adapter.name()) == "ArbiterAI");
+TEST_CASE("AtlasAIAdapter accepts ContractIssue and WorldChanged", "[Pipeline][ToolAdapter]") {
+    NF::AtlasAIAdapter adapter;
+    REQUIRE(std::string(adapter.name()) == "AtlasAI");
     REQUIRE(adapter.acceptsEvent(NF::ChangeEventType::ContractIssue));
     REQUIRE(adapter.acceptsEvent(NF::ChangeEventType::WorldChanged));
     REQUIRE_FALSE(adapter.acceptsEvent(NF::ChangeEventType::AssetImported));
@@ -177,10 +177,10 @@ TEST_CASE("ArbiterAdapter accepts ContractIssue and WorldChanged", "[Pipeline][T
     REQUIRE_FALSE(adapter.acceptsEvent(NF::ChangeEventType::ReplayExported));
 }
 
-TEST_CASE("ArbiterAdapter handles WorldChanged and emits AIAnalysis", "[Pipeline][ToolAdapter]") {
-    auto dirs = makeTempPipeline("arbiter_handle");
+TEST_CASE("AtlasAIAdapter handles WorldChanged and emits AIAnalysis", "[Pipeline][ToolAdapter]") {
+    auto dirs = makeTempPipeline("atlas_ai_handle");
 
-    NF::ArbiterAdapter adapter;
+    NF::AtlasAIAdapter adapter;
     NF::ChangeEvent ev;
     ev.tool      = "Editor";
     ev.eventType = NF::ChangeEventType::WorldChanged;
@@ -217,7 +217,7 @@ TEST_CASE("ToolRegistry dispatch routes events to matching adapters", "[Pipeline
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
     registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     // AssetImported → BlenderGen + SwissAgent = 2 handlers
     NF::ChangeEvent ev1;
@@ -235,7 +235,7 @@ TEST_CASE("ToolRegistry dispatch routes events to matching adapters", "[Pipeline
     ev2.timestamp = 200LL;
     REQUIRE(registry.dispatch(ev2, dirs) == 2);
 
-    // ContractIssue → SwissAgent + Arbiter = 2 handlers
+    // ContractIssue → SwissAgent + AtlasAI = 2 handlers
     NF::ChangeEvent ev3;
     ev3.tool      = "ContractScanner";
     ev3.eventType = NF::ChangeEventType::ContractIssue;
@@ -243,7 +243,7 @@ TEST_CASE("ToolRegistry dispatch routes events to matching adapters", "[Pipeline
     ev3.timestamp = 300LL;
     REQUIRE(registry.dispatch(ev3, dirs) == 2);
 
-    // WorldChanged → SwissAgent + Arbiter = 2 handlers
+    // WorldChanged → SwissAgent + AtlasAI = 2 handlers
     NF::ChangeEvent ev4;
     ev4.tool      = "Editor";
     ev4.eventType = NF::ChangeEventType::WorldChanged;
@@ -322,10 +322,10 @@ TEST_CASE("ToolRegistry with all five tools handles full event matrix", "[Pipeli
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
     registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
     REQUIRE(registry.toolCount() == 5);
 
-    // AIAnalysis → only SwissAgent (Arbiter doesn't accept AIAnalysis)
+    // AIAnalysis → only SwissAgent (AtlasAI doesn't accept AIAnalysis)
     NF::ChangeEvent evAI;
     evAI.tool      = "SwissAgent";
     evAI.eventType = NF::ChangeEventType::AIAnalysis;

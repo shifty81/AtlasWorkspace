@@ -1,6 +1,9 @@
 // S137 editor tests: AIPathfindEditor, AIPerceptionEditor, AIDecisionEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/AIDecisionEditor.h"
+#include "NF/Editor/AIPerceptionEditor.h"
+#include "NF/Editor/AIPathfindEditor.h"
 
 using namespace NF;
 

@@ -1,6 +1,9 @@
 // S98 editor tests: TimelineSequencer, CutsceneDirector, ActorDirector
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ActorDirector.h"
+#include "NF/Editor/CutsceneDirector.h"
+#include "NF/Editor/TimelineSequencer.h"
 
 using namespace NF;
 

@@ -1,6 +1,9 @@
 // S119 editor tests: AccessibilityEditor, ColorblindSimulator, SubtitleEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/SubtitleEditor.h"
+#include "NF/Editor/ColorblindSimulator.h"
+#include "NF/Editor/AccessibilityEditor.h"
 
 using namespace NF;
 

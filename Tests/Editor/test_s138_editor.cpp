@@ -1,6 +1,9 @@
 // S138 editor tests: PhysicsMaterialEditor, PhysicsConstraintEditor, PhysicsTriggerEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/PhysicsTriggerEditor.h"
+#include "NF/Editor/PhysicsConstraintEditor.h"
+#include "NF/Editor/PhysicsMaterialEditor.h"
 
 using namespace NF;
 

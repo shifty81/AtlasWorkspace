@@ -1,6 +1,9 @@
 // S127 editor tests: MatchmakingEditor, LobbyEditor, TournamentEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/TournamentEditor.h"
+#include "NF/Editor/LobbyEditor.h"
+#include "NF/Editor/MatchmakingEditor.h"
 
 using namespace NF;
 

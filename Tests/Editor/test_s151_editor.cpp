@@ -2,6 +2,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/EntityQueryV1.h"
+#include "NF/Editor/SceneTreeEditorV1.h"
 
 using namespace NF;
 using Catch::Approx;

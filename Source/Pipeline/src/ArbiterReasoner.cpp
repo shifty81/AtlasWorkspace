@@ -1,6 +1,6 @@
-// NF::Pipeline — S4 ArbiterAI Integration (ArbiterReasoner)
+// NF::Pipeline — S4 AtlasAI Integration (AtlasAIReasoner)
 //
-// Implements ArbiterReasoner: the deterministic rule-based reasoning
+// Implements AtlasAIReasoner: the deterministic rule-based reasoning
 // engine that evaluates declarative rules against pipeline events,
 // detects violations, and emits findings back into the pipeline.
 
@@ -47,24 +47,24 @@ static bool globMatch(const std::string& pattern, const std::string& text) {
 
 } // anonymous namespace
 
-// ── ArbiterReasoner ───────────────────────────────────────────────────────
+// ── AtlasAIReasoner ───────────────────────────────────────────────────────
 
-ArbiterReasoner::ArbiterReasoner() = default;
+AtlasAIReasoner::AtlasAIReasoner() = default;
 
 // ── AB-1: Rule management ─────────────────────────────────────────────────
 
-void ArbiterReasoner::addRule(ArbiterRule rule) {
+void AtlasAIReasoner::addRule(AtlasAIRule rule) {
     m_rules.push_back(std::move(rule));
 }
 
-const ArbiterRule* ArbiterReasoner::findRule(const std::string& id) const {
+const AtlasAIRule* AtlasAIReasoner::findRule(const std::string& id) const {
     for (const auto& r : m_rules) {
         if (r.id == id) return &r;
     }
     return nullptr;
 }
 
-size_t ArbiterReasoner::loadRulesFromJson(const std::string& json) {
+size_t AtlasAIReasoner::loadRulesFromJson(const std::string& json) {
     // Simple parser for array of rule objects.
     // Format: [ { "id": "R001", "description": "...", ... }, ... ]
     size_t count = 0;
@@ -104,7 +104,7 @@ size_t ArbiterReasoner::loadRulesFromJson(const std::string& json) {
             return obj.substr(p, e - p);
         };
 
-        ArbiterRule rule;
+        AtlasAIRule rule;
         rule.id          = getStr("id");
         rule.description = getStr("description");
         rule.pathPattern = getStr("path_pattern");
@@ -131,12 +131,12 @@ size_t ArbiterReasoner::loadRulesFromJson(const std::string& json) {
 
 // ── AB-2: Rule evaluation ─────────────────────────────────────────────────
 
-bool ArbiterReasoner::matchesPath(const std::string& pattern,
+bool AtlasAIReasoner::matchesPath(const std::string& pattern,
                                    const std::string& path) const {
     return globMatch(pattern, path);
 }
 
-std::vector<RuleViolation> ArbiterReasoner::evaluate(const ChangeEvent& event) const {
+std::vector<RuleViolation> AtlasAIReasoner::evaluate(const ChangeEvent& event) const {
     std::vector<RuleViolation> results;
 
     for (const auto& rule : m_rules) {
@@ -168,7 +168,7 @@ std::vector<RuleViolation> ArbiterReasoner::evaluate(const ChangeEvent& event) c
 
 // ── AB-3: Default game balance rules ──────────────────────────────────────
 
-void ArbiterReasoner::loadDefaultRules() {
+void AtlasAIReasoner::loadDefaultRules() {
     // Contract quality rules.
     addRule({"R001", "Contract violation detected in source file",
              RuleSeverity::Error, ChangeEventType::ContractIssue,
@@ -208,7 +208,7 @@ void ArbiterReasoner::loadDefaultRules() {
 
 // ── AB-4: Violation tracking & processing ─────────────────────────────────
 
-size_t ArbiterReasoner::processEvent(const ChangeEvent& event,
+size_t AtlasAIReasoner::processEvent(const ChangeEvent& event,
                                       const PipelineDirectories& dirs) {
     auto violations = evaluate(event);
     ++m_eventsProcessed;
@@ -222,7 +222,7 @@ size_t ArbiterReasoner::processEvent(const ChangeEvent& event,
 
     // Emit an AIAnalysis event summarizing the findings.
     ChangeEvent response;
-    response.tool      = "ArbiterAI";
+    response.tool      = "AtlasAI";
     response.eventType = ChangeEventType::AIAnalysis;
     response.path      = event.path;
     response.timestamp = nowMs();
@@ -237,7 +237,7 @@ size_t ArbiterReasoner::processEvent(const ChangeEvent& event,
     return violations.size();
 }
 
-std::vector<RuleViolation> ArbiterReasoner::violationsForPath(
+std::vector<RuleViolation> AtlasAIReasoner::violationsForPath(
     const std::string& path) const {
     std::vector<RuleViolation> result;
     for (const auto& v : m_violations) {
@@ -248,7 +248,7 @@ std::vector<RuleViolation> ArbiterReasoner::violationsForPath(
 
 // ── AB-5: CI gate ─────────────────────────────────────────────────────────
 
-bool ArbiterReasoner::passesGate() const {
+bool AtlasAIReasoner::passesGate() const {
     for (const auto& v : m_violations) {
         if (v.severity == RuleSeverity::Error ||
             v.severity == RuleSeverity::Critical) {
@@ -258,7 +258,7 @@ bool ArbiterReasoner::passesGate() const {
     return true;
 }
 
-std::string ArbiterReasoner::summary() const {
+std::string AtlasAIReasoner::summary() const {
     size_t info = 0, warn = 0, err = 0, crit = 0;
     for (const auto& v : m_violations) {
         switch (v.severity) {
@@ -270,7 +270,7 @@ std::string ArbiterReasoner::summary() const {
     }
 
     std::ostringstream oss;
-    oss << "ArbiterAI: " << m_violations.size() << " violation(s) — "
+    oss << "AtlasAI: " << m_violations.size() << " violation(s) — "
         << crit << " critical, " << err << " error, "
         << warn << " warning, " << info << " info. "
         << "Gate: " << (passesGate() ? "PASS" : "FAIL") << ". "
@@ -280,11 +280,11 @@ std::string ArbiterReasoner::summary() const {
 
 // ── Pipeline integration ──────────────────────────────────────────────────
 
-void ArbiterReasoner::attachToWatcher(PipelineWatcher& watcher,
+void AtlasAIReasoner::attachToWatcher(PipelineWatcher& watcher,
                                        const PipelineDirectories& dirs) {
     watcher.subscribe([this, dirs](const ChangeEvent& event) {
-        // Skip events emitted by ArbiterAI itself to avoid feedback loops.
-        if (event.tool == "ArbiterAI") return;
+        // Skip events emitted by AtlasAI itself to avoid feedback loops.
+        if (event.tool == "AtlasAI") return;
         processEvent(event, dirs);
     });
 }

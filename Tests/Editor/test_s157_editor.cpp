@@ -2,6 +2,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/TriggerEditorV1.h"
+#include "NF/Editor/StateGraphV1.h"
+#include "NF/Editor/EventTimelineV1.h"
 
 using namespace NF;
 using Catch::Approx;

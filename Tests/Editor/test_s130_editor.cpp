@@ -1,6 +1,9 @@
 // S130 editor tests: EventBusEditor, MessageQueueEditor, PubSubEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/PubSubEditor.h"
+#include "NF/Editor/MessageQueueEditor.h"
+#include "NF/Editor/EventBusEditor.h"
 
 using namespace NF;
 

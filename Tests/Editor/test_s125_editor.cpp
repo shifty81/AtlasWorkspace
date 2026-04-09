@@ -1,6 +1,9 @@
 // S125 editor tests: RewardSystemEditor, DailyQuestEditor, SeasonPassEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/SeasonPassEditor.h"
+#include "NF/Editor/DailyQuestEditor.h"
+#include "NF/Editor/RewardSystemEditor.h"
 
 using namespace NF;
 

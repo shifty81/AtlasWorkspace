@@ -1,6 +1,9 @@
 // S117 editor tests: TelemetryEditor, AnalyticsDashboard, PlaytestRecorder
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/PlaytestRecorder.h"
+#include "NF/Editor/AnalyticsDashboard.h"
+#include "NF/Editor/TelemetryEditor.h"
 
 using namespace NF;
 

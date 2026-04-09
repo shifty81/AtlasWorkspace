@@ -1,6 +1,9 @@
 // S108 editor tests: UIDesignEditor, HUDEditor, MenuLayoutEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/MenuLayoutEditor.h"
+#include "NF/Editor/HUDEditor.h"
+#include "NF/Editor/UIDesignEditor.h"
 
 using namespace NF;
 

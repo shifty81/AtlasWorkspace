@@ -1,6 +1,9 @@
 // S103 editor tests: ProceduralMeshEditor, MeshDeformerEditor, SkeletonEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/SkeletonEditor.h"
+#include "NF/Editor/MeshDeformerEditor.h"
+#include "NF/Editor/ProceduralMeshEditor.h"
 
 using namespace NF;
 

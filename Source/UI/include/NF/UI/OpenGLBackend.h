@@ -1,7 +1,10 @@
 #pragma once
-// NF::OpenGLBackend — GPU-accelerated rendering backend for the UI system.
+// NF::OpenGLBackend — GPU-accelerated compatibility rendering backend.
 // Uses OpenGL for quad batching, font atlas rendering, and 3D viewport.
 // Requires OpenGL headers and a valid GL context.
+//
+// NOTE: This is a COMPATIBILITY backend, not the canonical long-term path.
+// The intended primary backend is D3D11 + DirectWrite.
 #include "NF/UI/UIBackend.h"
 
 namespace NF {

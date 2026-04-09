@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ReflectionProbeEditor.h"
+#include "NF/Editor/LightEditor.h"
+#include "NF/Editor/DecalEditor.h"
 
 using namespace NF;
 

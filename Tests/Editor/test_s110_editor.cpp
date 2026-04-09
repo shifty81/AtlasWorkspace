@@ -1,6 +1,9 @@
 // S110 editor tests: BiomeEditor, WeatherSystemEditor, EcosystemEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/EcosystemEditor.h"
+#include "NF/Editor/WeatherSystemEditor.h"
+#include "NF/Editor/BiomeEditor.h"
 
 using namespace NF;
 
