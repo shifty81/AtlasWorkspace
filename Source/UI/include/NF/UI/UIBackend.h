@@ -1,6 +1,9 @@
 #pragma once
 // NF::UIBackend — Abstract rendering backend for the UI system.
-// Concrete implementations: GDIBackend (Win32), OpenGLBackend (GPU).
+// Concrete implementations:
+//   - D3D11Backend    (primary target — not yet implemented)
+//   - GDIBackend      (fallback/bootstrap — Win32 only)
+//   - OpenGLBackend   (compatibility — cross-platform)
 #include "NF/Core/Core.h"
 #include "NF/UI/UI.h"
 
