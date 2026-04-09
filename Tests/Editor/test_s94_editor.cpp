@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/EventGraph.h"
+#include "NF/Editor/CurveLibrary.h"
+#include "NF/Editor/DataTableEditor.h"
 
 using namespace NF;
 

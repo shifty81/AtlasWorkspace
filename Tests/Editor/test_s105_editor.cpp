@@ -1,6 +1,7 @@
 // S105 editor tests: PerformanceBudgetEditor, MemoryProfilerPanel, RenderStatsPanel
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/PerformanceBudgetEditor.h"
 
 using namespace NF;
 

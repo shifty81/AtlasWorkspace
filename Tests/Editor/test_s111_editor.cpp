@@ -1,6 +1,9 @@
 // S111 editor tests: VFXGraphEditor, TrailEditor, ImpactEffectEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ImpactEffectEditor.h"
+#include "NF/Editor/TrailEditor.h"
+#include "NF/Editor/VFXGraphEditor.h"
 
 using namespace NF;
 

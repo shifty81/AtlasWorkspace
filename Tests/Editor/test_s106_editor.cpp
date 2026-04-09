@@ -1,6 +1,9 @@
 // S106 editor tests: AudioMixerEditor, SoundEffectEditor, MusicSequencer
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/MusicSequencer.h"
+#include "NF/Editor/SoundEffectEditor.h"
+#include "NF/Editor/AudioMixerEditor.h"
 
 using namespace NF;
 

@@ -1,6 +1,9 @@
 // S99 editor tests: QuestEditor, DialogueEditor, CutsceneScriptEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/CutsceneScriptEditor.h"
+#include "NF/Editor/DialogueEditor.h"
+#include "NF/Editor/QuestEditor.h"
 
 using namespace NF;
 

@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/StaticMeshEditor.h"
+#include "NF/Editor/MeshOptimizer.h"
+#include "NF/Editor/LODEditor.h"
 
 using namespace NF;
 

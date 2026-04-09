@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/MultiplayerPreview.h"
+#include "NF/Editor/PacketCapture.h"
+#include "NF/Editor/NetworkDebugger.h"
 
 using namespace NF;
 

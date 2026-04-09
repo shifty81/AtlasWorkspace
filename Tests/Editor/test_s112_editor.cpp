@@ -1,6 +1,8 @@
 // S112 editor tests: CharacterCreatorEditor, CostumeEditor, MorphTargetEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/CostumeEditor.h"
+#include "NF/Editor/CharacterCreatorEditor.h"
 
 using namespace NF;
 

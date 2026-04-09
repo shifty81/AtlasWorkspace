@@ -1,6 +1,9 @@
 // S109 editor tests: AbilitySystemEditor, InventoryEditor, ProgressionEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ProgressionEditor.h"
+#include "NF/Editor/InventoryEditor.h"
+#include "NF/Editor/AbilitySystemEditor.h"
 
 using namespace NF;
 

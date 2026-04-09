@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/SequenceRecorder.h"
+#include "NF/Editor/CameraPathEditor.h"
+#include "NF/Editor/CinematicsEditor.h"
 
 using namespace NF;
 

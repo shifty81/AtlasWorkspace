@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/FoliagePainter.h"
+#include "NF/Editor/WaterEditor.h"
+#include "NF/Editor/TerrainEditor.h"
 
 using namespace NF;
 

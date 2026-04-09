@@ -24,6 +24,10 @@
 #include "NF/Editor/EditorCamera.h"
 
 // ── Workspace shell ─────────────────────────────────────────────
+#include "NF/Editor/WorkspaceShell.h"
+#include "NF/Editor/IHostedTool.h"
+#include "NF/Editor/ToolRegistry.h"
+#include "NF/Editor/PanelRegistry.h"
 #include "NF/Editor/WorkspaceAppRegistry.h"
 #include "NF/Editor/WorkspaceLaunchContract.h"
 #include "NF/Editor/WorkspacePanelHost.h"

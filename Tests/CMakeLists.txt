@@ -288,6 +288,7 @@ add_executable(NF_EditorTests
     Editor/test_s165_editor.cpp
     Editor/test_m1c_editor.cpp
     Editor/test_tool_modules.cpp
+    Editor/test_workspace_shell.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ConsoleToolModule.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ProfilerToolModule.cpp
     ${CMAKE_SOURCE_DIR}/Source/Editor/src/Tools/ECSInspectorToolModule.cpp
