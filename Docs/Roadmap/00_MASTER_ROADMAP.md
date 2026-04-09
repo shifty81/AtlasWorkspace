@@ -46,7 +46,6 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - [x] Wire WorkspaceShell into EditorApp bootstrap (via Editor.h umbrella)
 - [x] Project adapter loading through WorkspaceShell
 - [x] Tests for WorkspaceShell, ToolRegistry, PanelRegistry (42 tests, 141 assertions)
-- [ ] Project adapter loading through WorkspaceShell
 - [ ] Remove project-specific leakage from workspace core
 
 **Success Criteria:**
