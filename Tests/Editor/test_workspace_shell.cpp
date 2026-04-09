@@ -427,7 +427,7 @@ TEST_CASE("WorkspaceShell: register tool before init, initialized by init", "[wo
     shell.toolRegistry().registerTool(std::move(t));
     shell.initialize();
     REQUIRE(raw->state() == NF::HostedToolState::Ready);
-    REQUIRE(shell.toolRegistry().count() == 1);
+    REQUIRE(shell.toolRegistry().count() == 8); // stub replaced the real SceneEditorTool; 7 others bootstrapped
     shell.shutdown();
 }
 
@@ -523,8 +523,8 @@ TEST_CASE("WorkspaceShell: accessors return correct registries", "[workspace][sh
     shell.initialize();
     // Panel registry has default panels
     REQUIRE(shell.panelRegistry().count() == 10);
-    // Tool registry starts empty (no tools registered)
-    REQUIRE(shell.toolRegistry().empty());
+    // Tool registry has 8 bootstrapped core tools
+    REQUIRE(shell.toolRegistry().count() == 8);
     // App registry is accessible
     REQUIRE(shell.appRegistry().empty());
     shell.shutdown();

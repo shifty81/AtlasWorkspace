@@ -135,6 +135,7 @@ add_executable(NF_EditorTests
     Editor/test_visual_logic_editor_tool.cpp
     Editor/test_build_tool.cpp
     Editor/test_atlas_ai_tool.cpp
+    Editor/test_workspace_bootstrap.cpp
     catch_main.cpp
 )
 target_include_directories(NF_EditorTests PRIVATE

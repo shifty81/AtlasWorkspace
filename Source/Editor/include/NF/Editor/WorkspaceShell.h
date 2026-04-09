@@ -18,6 +18,15 @@
 #include "NF/Editor/WorkspaceShellContract.h"
 #include "NF/Editor/IGameProjectAdapter.h"
 #include "NF/Editor/ProjectSystemsTool.h"
+// ── Primary tool roster ───────────────────────────────────────────
+#include "NF/Editor/SceneEditorTool.h"
+#include "NF/Editor/AssetEditorTool.h"
+#include "NF/Editor/MaterialEditorTool.h"
+#include "NF/Editor/AnimationEditorTool.h"
+#include "NF/Editor/DataEditorTool.h"
+#include "NF/Editor/VisualLogicEditorTool.h"
+#include "NF/Editor/BuildTool.h"
+#include "NF/Editor/AtlasAITool.h"
 #include <memory>
 #include <string>
 
@@ -61,6 +70,9 @@ public:
 
         // Register canonical shared panels
         registerDefaultPanels();
+
+        // Register the canonical primary tool roster
+        registerCoreTools();
 
         // Initialize all registered tools
         m_toolRegistry.initializeAll();
@@ -137,6 +149,24 @@ public:
     [[nodiscard]] ShellPhase phase() const { return m_phase; }
 
 private:
+    // Register the canonical primary tool roster for this workspace session.
+    // Tools are registered in Atlas-bar display order.
+    // Any tool already registered (e.g. injected by tests) is silently skipped.
+    void registerCoreTools() {
+        auto tryRegister = [this](std::unique_ptr<IHostedTool> t) {
+            if (!m_toolRegistry.isRegistered(t->toolId()))
+                m_toolRegistry.registerTool(std::move(t));
+        };
+        tryRegister(std::make_unique<SceneEditorTool>());
+        tryRegister(std::make_unique<AssetEditorTool>());
+        tryRegister(std::make_unique<MaterialEditorTool>());
+        tryRegister(std::make_unique<AnimationEditorTool>());
+        tryRegister(std::make_unique<DataEditorTool>());
+        tryRegister(std::make_unique<VisualLogicEditorTool>());
+        tryRegister(std::make_unique<BuildTool>());
+        tryRegister(std::make_unique<AtlasAITool>());
+    }
+
     // Register the canonical set of shared panels that every tool can use.
     void registerDefaultPanels() {
         m_panelRegistry.registerPanel({"inspector",       "Inspector",       SharedPanelCategory::Inspector});
