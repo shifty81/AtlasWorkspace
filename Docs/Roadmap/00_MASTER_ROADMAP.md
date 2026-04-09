@@ -6,7 +6,7 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 0 – Canon Reset and Consolidation
 
-**Status: In Progress**
+**Status: Done**
 
 - [x] Add `.gitattributes` for line-ending normalization
 - [x] Tighten `.gitignore`
@@ -15,12 +15,14 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - [x] Create Canon docs
 - [x] Create Roadmap docs
 - [x] Create Inventory docs
-- [ ] Active-path Arbiter → AtlasAI rename
-- [ ] Workspace bootstrap naming cleanup
-- [ ] GDI/OpenGL fallback marking
-- [ ] Editor umbrella include reduction
-- [ ] Editor inventory and consolidation plan
-- [ ] Archive stale tools and docs
+- [x] Active-path Arbiter → AtlasAI rename
+- [x] Workspace bootstrap naming cleanup
+- [x] GDI/OpenGL fallback marking + D3D11/DirectWrite stubs
+- [x] Editor umbrella include reduction (Editor.h → EditorSharedPanels.h + EditorToolRegistry.h)
+- [x] Editor inventory and consolidation plan
+- [x] Archive legacy tools (ArbiterAI, SwissAgent, build_verify)
+- [x] NovaForge adapter contract (IGameProjectAdapter, ProjectSystemsTool)
+- [x] CONTRIBUTING.md and Docs/README.md doc index
 
 **Success Criteria:**
 - README rewritten
@@ -35,13 +37,16 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 1 – Workspace Core Stabilization
 
-**Status: Planned**
+**Status: In Progress**
 
-- [ ] Clean AtlasWorkspace.exe host bootstrap
-- [ ] Rationalize app/tool registry
-- [ ] Wire project adapter contract
-- [ ] Enforce generic workspace core
-- [ ] Remove project-specific leakage
+- [ ] IHostedTool interface and ToolDescriptor
+- [ ] ToolRegistry — tool registration, lookup, lifecycle
+- [ ] PanelRegistry — shared panel registration and context binding
+- [ ] WorkspaceShell — composition root owning registries, managers, project adapter
+- [ ] Wire WorkspaceShell into EditorApp bootstrap
+- [ ] Project adapter loading through WorkspaceShell
+- [ ] Remove project-specific leakage from workspace core
+- [ ] Tests for WorkspaceShell, ToolRegistry, PanelRegistry
 
 **Success Criteria:**
 - Host bootstrap is clean and deterministic
@@ -53,14 +58,16 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 2 – AtlasUI Backend Strategy
 
-**Status: Planned**
+**Status: Partial (stubs done, implementation planned)**
 
-- [ ] Create backend selector contract
-- [ ] Mark GDI as fallback only
-- [ ] Add D3D11 backend stub
-- [ ] Add DirectWrite text backend stub
+- [x] Create backend selector contract (UIBackendSelector.h)
+- [x] Mark GDI as fallback only
+- [x] Add D3D11 backend stub
+- [x] Add DirectWrite text backend stub (ITextBackend interface)
 - [ ] Isolate legacy OpenGL/GLFW paths
-- [ ] Formalize backend interface split
+- [ ] Formalize backend interface split (layout/input, primitives, text, texture)
+- [ ] Implement D3D11 backend
+- [ ] Implement DirectWrite text backend
 
 **Success Criteria:**
 - Backend selector contract exists
@@ -72,13 +79,14 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 3 – Editor Consolidation
 
-**Status: Planned**
+**Status: Partial (headers split, full consolidation planned)**
 
+- [x] Create EditorToolRegistry and EditorSharedPanels headers
+- [x] Host NovaForge gameplay panels through adapter
 - [ ] Reduce primary tool roster to ~10
 - [ ] Extract shared panels from standalone editors
 - [ ] Remove one-off tools from active registry
-- [ ] Host NovaForge gameplay panels through adapter
-- [ ] Create EditorToolRegistry and EditorSharedPanels headers
+- [ ] Merge related editors into broader host tools
 
 **Success Criteria:**
 - Primary tool roster matches canon

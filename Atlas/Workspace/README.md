@@ -2,36 +2,26 @@
 
 > **Source code** lives in `AtlasAI/` (repo root).
 > **Deployable packages** live here in `Atlas/Workspace/`.
-> **Runtime IPC** goes through `.novaforge/pipeline/`.
+> **Legacy subsystems** archived to `Archive/Legacy/`.
 
 ## Directory Layout
 
 ```
 Atlas/
 └── Workspace/
-    ├── Arbiter/              ← Atlas_Arbiter deployable package
-    │   ├── arbiter_cli.py    ← CLI entry point
-    │   ├── rules/            ← .arbiter.json rule files
-    │   ├── Dockerfile        ← Container deployment
-    │   └── config.toml       ← Runtime configuration
-    ├── SwissAgent/           ← Atlas_SwissAgent deployable package
-    │   ├── cli.py            ← CLI entry point
-    │   ├── core/             ← Agent core modules
-    │   ├── llm/              ← LLM backend adapters
-    │   ├── tools/            ← Tool integrations
-    │   ├── Dockerfile        ← Container deployment
-    │   └── config.toml       ← Runtime configuration
-    └── Sessions/             ← Runtime session data (gitignored)
-        └── <session_id>/
+    ├── AtlasAI/              ← AtlasAI deployable package
+    ├── BlenderBridge/        ← Blender integration
+    ├── Sessions/             ← Runtime session data (gitignored)
+    └── SwissAgent/           ← SwissAgent deployable package (legacy)
 ```
 
 ## Relationship to Other Directories
 
 | Directory | Purpose | Committed |
 |-----------|---------|-----------|
-| `AtlasAI/` | AI tool **source code** and reference snippets | Yes |
-| `Atlas/Workspace/` | **Deployable** tool packages (staged for execution) | Yes (except Sessions/) |
-| `.novaforge/pipeline/` | **Runtime IPC** — ChangeEvent JSON files between tools | No (gitignored) |
+| `AtlasAI/` | AI tool **source code** and reference docs | Yes |
+| `Atlas/Workspace/` | **Deployable** tool packages | Yes (except Sessions/) |
+| `Archive/Legacy/` | **Archived** legacy tools and subsystems | Yes |
 
 ## Pipeline Contract
 
