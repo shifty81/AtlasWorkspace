@@ -79,20 +79,36 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 3 – Editor Consolidation
 
-**Status: Partial (headers split, full consolidation planned)**
+**Status: IN PROGRESS**
+
+> ⚠️ STOP: No new V1 stub headers or S-story test expansions.
+> Stories S4–S189 produced 400+ header-only stubs. That pattern is closed.
+> All S-story test files and non-core V1 stubs have been moved to Legacy/.
+> Phase 3 is now the active track: implement real hosted tools.
 
 - [x] Create EditorToolRegistry and EditorSharedPanels headers
 - [x] Host NovaForge gameplay panels through adapter
-- [ ] Reduce primary tool roster to ~10
-- [ ] Extract shared panels from standalone editors
+- [x] Archive S-story stub tests (test_s4–test_s189) to Tests/Editor/Legacy/
+- [x] Archive non-core V1 stub headers to Source/Editor/include/NF/Editor/Legacy/
+- [x] Remove archived tests from active CMakeLists build
+- [x] Implement SceneEditorTool as first real NF::IHostedTool
+- [ ] Implement AssetEditorTool as NF::IHostedTool
+- [ ] Implement MaterialEditorTool as NF::IHostedTool
+- [ ] Implement AnimationEditorTool as NF::IHostedTool
+- [ ] Implement DataEditorTool as NF::IHostedTool
+- [ ] Implement VisualLogicEditorTool as NF::IHostedTool
+- [ ] Implement BuildTool as NF::IHostedTool
+- [ ] Implement AtlasAITool as NF::IHostedTool
+- [ ] Wire all primary tools into WorkspaceShell at bootstrap
+- [ ] Extract shared panels (Outliner, Inspector, ContentBrowser) from standalone editors
 - [ ] Remove one-off tools from active registry
-- [ ] Merge related editors into broader host tools
 
 **Success Criteria:**
-- Primary tool roster matches canon
-- Shared panel extraction is real
-- One-off tools removed from active registry
+- Primary tool roster (~10 tools) all implemented as real NF::IHostedTool
+- All tools registered with WorkspaceShell via ToolRegistry at boot
+- Shared panels owned by workspace core, not duplicated per tool
 - NovaForge gameplay panels hosted through adapter
+- No new one-off standalone editor headers added to active build
 
 ---
 
