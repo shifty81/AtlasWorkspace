@@ -1,6 +1,7 @@
 add_library(NF_Editor STATIC
     src/Editor.cpp
     src/SceneEditorTool.cpp
+    src/AssetEditorTool.cpp
     src/Tools/ConsoleToolModule.cpp
     src/Tools/ProfilerToolModule.cpp
     src/Tools/ECSInspectorToolModule.cpp
