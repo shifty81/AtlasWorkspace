@@ -1,162 +1,263 @@
 # Atlas Workspace
 
-> **Generic C++ Development Environment** | Powered by the Flagship Atlas Engine
+Atlas Workspace is a native C++ workspace platform for building games, tools, and development pipelines. It provides a unified host for editors, build systems, AtlasAI workflows, and project orchestration.
 
-**Atlas Workspace** is a native C++ development environment and the home of the
-**Atlas Engine** — the engine that powers all software built in this platform.
+Atlas Workspace is a **generic host environment**. Game projects such as NovaForge are developed inside it but do not define the workspace core.
 
-The workspace:
-- Hosts the Atlas Engine (ECS, Physics, Audio, Animation, Input, Networking, Rendering)
-- Loads and runs external projects through adapters and plugins
-- Provides editors and tools built on the engine
-- Manages assets, builds, logs, and automation
-- Brokers AI assistance through AtlasAI (which hooks directly into the engine)
+---
 
-[![Language](https://img.shields.io/badge/language-C%2B%2B20-brightgreen)]()
-[![Engine](https://img.shields.io/badge/engine-Atlas%20Engine-blue)]()
-[![Build](https://img.shields.io/badge/build-CMake-orange)]()
+## Current Status
 
-## Architecture
+Active phase: **Milestone 0 – Canon Reset and Consolidation**
+
+The repository contains real structure and systems, but is undergoing cleanup and normalization before further expansion.
+
+---
+
+## State Overview
+
+### Done
+- Workspace-first architecture defined
+- Atlas Workspace is the primary executable direction
+- AtlasUI selected as standard UI framework
+- AtlasAI established as canonical AI broker name
+- Monorepo structure in place
+- Hosted project structure (NovaForge) present
+- Broad spec and documentation coverage exists
+- AtlasUI widget kit (19+ widgets), docking, theming, command layer
+
+### In Progress
+- Repo normalization and cleanup
+- Active naming migration (Arbiter → AtlasAI)
+- Documentation reset
+- Workspace bootstrap cleanup
+- Editor consolidation
+
+### Partial
+- UI backend strategy implementation (GDI active, D3D11 targeted)
+- Shared panel system extraction
+- AtlasAI/Codex workflow wiring
+- Test/dependency cleanup
+- Hosted-project gating
+
+### Planned
+- D3D11 UI backend
+- DirectWrite text backend
+- Final editor tool roster (~10 primary tools)
+- Project/plugin loading system
+- Release pipeline
+
+### Archived / Deferred
+- WPF shell direction
+- ImGui tooling path
+- Arbiter naming
+- One-off editor expansion
+
+---
+
+## Current Roadmap
+
+### 1. Cleanup and Normalization
+- Line ending normalization (.gitattributes)
+- Repo hygiene enforcement
+- Active naming cleanup (Arbiter → AtlasAI)
+- Doc canon reset
+- Test dependency gating
+
+### 2. Workspace Core Stabilization
+- Clean host bootstrap (AtlasWorkspace.exe)
+- Enforce workspace/project boundaries
+- Tool/app registry cleanup
+
+### 3. AtlasUI Backend Strategy
+- GDI marked fallback only
+- D3D11 target backend
+- DirectWrite text path
+- Legacy OpenGL/GLFW isolation
+
+### 4. Editor Consolidation
+- Reduce tool count to ~10 primary tools
+- Convert one-off editors → shared panels/services
+- Define shared systems and panel residency
+
+### 5. AtlasAI Integration
+- Broker flow formalization
+- Build-log and error-handling routing
+- Codex mirroring and snippet promotion
+
+### 6. Hosted Project Support
+- NovaForge as hosted project with adapter
+- Build gating
+- Plugin/project model
+
+### 7. Build, Patch, and Release Pipeline
+- Build presets and dependency policy
+- Patch apply/remove workflow
+- Packaging and release path
+
+---
+
+## Consolidation Still Required
+
+### Naming
+- Remove legacy naming in active paths (Arbiter, Atlas Suite, MasterRepo)
+- User-facing strings must reflect Atlas Workspace canon
+
+### Structural
+- Line-ending normalization locked
+- Generated artifacts excluded from source audits
+- Active docs separated from historical archives
+
+### Editor
+- Primary editor roster trimmed to intended core tool set
+- Shared panels replace duplicated editor-like surfaces
+- Non-core one-off editors merged, deferred, or archived
+
+### Backend
+- AtlasUI backend selection formalized
+- GDI stops acting like the practical default
+- D3D11 + DirectWrite become the intended primary path
+
+---
+
+## Core Tool Direction
+
+Target: ~10 primary tools supported by shared panels and services.
+
+| Tool | Purpose |
+|------|---------|
+| Workspace Browser | Project and workspace navigation |
+| Scene Editor | Scene/world editing and viewport |
+| Asset Editor | Asset management and editing |
+| Material Editor | Material/shader authoring |
+| Visual Logic Editor | Blueprint/graph-based logic |
+| UI Editor | UI layout and design |
+| Animation Editor | Animation timeline and state |
+| Data Editor | Data tables and configuration |
+| Build Tool | Build pipeline and packaging |
+| AtlasAI Tool | AI broker, diagnostics, Codex |
+| Project Systems Tool | Hosted-project gameplay panels (via adapter) |
+
+Everything else becomes a shared panel, shared service, mode, plugin, or archive.
+
+---
+
+## Known Drift
+
+- Editor surface area overspread (~312 headers, target ~10 tools)
+- Legacy naming residue (Arbiter in active paths)
+- Backend mismatch (GDI active, D3D11 targeted)
+- Stale docs reflecting older project states
+- Generated artifact pollution in source tree
+
+---
+
+## Repo Layout
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Atlas Workspace                    │
-│                                                      │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │              Atlas Engine (Flagship)             │ │
-│  │  Core · Engine · Physics · Audio · Animation    │ │
-│  │  Input · Networking · Renderer                  │ │
-│  └─────────────────────────────────────────────────┘ │
-│                                                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │
-│  │  AtlasUI     │  │  AtlasAI     │  │  Codex    │  │
-│  │  GraphVM     │  │  (hooks into │  │  Logger   │  │
-│  │  Editor      │  │   Engine)    │  │  Pipeline │  │
-│  └──────────────┘  └──────────────┘  └───────────┘  │
-│                                                      │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │         Project / Plugin Layer (SDK)             │ │
-│  │   NovaForge · arena2d · atlas-sample · ...      │ │
-│  └─────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────┘
+Source/          Core source for workspace, engine, UI, renderer, editor, and tooling
+  Core/          Foundation types, logging, memory
+  Engine/        Atlas Engine: ECS, behavior trees, asset system, scene graph
+  Renderer/      Rendering subsystem
+  Physics/       Physics subsystem
+  Audio/         Audio subsystem
+  Animation/     Animation subsystem
+  Input/         Input subsystem
+  Networking/    Networking subsystem
+  UI/            AtlasUI framework
+  GraphVM/       Visual graph/scripting VM
+  AI/            AtlasAI broker
+  Pipeline/      Build orchestration and workspace broker
+  Editor/        Workspace editor host
+  Programs/      Executable entrypoints
+Docs/            Canon docs, roadmap docs, inventory docs, and archives
+  Canon/         Locked project direction and policies
+  Roadmap/       Phased execution plan
+  Inventory/     Tool inventories, scrub lists, cleanup manifests
+  Archive/       Historical material not considered active canon
+NovaForge/       Hosted project under active development through Workspace
+Tools/           Standalone or support tooling
+Schemas/         Shared schema definitions (atlas.project.v1, atlas.build.v1)
+Scripts/         Build, patch, and validation scripts
+Tests/           Catch2 test suite
+Project/         Project descriptors and config
+Archive/         Historical material
 ```
 
-## Repository Structure
-
-```
-/AtlasWorkspace
-  /Source
-    /Core          — Foundation types, logging, memory
-    /Engine        — Atlas Engine: ECS, behavior trees, asset system, scene graph
-    /Physics       — Atlas Engine: physics subsystem
-    /Audio         — Atlas Engine: audio subsystem
-    /Animation     — Atlas Engine: animation subsystem
-    /Input         — Atlas Engine: input subsystem
-    /Networking    — Atlas Engine: networking subsystem
-    /Renderer      — Atlas Engine: rendering subsystem
-    /UI            — AtlasUI framework
-    /GraphVM       — Visual graph/scripting VM
-    /AI            — AtlasAI broker (hooks into Engine)
-    /Pipeline      — Build orchestration / workspace broker
-    /Editor        — Workspace editor host
-  /Tests           — Atlas Engine + workspace tests
-  /Docs            — Workspace documentation
-  /Schemas         — Workspace schemas (atlas.project.v1, atlas.build.v1)
-  /Project         — Generic project samples
-  /Atlas           — Atlas tools
-  /AtlasAI         — AtlasAI broker
-  /Codex           — Logger/diagnostics
-  /Scripts         — Build scripts
-  /Tools           — Workspace tools
-  /NovaForge       — NovaForge game project (uses Atlas Engine via adapter)
-```
+---
 
 ## Building
 
 ```bash
-# Build workspace (includes Atlas Engine)
+# Configure workspace (tests off, no network fetch)
 cmake --preset debug
+
+# Configure with tests (requires network or local Catch2)
+cmake -S . -B build -DATLAS_BUILD_TESTS=ON -DATLAS_ENABLE_ONLINE_DEPS=ON
+
+# Build
 cmake --build --preset debug --parallel
 
-# Run tests
+# Run tests (when enabled)
 ctest --preset debug
 ```
 
-## NovaForge
+---
 
-The NovaForge game lives in `/NovaForge`. It uses the Atlas Engine through the
-workspace adapter layer — game logic, world generation, and gameplay systems
-all sit in `NovaForge/Source/` and link against the workspace-provided engine.
+## Documentation Index
 
-See `/NovaForge/CMakeLists.txt` for the standalone NovaForge build.
+### Canon
+- [Project Status](Docs/Canon/00_PROJECT_STATUS.md)
+- [Locked Direction](Docs/Canon/01_LOCKED_DIRECTION.md)
+- [Naming Canon](Docs/Canon/03_NAMING_CANON.md)
+- [UI Backend Strategy](Docs/Canon/04_UI_BACKEND_STRATEGY.md)
+- [Editor Strategy](Docs/Canon/05_EDITOR_STRATEGY.md)
+- [Workspace vs Project Boundary](Docs/Canon/06_WORKSPACE_VS_PROJECT_BOUNDARY.md)
+- [Build and Dependency Policy](Docs/Canon/07_BUILD_AND_DEPENDENCY_POLICY.md)
+- [Definition of Done](Docs/Canon/09_DEFINITION_OF_DONE.md)
+- [Status Legend](Docs/Canon/10_REPO_STATUS_LEGEND.md)
+- [Module Boundaries](Docs/Canon/11_MODULE_BOUNDARIES.md)
 
-## Roadmap
+### Roadmap
+- [Master Roadmap](Docs/Roadmap/00_MASTER_ROADMAP.md)
+- [Cleanup and Normalization](Docs/Roadmap/01_CLEANUP_AND_NORMALIZATION.md)
+- [Editor Consolidation](Docs/Roadmap/04_EDITOR_CONSOLIDATION.md)
 
-Development follows a **tooling-first** priority: framework and editor
-infrastructure ships before game-specific features.
+### Inventory
+- [Editor Tool Inventory](Docs/Inventory/EDITOR_TOOL_INVENTORY.md)
+- [Panel and Service Matrix](Docs/Inventory/PANEL_AND_SERVICE_MATRIX.md)
+- [Legacy Name Scrub List](Docs/Inventory/LEGACY_NAME_SCRUB_LIST.md)
+- [Repo Cleanup Manifest](Docs/Inventory/REPO_CLEANUP_MANIFEST.md)
 
-### Phase 1 — AtlasUI Foundation ✅
+---
 
-| Feature | Status |
-|---------|--------|
-| Backend abstraction (GDI / OpenGL / Null) | ✅ Done |
-| Widget kit (Button, Label, TextInput, Dropdown, …) | ✅ 19 widgets |
-| Theme & token system | ✅ Done |
-| Tabs / chrome | ✅ Done |
-| Docking layout | ✅ Done |
-| Tooltips | ✅ Done |
-| Command & shortcut layer | ✅ Done |
-| Menu layer | ✅ Done (ContextMenu widget added) |
+## Immediate Priority
 
-### Phase 2 — Workspace Shell & Core Surfaces 🟡
+1. Normalize the repo
+2. Lock the documentation
+3. Complete naming cleanup
+4. Stabilize workspace host
+5. Fix UI backend strategy
+6. Consolidate editors
 
-| Feature | Status |
-|---------|--------|
-| Shell frame (EditorApp + PanelHost) | ✅ Done |
-| Notification center | ✅ Widget + host done |
-| Notification severity / workflow rules | ✅ WorkflowEngine, RateLimiter, PriorityQueue |
-| AtlasAI panel host | ✅ AIAssistantPanel with ChatSession |
-| Settings / control panel | ✅ SettingsPanel + SettingsRegistry |
-| Project & repo surfaces | 🔲 Not started |
+Feature expansion should wait until those are complete.
 
-### Phase 3 — Editor Standards & Persistence 🟡
+---
 
-| Feature | Status |
-|---------|--------|
-| PropertyGrid / TreeView / TableView | ✅ Done |
-| Layout persistence | ✅ LayoutPersistenceManager + presets |
-| Scroll + virtualization | ✅ ScrollView widget done |
-| Viewport host contract | ✅ IViewportHost + registry + session |
-| Graph host contract | 🔲 Not started |
+## Rules
 
-### Phase 4 — Workflow & Debugging Integration 🟡
+- No feature expansion during cleanup milestone
+- No new standalone editors without justification
+- No stale naming in active paths
+- No generated artifacts in repo snapshots
+- No `.git` in audit zips
+- Presence of a file does not equal completion
 
-| Feature | Status |
-|---------|--------|
-| Logging route (Console → Codex) | ✅ ConsolePanel + PipelineMonitor |
-| AtlasAI debug path | 🔲 Not started |
-| File intake / drop pipeline | 🔲 Not started |
-| Codex / snippet mirroring | 🔲 Not started |
+---
 
-### Phase 5 — Hosted Project Support 🔲
+## Audit Rules
 
-| Feature | Status |
-|---------|--------|
-| Project templates | 🔲 Not started |
-| Import / export flows | 🔲 Not started |
-| Build / package workflows | 🔲 Not started |
-| Repo tooling polish | 🔲 Not started |
-
-### Phase 6–7 — Game Development (deferred)
-
-Game-specific work (combat, world content, fleet features, missions, etc.) is
-intentionally deferred until the tooling foundation is solid.
-
-> Full details: [`Docs/SpecRollup/`](Docs/SpecRollup/)
-
-## Key Principles
-
-- The Atlas Engine is owned by the workspace — all projects use it
-- AtlasAI hooks into the engine for context (active entities, logs, git state)
-- Projects load through adapters; no game logic lives in the workspace core
-- All gameplay systems are project-level (NovaForge, arena2d, etc.)
+- No `.git/` in audit zips
+- No `build/`, `.vs/`, `Binaries/`, `Intermediate/` in audit zips
+- Generated artifacts excluded
+- Current README and canon docs updated with major structural changes
