@@ -298,6 +298,9 @@ add_executable(NF_EditorTests
     Editor/test_s175_editor.cpp
     Editor/test_s176_editor.cpp
     Editor/test_s177_editor.cpp
+    Editor/test_s178_editor.cpp
+    Editor/test_s179_editor.cpp
+    Editor/test_s180_editor.cpp
     Editor/test_m1c_editor.cpp
     Editor/test_tool_modules.cpp
     Editor/test_workspace_shell.cpp
