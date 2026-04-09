@@ -40,7 +40,7 @@ enum class ChangeEventType : uint8_t {
     AnimationExported,
     ContractIssue,
     ReplayExported,
-    AIAnalysis,          // Emitted by AI tools (SwissAgent, Arbiter) as a response
+    AIAnalysis,          // Emitted by AI tools (SwissAgent, AtlasAI) as a response
 };
 
 inline const char* changeEventTypeName(ChangeEventType t) noexcept {
@@ -317,8 +317,8 @@ public:
                      const PipelineDirectories& dirs) override;
 };
 
-// ArbiterAI: accepts ContractIssue and WorldChanged; AI reasoning.
-class ArbiterAdapter final : public ToolAdapter {
+// AtlasAI: accepts ContractIssue and WorldChanged; AI reasoning.
+class AtlasAIAdapter final : public ToolAdapter {
 public:
     const char* name() const noexcept override;
     bool acceptsEvent(ChangeEventType type) const noexcept override;
@@ -557,7 +557,7 @@ private:
 };
 
 // ── RuleSeverity ─────────────────────────────────────────────────
-// Severity level for Arbiter rule violations.
+// Severity level for AtlasAI rule violations.
 
 enum class RuleSeverity : uint8_t {
     Info,
@@ -576,13 +576,13 @@ inline const char* ruleSeverityName(RuleSeverity s) noexcept {
     }
 }
 
-// ── ArbiterRule ──────────────────────────────────────────────────
-// A single declarative rule evaluated by the ArbiterReasoner.
+// ── AtlasAIRule ─────────────────────────────────────────────────
+// A single declarative rule evaluated by the AtlasAIReasoner.
 // Schema: { "id": "...", "description": "...", "severity": "...",
 //           "event_type": "...", "path_pattern": "...",
 //           "condition": "...", "suggestion": "..." }
 
-struct ArbiterRule {
+struct AtlasAIRule {
     std::string       id;            // Unique rule identifier (e.g. "R001")
     std::string       description;   // Human-readable description
     RuleSeverity      severity = RuleSeverity::Warning;
@@ -593,7 +593,7 @@ struct ArbiterRule {
 };
 
 // ── RuleViolation ────────────────────────────────────────────────
-// Result of evaluating an ArbiterRule against a pipeline event.
+// Result of evaluating an AtlasAIRule against a pipeline event.
 
 struct RuleViolation {
     std::string       ruleId;
@@ -604,8 +604,8 @@ struct RuleViolation {
     int64_t           timestamp = 0;
 };
 
-// ── ArbiterReasoner ──────────────────────────────────────────────
-// S4: ArbiterAI reasoning engine that evaluates declarative rules
+// ── AtlasAIReasoner ─────────────────────────────────────────────
+// S4: AtlasAI reasoning engine that evaluates declarative rules
 // against pipeline events.  Manages a rule set, evaluates events,
 // tracks violations, and emits findings back into the pipeline.
 //
@@ -615,24 +615,24 @@ struct RuleViolation {
 // AB-4: Editor integration (violation reporting)
 // AB-5: CI gate integration (pass/fail summary)
 
-class ArbiterReasoner {
+class AtlasAIReasoner {
 public:
-    ArbiterReasoner();
+    AtlasAIReasoner();
 
     // ── AB-1: Rule management ─────────────────────────────────────
 
     // Add a rule to the rule set.
-    void addRule(ArbiterRule rule);
+    void addRule(AtlasAIRule rule);
 
     // Load rules from a JSON string (array of rule objects).
     size_t loadRulesFromJson(const std::string& json);
 
     // Get all registered rules.
-    const std::vector<ArbiterRule>& rules() const { return m_rules; }
+    const std::vector<AtlasAIRule>& rules() const { return m_rules; }
     size_t ruleCount() const noexcept { return m_rules.size(); }
 
     // Find a rule by ID (nullptr if not found).
-    const ArbiterRule* findRule(const std::string& id) const;
+    const AtlasAIRule* findRule(const std::string& id) const;
 
     // ── AB-2: Rule evaluation ─────────────────────────────────────
 
@@ -678,7 +678,7 @@ public:
                          const PipelineDirectories& dirs);
 
 private:
-    std::vector<ArbiterRule>    m_rules;
+    std::vector<AtlasAIRule>    m_rules;
     std::vector<RuleViolation>  m_violations;
     size_t                      m_eventsProcessed = 0;
 

@@ -137,18 +137,18 @@ bool SwissAgentAdapter::handleEvent(const ChangeEvent& event,
     return true;
 }
 
-// ── ArbiterAdapter ────────────────────────────────────────────────────────
+// ── AtlasAIAdapter ────────────────────────────────────────────────────────
 
-const char* ArbiterAdapter::name() const noexcept {
-    return "ArbiterAI";
+const char* AtlasAIAdapter::name() const noexcept {
+    return "AtlasAI";
 }
 
-bool ArbiterAdapter::acceptsEvent(ChangeEventType type) const noexcept {
+bool AtlasAIAdapter::acceptsEvent(ChangeEventType type) const noexcept {
     return type == ChangeEventType::ContractIssue ||
            type == ChangeEventType::WorldChanged;
 }
 
-bool ArbiterAdapter::handleEvent(const ChangeEvent& event,
+bool AtlasAIAdapter::handleEvent(const ChangeEvent& event,
                                  const PipelineDirectories& dirs) {
     if (!acceptsEvent(event.eventType)) return false;
 

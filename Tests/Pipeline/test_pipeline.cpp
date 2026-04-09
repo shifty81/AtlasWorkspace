@@ -308,7 +308,7 @@ TEST_CASE("PipelineWatcher poll detects new .change.json and fires callback",
 
     // Write a .change.json file.
     NF::ChangeEvent ev;
-    ev.tool      = "ArbiterAI";
+    ev.tool      = "AtlasAI";
     ev.eventType = NF::ChangeEventType::WorldChanged;
     ev.path      = "worlds/sector02.json";
     ev.timestamp = 7777LL;
@@ -318,7 +318,7 @@ TEST_CASE("PipelineWatcher poll detects new .change.json and fires callback",
     int found = watcher.poll();
     REQUIRE(found == 1);
     REQUIRE(received.size() == 1);
-    REQUIRE(received[0].tool      == "ArbiterAI");
+    REQUIRE(received[0].tool      == "AtlasAI");
     REQUIRE(received[0].eventType == NF::ChangeEventType::WorldChanged);
 
     // Polling again must not re-fire the same file.

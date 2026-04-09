@@ -43,7 +43,7 @@ static void createDummyAsset(const fs::path& fullPath) {
 // S5: Full Suite Validation
 //
 // All five tool adapters + BlenderBridge + WorkspaceBroker +
-// ArbiterReasoner active simultaneously.  Events propagate through
+// AtlasAIReasoner active simultaneously.  Events propagate through
 // the entire pipeline without interference or feedback loops.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -57,7 +57,7 @@ TEST_CASE("S5: All tools active — AssetImported propagates correctly", "[Pipel
     NF::WorkspaceBroker broker;
     auto sessionId = broker.createSession("SuiteTest");
 
-    NF::ArbiterReasoner reasoner;
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ToolRegistry registry;
@@ -65,7 +65,7 @@ TEST_CASE("S5: All tools active — AssetImported propagates correctly", "[Pipel
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
     registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
     REQUIRE(registry.toolCount() == 5);
 
     NF::PipelineWatcher watcher(dirs.changes);
@@ -100,7 +100,7 @@ TEST_CASE("S5: All tools active — AssetImported propagates correctly", "[Pipel
     // WorkspaceBroker analyzed it.
     REQUIRE(broker.totalAnalyses() >= 1);
 
-    // ArbiterReasoner evaluated rules (R020 matches *.glb AssetImported).
+    // AtlasAIReasoner evaluated rules (R020 matches *.glb AssetImported).
     REQUIRE(reasoner.eventsProcessed() >= 1);
 
     // Bridge registered the asset.
@@ -114,7 +114,7 @@ TEST_CASE("S5: All tools active — ContractIssue propagates correctly", "[Pipel
     NF::WorkspaceBroker broker;
     auto sessionId = broker.createSession("SuiteTest");
 
-    NF::ArbiterReasoner reasoner;
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ToolRegistry registry;
@@ -122,7 +122,7 @@ TEST_CASE("S5: All tools active — ContractIssue propagates correctly", "[Pipel
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
     registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
     registry.attach(watcher, dirs);
@@ -142,13 +142,13 @@ TEST_CASE("S5: All tools active — ContractIssue propagates correctly", "[Pipel
 
     // SwissAgent handles all events.
     REQUIRE(registry.tool(3)->handledCount() >= 1);
-    // ArbiterAdapter handles ContractIssue.
+    // AtlasAIAdapter handles ContractIssue.
     REQUIRE(registry.tool(4)->handledCount() >= 1);
 
     // WorkspaceBroker analyzed.
     REQUIRE(broker.totalAnalyses() >= 1);
 
-    // ArbiterReasoner found violations (R001 matches ContractIssue *.cpp).
+    // AtlasAIReasoner found violations (R001 matches ContractIssue *.cpp).
     REQUIRE(reasoner.violationCount() >= 1);
     REQUIRE_FALSE(reasoner.passesGate());  // Error-level violations
 }
@@ -159,7 +159,7 @@ TEST_CASE("S5: All tools active — ScriptUpdated propagates correctly", "[Pipel
     NF::WorkspaceBroker broker;
     auto sessionId = broker.createSession("SuiteTest");
 
-    NF::ArbiterReasoner reasoner;
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ToolRegistry registry;
@@ -167,7 +167,7 @@ TEST_CASE("S5: All tools active — ScriptUpdated propagates correctly", "[Pipel
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
     registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
     registry.attach(watcher, dirs);
@@ -198,7 +198,7 @@ TEST_CASE("S5: All tools active — WorldChanged propagates correctly", "[Pipeli
     NF::WorkspaceBroker broker;
     auto sessionId = broker.createSession("SuiteTest");
 
-    NF::ArbiterReasoner reasoner;
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ToolRegistry registry;
@@ -206,7 +206,7 @@ TEST_CASE("S5: All tools active — WorldChanged propagates correctly", "[Pipeli
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
     registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
     registry.attach(watcher, dirs);
@@ -224,7 +224,7 @@ TEST_CASE("S5: All tools active — WorldChanged propagates correctly", "[Pipeli
 
     // SwissAgent handles it.
     REQUIRE(registry.tool(3)->handledCount() >= 1);
-    // ArbiterAdapter handles WorldChanged.
+    // AtlasAIAdapter handles WorldChanged.
     REQUIRE(registry.tool(4)->handledCount() >= 1);
 
     REQUIRE(broker.totalAnalyses() >= 1);
@@ -237,7 +237,7 @@ TEST_CASE("S5: All tools active — ReplayExported propagates correctly", "[Pipe
     NF::WorkspaceBroker broker;
     auto sessionId = broker.createSession("SuiteTest");
 
-    NF::ArbiterReasoner reasoner;
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ToolRegistry registry;
@@ -245,7 +245,7 @@ TEST_CASE("S5: All tools active — ReplayExported propagates correctly", "[Pipe
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
     registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
     registry.attach(watcher, dirs);
@@ -279,7 +279,7 @@ TEST_CASE("S5: Full event matrix — all event types through all tools", "[Pipel
     NF::WorkspaceBroker broker;
     auto sessionId = broker.createSession("FullMatrixTest");
 
-    NF::ArbiterReasoner reasoner;
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::ToolRegistry registry;
@@ -287,7 +287,7 @@ TEST_CASE("S5: Full event matrix — all event types through all tools", "[Pipel
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
     registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
-    registry.registerTool(std::make_unique<NF::ArbiterAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     // Dispatch all 6 active event types through the registry.
     struct TestEvent {
@@ -299,8 +299,8 @@ TEST_CASE("S5: Full event matrix — all event types through all tools", "[Pipel
         {NF::ChangeEventType::AssetImported,     "assets/a.glb",           2},  // BlenderGen + SwissAgent
         {NF::ChangeEventType::ScriptUpdated,     "scripts/b.graph",       2},  // ContractScanner + SwissAgent
         {NF::ChangeEventType::ReplayExported,    "replays/c.replay.json", 2},  // ReplayMinimizer + SwissAgent
-        {NF::ChangeEventType::ContractIssue,     "src/d.cpp",             2},  // SwissAgent + Arbiter
-        {NF::ChangeEventType::WorldChanged,      "worlds/e.json",         2},  // SwissAgent + Arbiter
+        {NF::ChangeEventType::ContractIssue,     "src/d.cpp",             2},  // SwissAgent + AtlasAI
+        {NF::ChangeEventType::WorldChanged,      "worlds/e.json",         2},  // SwissAgent + AtlasAI
         {NF::ChangeEventType::AnimationExported, "anims/f.glb",           1},  // SwissAgent only
     };
 
@@ -335,7 +335,7 @@ TEST_CASE("S5: No feedback loops — tool-emitted events don't cause infinite ch
     NF::WorkspaceBroker broker;
     auto sessionId = broker.createSession("NoLoopTest");
 
-    NF::ArbiterReasoner reasoner;
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     NF::PipelineWatcher watcher(dirs.changes);
@@ -343,7 +343,7 @@ TEST_CASE("S5: No feedback loops — tool-emitted events don't cause infinite ch
     reasoner.attachToWatcher(watcher, dirs);
 
     // Write a SwissAgent AIAnalysis event — broker should skip it (its own tool),
-    // but reasoner will process it (ArbiterAI != SwissAgent).
+    // but reasoner will process it (AtlasAI != SwissAgent).
     NF::ChangeEvent ev1;
     ev1.tool      = "SwissAgent";
     ev1.eventType = NF::ChangeEventType::AIAnalysis;
@@ -351,10 +351,10 @@ TEST_CASE("S5: No feedback loops — tool-emitted events don't cause infinite ch
     ev1.timestamp = 1000LL;
     ev1.writeToFile(dirs.changes);
 
-    // Write an ArbiterAI AIAnalysis event — reasoner should skip it (its own tool),
-    // but broker will process it (SwissAgent != ArbiterAI).
+    // Write an AtlasAI AIAnalysis event — reasoner should skip it (its own tool),
+    // but broker will process it (SwissAgent != AtlasAI).
     NF::ChangeEvent ev2;
-    ev2.tool      = "ArbiterAI";
+    ev2.tool      = "AtlasAI";
     ev2.eventType = NF::ChangeEventType::AIAnalysis;
     ev2.path      = "analysis/y.json";
     ev2.timestamp = 2000LL;
@@ -362,9 +362,9 @@ TEST_CASE("S5: No feedback loops — tool-emitted events don't cause infinite ch
 
     watcher.poll();
 
-    // Broker skips SwissAgent events but processes ArbiterAI events.
+    // Broker skips SwissAgent events but processes AtlasAI events.
     REQUIRE(broker.totalAnalyses() == 1);
-    // Reasoner skips ArbiterAI events but processes SwissAgent events.
+    // Reasoner skips AtlasAI events but processes SwissAgent events.
     REQUIRE(reasoner.eventsProcessed() == 1);
 
     // Key invariant: no tool processes its own emitted events, preventing
@@ -412,10 +412,10 @@ TEST_CASE("S5: Manifest persistence after full suite run", "[Pipeline][Suite]") 
     REQUIRE(loaded.projectName == "SuiteProject");
 }
 
-TEST_CASE("S5: ArbiterReasoner CI gate summary after full suite", "[Pipeline][Suite]") {
+TEST_CASE("S5: AtlasAIReasoner CI gate summary after full suite", "[Pipeline][Suite]") {
     auto dirs = makeTempPipeline("suite_gate");
 
-    NF::ArbiterReasoner reasoner;
+    NF::AtlasAIReasoner reasoner;
     reasoner.loadDefaultRules();
 
     // Process a mix of events.
@@ -439,6 +439,6 @@ TEST_CASE("S5: ArbiterReasoner CI gate summary after full suite", "[Pipeline][Su
     REQUIRE(reasoner.violationCount() >= 1);
 
     auto summary = reasoner.summary();
-    REQUIRE(summary.find("ArbiterAI:") != std::string::npos);
+    REQUIRE(summary.find("AtlasAI:") != std::string::npos);
     REQUIRE(summary.find("Events processed: 3") != std::string::npos);
 }

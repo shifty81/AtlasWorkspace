@@ -200,7 +200,7 @@ TEST_CASE("ToolOrchestrator startAll and stopAll", "[Editor][S8]") {
 TEST_CASE("ToolOrchestrator runner lookup by name", "[Editor][S8]") {
     ToolOrchestrator orch;
     CHECK(orch.runner("SwissAgent") != nullptr);
-    CHECK(orch.runner("ArbiterAI") != nullptr);
+    CHECK(orch.runner("AtlasAI") != nullptr);
     CHECK(orch.runner("ContractScanner") != nullptr);
     CHECK(orch.runner("ReplayMinimizer") != nullptr);
     CHECK(orch.runner("NonExistent") == nullptr);
@@ -212,7 +212,7 @@ TEST_CASE("ToolOrchestrator totalEventsHandled", "[Editor][S8]") {
     orch.startAll();
     orch.runner("SwissAgent")->recordEvent();
     orch.runner("SwissAgent")->recordEvent();
-    orch.runner("ArbiterAI")->recordEvent();
+    orch.runner("AtlasAI")->recordEvent();
     CHECK(orch.totalEventsHandled() == 3);
 }
 
@@ -251,6 +251,6 @@ TEST_CASE("ToolEcosystem healthyToolCount", "[Editor][S8]") {
     eco.init();
     eco.startAll();
     CHECK(eco.healthyToolCount() == 4);
-    eco.orchestrator().runner("ArbiterAI")->markCrashed();
+    eco.orchestrator().runner("AtlasAI")->markCrashed();
     CHECK(eco.healthyToolCount() == 3);
 }

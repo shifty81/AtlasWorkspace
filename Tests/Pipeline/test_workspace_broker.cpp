@@ -265,7 +265,7 @@ TEST_CASE("WorkspaceBroker generates recommendations per event type", "[Pipeline
 
     REQUIRE(r1.recommendation.find("Content Browser") != std::string::npos);
     REQUIRE(r2.recommendation.find("ContractScanner") != std::string::npos);
-    REQUIRE(r3.recommendation.find("ArbiterAI") != std::string::npos);
+    REQUIRE(r3.recommendation.find("AtlasAI") != std::string::npos);
 }
 
 TEST_CASE("WorkspaceBroker analyzeEvent writes response to pipeline", "[Pipeline][WorkspaceBroker]") {

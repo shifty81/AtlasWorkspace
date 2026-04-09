@@ -151,7 +151,7 @@ std::string WorkspaceBroker::generateRecommendation(const ChangeEvent& event) co
         case ChangeEventType::WorldChanged:
             return "Review world snapshot diff; check entity placement bounds.";
         case ChangeEventType::ContractIssue:
-            return "Review contract violation details; consider ArbiterAI for resolution.";
+            return "Review contract violation details; consider AtlasAI for resolution.";
         case ChangeEventType::ReplayExported:
             return "Run ReplayMinimizer to reduce file size; archive for regression tests.";
         case ChangeEventType::AIAnalysis:

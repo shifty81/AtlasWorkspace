@@ -181,8 +181,8 @@ public:
     ToolOrchestrator() {
         m_swissAgent.setName("SwissAgent");
         m_swissAgent.setExecutablePath("Atlas/Workspace/SwissAgent/cli.py");
-        m_arbiter.setName("ArbiterAI");
-        m_arbiter.setExecutablePath("Atlas/Workspace/Arbiter/arbiter_cli.py");
+        m_arbiter.setName("AtlasAI");
+        m_arbiter.setExecutablePath("Atlas/Workspace/AtlasAI/atlas_ai_cli.py");
         m_contractScanner.setName("ContractScanner");
         m_contractScanner.setExecutablePath("tools/contract_scanner");
         m_replayMinimizer.setName("ReplayMinimizer");
@@ -209,7 +209,7 @@ public:
 
     StandaloneToolRunner* runner(const std::string& name) {
         if (name == "SwissAgent") return &m_swissAgent;
-        if (name == "ArbiterAI") return &m_arbiter;
+        if (name == "AtlasAI") return &m_arbiter;
         if (name == "ContractScanner") return &m_contractScanner;
         if (name == "ReplayMinimizer") return &m_replayMinimizer;
         return nullptr;
@@ -217,7 +217,7 @@ public:
 
     const StandaloneToolRunner* runner(const std::string& name) const {
         if (name == "SwissAgent") return &m_swissAgent;
-        if (name == "ArbiterAI") return &m_arbiter;
+        if (name == "AtlasAI") return &m_arbiter;
         if (name == "ContractScanner") return &m_contractScanner;
         if (name == "ReplayMinimizer") return &m_replayMinimizer;
         return nullptr;
@@ -259,7 +259,7 @@ public:
         m_config = config;
         m_monitor.setConfig(config);
         m_monitor.addRunner(m_orchestrator.runner("SwissAgent"));
-        m_monitor.addRunner(m_orchestrator.runner("ArbiterAI"));
+        m_monitor.addRunner(m_orchestrator.runner("AtlasAI"));
         m_monitor.addRunner(m_orchestrator.runner("ContractScanner"));
         m_monitor.addRunner(m_orchestrator.runner("ReplayMinimizer"));
         m_initialized = true;
@@ -296,7 +296,7 @@ public:
 
 private:
     void autoRestartCrashed() {
-        for (const char* name : {"SwissAgent", "ArbiterAI", "ContractScanner", "ReplayMinimizer"}) {
+        for (const char* name : {"SwissAgent", "AtlasAI", "ContractScanner", "ReplayMinimizer"}) {
             auto* r = m_orchestrator.runner(name);
             if (r && r->status() == ToolStatus::Crashed) {
                 r->start();
