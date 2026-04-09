@@ -128,6 +128,7 @@ add_executable(NF_EditorTests
     Editor/test_m1c_editor.cpp
     Editor/test_tool_modules.cpp
     Editor/test_workspace_shell.cpp
+    Editor/test_asset_editor_tool.cpp
     catch_main.cpp
 )
 target_include_directories(NF_EditorTests PRIVATE

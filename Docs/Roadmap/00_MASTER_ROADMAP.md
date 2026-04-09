@@ -92,7 +92,7 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - [x] Archive non-core V1 stub headers to Source/Editor/include/NF/Editor/Legacy/
 - [x] Remove archived tests from active CMakeLists build
 - [x] Implement SceneEditorTool as first real NF::IHostedTool
-- [ ] Implement AssetEditorTool as NF::IHostedTool
+- [x] Implement AssetEditorTool as NF::IHostedTool
 - [ ] Implement MaterialEditorTool as NF::IHostedTool
 - [ ] Implement AnimationEditorTool as NF::IHostedTool
 - [ ] Implement DataEditorTool as NF::IHostedTool
