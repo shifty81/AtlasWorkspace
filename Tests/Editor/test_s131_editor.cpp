@@ -1,6 +1,9 @@
 // S131 editor tests: GraphicsSettingsEditor, DisplayModeEditor, ResolutionEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ResolutionEditor.h"
+#include "NF/Editor/DisplayModeEditor.h"
+#include "NF/Editor/GraphicsSettingsEditor.h"
 
 using namespace NF;
 

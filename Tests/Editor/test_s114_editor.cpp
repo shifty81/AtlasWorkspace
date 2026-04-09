@@ -1,6 +1,9 @@
 // S114 editor tests: ReplaySystemEditor, MatchReplayEditor, SpectatorEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/SpectatorEditor.h"
+#include "NF/Editor/MatchReplayEditor.h"
+#include "NF/Editor/ReplaySystemEditor.h"
 
 using namespace NF;
 

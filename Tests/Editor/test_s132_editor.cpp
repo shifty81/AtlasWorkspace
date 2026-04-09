@@ -1,6 +1,9 @@
 // S132 editor tests: LocalizationKeyEditor, TranslationEditor, LanguagePackEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/LanguagePackEditor.h"
+#include "NF/Editor/TranslationEditor.h"
+#include "NF/Editor/LocalizationKeyEditor.h"
 
 using namespace NF;
 

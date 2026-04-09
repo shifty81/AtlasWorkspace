@@ -1,6 +1,9 @@
 // S120 editor tests: BenchmarkSuiteEditor, StressTestEditor, LoadTestEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/LoadTestEditor.h"
+#include "NF/Editor/StressTestEditor.h"
+#include "NF/Editor/BenchmarkSuiteEditor.h"
 
 using namespace NF;
 

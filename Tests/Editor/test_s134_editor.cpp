@@ -1,6 +1,9 @@
 // S134 editor tests: CameraRigEditor, CameraBlendEditor, CameraShakeEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/CameraShakeEditor.h"
+#include "NF/Editor/CameraBlendEditor.h"
+#include "NF/Editor/CameraRigEditor.h"
 
 using namespace NF;
 

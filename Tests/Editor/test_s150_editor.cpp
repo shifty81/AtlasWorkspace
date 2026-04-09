@@ -2,6 +2,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/VersionResolverV1.h"
+#include "NF/Editor/DependencyGraphV1.h"
+#include "NF/Editor/PackageManagerV1.h"
 
 using namespace NF;
 using Catch::Approx;

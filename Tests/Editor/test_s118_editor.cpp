@@ -1,6 +1,8 @@
 // S118 editor tests: CloudSyncEditor, OnlineServicesPanel, LiveOpsEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/LiveOpsEditor.h"
+#include "NF/Editor/CloudSyncEditor.h"
 
 using namespace NF;
 

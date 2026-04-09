@@ -2,6 +2,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/LinkerSettingsV1.h"
+#include "NF/Editor/CompilerSettingsV1.h"
+#include "NF/Editor/BuildPipelineEditorV1.h"
 
 using namespace NF;
 using Catch::Approx;

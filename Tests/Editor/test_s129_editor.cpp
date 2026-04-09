@@ -1,6 +1,9 @@
 // S129 editor tests: TagSystemEditor, FilterEditor, SearchIndexEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/SearchIndexEditor.h"
+#include "NF/Editor/FilterEditor.h"
+#include "NF/Editor/TagSystemEditor.h"
 
 using namespace NF;
 

@@ -2,6 +2,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/PipelineStateEditorV1.h"
+#include "NF/Editor/RenderPassEditorV1.h"
+#include "NF/Editor/ShaderEditorV1.h"
 
 using namespace NF;
 using Catch::Approx;

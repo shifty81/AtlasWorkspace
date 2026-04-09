@@ -1,6 +1,9 @@
 // S121 editor tests: RuntimeConfigEditor, FeatureFlagEditor, ExperimentEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ExperimentEditor.h"
+#include "NF/Editor/FeatureFlagEditor.h"
+#include "NF/Editor/RuntimeConfigEditor.h"
 
 using namespace NF;
 

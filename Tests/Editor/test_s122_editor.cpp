@@ -1,6 +1,9 @@
 // S122 editor tests: GameEconomyEditor, VirtualCurrencyEditor, ItemShopEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/ItemShopEditor.h"
+#include "NF/Editor/VirtualCurrencyEditor.h"
+#include "NF/Editor/GameEconomyEditor.h"
 
 using namespace NF;
 

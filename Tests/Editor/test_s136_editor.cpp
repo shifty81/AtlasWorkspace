@@ -1,6 +1,9 @@
 // S136 editor tests: NetworkTopologyEditor, BandwidthProfileEditor, LatencySimEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/LatencySimEditor.h"
+#include "NF/Editor/BandwidthProfileEditor.h"
+#include "NF/Editor/NetworkTopologyEditor.h"
 
 using namespace NF;
 

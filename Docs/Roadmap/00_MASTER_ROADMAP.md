@@ -37,16 +37,17 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 1 – Workspace Core Stabilization
 
-**Status: In Progress**
+**Status: Done**
 
-- [ ] IHostedTool interface and ToolDescriptor
-- [ ] ToolRegistry — tool registration, lookup, lifecycle
-- [ ] PanelRegistry — shared panel registration and context binding
-- [ ] WorkspaceShell — composition root owning registries, managers, project adapter
-- [ ] Wire WorkspaceShell into EditorApp bootstrap
+- [x] IHostedTool interface and ToolDescriptor
+- [x] ToolRegistry — tool registration, lookup, lifecycle
+- [x] PanelRegistry — shared panel registration and context binding
+- [x] WorkspaceShell — composition root owning registries, managers, project adapter
+- [x] Wire WorkspaceShell into EditorApp bootstrap (via Editor.h umbrella)
+- [x] Project adapter loading through WorkspaceShell
+- [x] Tests for WorkspaceShell, ToolRegistry, PanelRegistry (42 tests, 141 assertions)
 - [ ] Project adapter loading through WorkspaceShell
 - [ ] Remove project-specific leakage from workspace core
-- [ ] Tests for WorkspaceShell, ToolRegistry, PanelRegistry
 
 **Success Criteria:**
 - Host bootstrap is clean and deterministic

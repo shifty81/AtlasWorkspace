@@ -1,6 +1,9 @@
 // S126 editor tests: NotificationCenterEditor, AlertRuleEditor, BroadcastEditor
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/BroadcastEditor.h"
+#include "NF/Editor/AlertRuleEditor.h"
+#include "NF/Editor/NotificationCenterEditor.h"
 
 using namespace NF;
 
