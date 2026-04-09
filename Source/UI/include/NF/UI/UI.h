@@ -56,20 +56,7 @@ public:
         ++m_quadCount;
     }
 
-    void drawText(float x, float y, std::string_view text, uint32_t color = 0xFFFFFFFF) {
-        constexpr float kCharWidth = 8.f;
-        constexpr float kCharHeight = 14.f;
-        float cx = x;
-        for (char ch : text) {
-            if (ch == '\n') { cx = x; y += kCharHeight + 2.f; continue; }
-            if (ch == ' ')  { cx += kCharWidth; continue; }
-
-            Rect charRect{cx, y, kCharWidth, kCharHeight};
-            drawRect(charRect, color);
-            cx += kCharWidth;
-        }
-        ++m_textDrawCount;
-    }
+    void drawText(float x, float y, std::string_view text, uint32_t color = 0xFFFFFFFF);
 
     void drawRectOutline(const Rect& r, uint32_t color, float thickness = 1.f) {
         drawRect({r.x, r.y, r.w, thickness}, color);                       // top

@@ -530,24 +530,37 @@ public:
         m_dockLayout.computeLayout(width, height, 56.f, 24.f);
         m_ui.beginFrame(width, height);
 
-        // Menu bar
+        // Menu bar background
         m_ui.drawRect({0.f, 0.f, width, 28.f}, m_theme.toolbarBackground);
-        float mx = 8.f;
-        for (auto& cat : m_menuBar.categories()) {
-            m_ui.drawText(mx, 7.f, cat.name, m_theme.panelText);
-            mx += static_cast<float>(cat.name.size()) * 8.f + 16.f;
+        {
+            float mx = 8.f;
+            int ci = 0;
+            for (auto& cat : m_menuBar.categories()) {
+                float cw = static_cast<float>(cat.name.size()) * 8.f + 16.f;
+                uint32_t catBg = (ci == m_openMenuCategoryIdx)
+                    ? m_theme.buttonPressed : m_theme.buttonBackground;
+                m_ui.drawRect({mx, 2.f, cw, 24.f}, catBg);
+                m_ui.drawText(mx + 4.f, 7.f, cat.name, m_theme.panelText);
+                mx += cw + 4.f;
+                ++ci;
+            }
         }
 
-        // Toolbar
+        // Toolbar background
         m_ui.drawRect({0.f, 28.f, width, 28.f}, m_theme.toolbarBackground);
-        float tx = 8.f;
-        for (auto& item : m_toolbar.items()) {
-            if (item.isSeparator) {
-                m_ui.drawRect({tx, 32.f, 1.f, 20.f}, m_theme.toolbarSeparator);
-                tx += 12.f;
-            } else {
-                m_ui.drawText(tx, 35.f, item.name, item.enabled ? m_theme.buttonText : m_theme.buttonDisabledText);
-                tx += static_cast<float>(item.name.size()) * 8.f + 12.f;
+        {
+            float tx = 8.f;
+            for (auto& item : m_toolbar.items()) {
+                if (item.isSeparator) {
+                    m_ui.drawRect({tx, 32.f, 1.f, 20.f}, m_theme.toolbarSeparator);
+                    tx += 12.f;
+                } else {
+                    float iw = static_cast<float>(item.name.size()) * 8.f + 8.f;
+                    m_ui.drawRect({tx, 31.f, iw, 20.f}, m_theme.buttonBackground);
+                    m_ui.drawText(tx + 4.f, 35.f, item.name,
+                        item.enabled ? m_theme.buttonText : m_theme.buttonDisabledText);
+                    tx += iw + 4.f;
+                }
             }
         }
 
@@ -588,6 +601,34 @@ public:
             }
         }
 
+        // Dropdown menu overlay — drawn last so it sits on top of everything
+        if (m_openMenuCategoryIdx >= 0 &&
+            m_openMenuCategoryIdx < static_cast<int>(m_menuBar.categories().size())) {
+            const auto& openCat = m_menuBar.categories()[m_openMenuCategoryIdx];
+            auto db = computeDropdownBounds(m_openMenuCategoryIdx);
+
+            m_ui.drawRect({db.x, db.y, db.w, db.h}, m_theme.panelBackground);
+            m_ui.drawRectOutline({db.x, db.y, db.w, db.h}, m_theme.panelBorder, 1.f);
+
+            float iy = db.y + 2.f;
+            for (auto& item : openCat.items) {
+                if (item.isSeparator) {
+                    m_ui.drawRect({db.x + 4.f, iy + 3.f, db.w - 8.f, 1.f}, m_theme.panelBorder);
+                    iy += 8.f;
+                } else {
+                    uint32_t textColor = item.enabled
+                        ? m_theme.panelText : m_theme.buttonDisabledText;
+                    m_ui.drawText(db.x + 8.f, iy + 2.f, item.name, textColor);
+                    if (!item.hotkey.empty()) {
+                        float hkX = db.x + db.w
+                            - static_cast<float>(item.hotkey.size()) * 8.f - 8.f;
+                        m_ui.drawText(hkX, iy + 2.f, item.hotkey, m_theme.buttonDisabledText);
+                    }
+                    iy += 20.f;
+                }
+            }
+        }
+
         m_ui.endFrame();
     }
 
@@ -619,6 +660,9 @@ public:
 
         // Route input to AtlasUI panels
         m_workspacePanelHost.handleInput(m_dockLayout, input);
+
+        // Handle menu bar and toolbar clicks
+        handleMenuToolbarInput(input);
     }
 
     // Process a hotkey string and dispatch matching commands.
@@ -735,6 +779,112 @@ private:
             NF_LOG_INFO("Editor", "Toggle panel '" + name + "' visible=" +
                         (p->visible ? "true" : "false"));
         }
+    }
+
+    struct DropdownBounds { float x, y, w, h; };
+
+    // Compute the screen-space bounds for the dropdown of the given category index.
+    // Shared by renderAll() and handleMenuToolbarInput() to keep layout in sync.
+    [[nodiscard]] DropdownBounds computeDropdownBounds(int catIdx) const {
+        float dropX = 8.f;
+        for (int ci = 0; ci < catIdx; ++ci) {
+            float cw = static_cast<float>(
+                m_menuBar.categories()[ci].name.size()) * 8.f + 16.f;
+            dropX += cw + 4.f;
+        }
+        const auto& cat = m_menuBar.categories()[catIdx];
+        float dropW = 120.f;
+        for (auto& item : cat.items) {
+            if (!item.isSeparator) {
+                float iw = static_cast<float>(item.name.size()) * 8.f + 24.f;
+                if (!item.hotkey.empty())
+                    iw += static_cast<float>(item.hotkey.size()) * 8.f + 16.f;
+                dropW = std::max(dropW, iw);
+            }
+        }
+        float dropH = 0.f;
+        for (auto& item : cat.items)
+            dropH += item.isSeparator ? 8.f : 20.f;
+        return {dropX, 28.f, dropW, dropH};
+    }
+
+    // Handle mouse clicks on the menu bar (top 28px) and toolbar (28..56px).
+    // Called once per frame from update().
+    void handleMenuToolbarInput(const InputSystem& input) {
+        bool mouseLeft   = input.isKeyDown(KeyCode::Mouse1);
+        bool justClicked = mouseLeft && !m_prevMouseLeft;
+        m_prevMouseLeft  = mouseLeft;
+        if (!justClicked) return;
+
+        float mx = input.state().mouse.x;
+        float my = input.state().mouse.y;
+
+        // ── Open dropdown item click ────────────────────────────
+        if (m_openMenuCategoryIdx >= 0 &&
+            m_openMenuCategoryIdx < static_cast<int>(m_menuBar.categories().size())) {
+            const auto& openCat = m_menuBar.categories()[m_openMenuCategoryIdx];
+            auto db = computeDropdownBounds(m_openMenuCategoryIdx);
+
+            if (mx >= db.x && mx < db.x + db.w &&
+                my >= db.y && my < db.y + db.h) {
+                // Find which entry was hit
+                float iy = db.y + 2.f;
+                for (auto& item : openCat.items) {
+                    float itemH = item.isSeparator ? 8.f : 20.f;
+                    if (!item.isSeparator && item.enabled &&
+                        my >= iy && my < iy + itemH) {
+                        m_commands.executeCommand(item.command);
+                        m_openMenuCategoryIdx = -1;
+                        return;
+                    }
+                    iy += itemH;
+                }
+                return; // clicked in dropdown but not on an active entry
+            }
+            // Clicked outside the dropdown
+            m_openMenuCategoryIdx = -1;
+            if (my < 28.f) { /* fall through to menu bar handling below */ }
+            else           { return; }
+        }
+
+        // ── Menu bar category click (y < 28) ────────────────────
+        if (my >= 0.f && my < 28.f) {
+            float cx = 8.f;
+            int ci = 0;
+            for (auto& cat : m_menuBar.categories()) {
+                float cw = static_cast<float>(cat.name.size()) * 8.f + 16.f;
+                if (mx >= cx && mx < cx + cw) {
+                    m_openMenuCategoryIdx = (m_openMenuCategoryIdx == ci) ? -1 : ci;
+                    return;
+                }
+                cx += cw + 4.f;
+                ++ci;
+            }
+            m_openMenuCategoryIdx = -1; // clicked in menu bar but not on a category
+            return;
+        }
+
+        // ── Toolbar item click (y in [28, 56]) ───────────────────
+        if (my >= 28.f && my < 56.f) {
+            m_openMenuCategoryIdx = -1; // close any open menu
+            float tx = 8.f;
+            for (auto& item : m_toolbar.items()) {
+                if (item.isSeparator) {
+                    tx += 12.f;
+                } else {
+                    float iw = static_cast<float>(item.name.size()) * 8.f + 8.f;
+                    if (item.enabled && mx >= tx && mx < tx + iw) {
+                        if (item.action) item.action();
+                        return;
+                    }
+                    tx += iw + 4.f;
+                }
+            }
+            return;
+        }
+
+        // Click elsewhere — close any open menu
+        m_openMenuCategoryIdx = -1;
     }
 
     void initMenuBar() {
@@ -866,6 +1016,10 @@ private:
 
     // AtlasUI workspace panel host (owns the 8 core AtlasUI panels)
     WorkspacePanelHost m_workspacePanelHost;
+
+    // ── Menu / toolbar interaction state ────────────────────────
+    int  m_openMenuCategoryIdx = -1; // -1 = no open dropdown
+    bool m_prevMouseLeft = false;    // left-button state last frame
 
     // ── State persistence ───────────────────────────────────────
 

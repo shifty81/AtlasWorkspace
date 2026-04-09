@@ -12,6 +12,29 @@ void UIRenderer::flush() {
     }
 }
 
+void UIRenderer::drawText(float x, float y, std::string_view text, uint32_t color) {
+    if (m_backend) {
+        // Flush any pending geometry so backgrounds are drawn before text.
+        flush();
+        m_backend->drawTextNative(x, y, text, color);
+        ++m_textDrawCount;
+        return;
+    }
+    // Fallback (headless / no backend): draw a coloured rect per glyph.
+    constexpr float kCharWidth  = 8.f;
+    constexpr float kCharHeight = 14.f;
+    float cx = x;
+    float curY = y; // local Y cursor for multi-line support
+    for (char ch : text) {
+        if (ch == '\n') { cx = x; curY += kCharHeight + 2.f; continue; }
+        if (ch == ' ')  { cx += kCharWidth; continue; }
+        Rect charRect{cx, curY, kCharWidth, kCharHeight};
+        drawRect(charRect, color);
+        cx += kCharWidth;
+    }
+    ++m_textDrawCount;
+}
+
 void UIRenderer::endFrame() {
     // Flush any remaining batched geometry to the active backend.
     flush();
