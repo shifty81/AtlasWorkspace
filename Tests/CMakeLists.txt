@@ -269,3 +269,14 @@ target_link_libraries(NF_Phase9Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase9Tests)
+
+# Phase 10 — Project Persistence and Serialization tests
+add_executable(NF_Phase10Tests
+    Workspace/test_phase10_persistence.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase10Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase10Tests)

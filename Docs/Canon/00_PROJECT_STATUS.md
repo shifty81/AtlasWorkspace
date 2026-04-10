@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase 9 Complete — Asset Pipeline and Content Routing**
+Current Phase: **Phase 10 Complete — Project Persistence and Serialization**
 
 ## Build Status
 
@@ -31,6 +31,7 @@ Current Phase: **Phase 9 Complete — Asset Pipeline and Content Routing**
 | 7 | Workspace Integration Surfaces | ✅ Done |
 | 8 | Runtime Wiring and First Real Tool Loop | ✅ Done |
 | 9 | Asset Pipeline and Content Routing | ✅ Done |
+| 10 | Project Persistence and Serialization | ✅ Done |
 
 ## Active Problems
 
@@ -40,10 +41,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 10: Project Persistence and Serialization**
+**Phase 11: Command Bus and Action System**
 
-Formalize the save/load contract for workspace state:
-- WorkspaceProjectFile — canonical .atlasproject file format (JSON schema)
-- ProjectSerializer — write/read WorkspaceShell state to/from disk
-- AssetCatalogSerializer — serialize/deserialize AssetCatalog (add/remove/dirty)
-- SettingsStore — typed key-value store for workspace settings with layering (user/project/defaults)
+Implement the workspace-level command and action infrastructure:
+- WorkspaceCommand — typed command descriptor (id, label, category, shortcut, enabled/visible)
+- CommandRegistry — register/unregister/find/enable commands; execute with pre/post hooks
+- CommandHistory — undo/redo stack with command grouping and partial rollback
+- ActionBinding — bind commands to UI gestures (keyboard shortcut, toolbar button, menu item)

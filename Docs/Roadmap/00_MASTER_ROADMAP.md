@@ -301,3 +301,51 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify the pipeline end-to-end ✓
 - 71 test cases pass (236 assertions) ✓
 - Total test suite: 1592 tests passing ✓
+
+---
+
+## Phase 10 – Project Persistence and Serialization
+
+**Status: Done**
+
+- [x] Create `WorkspaceProjectFile.h` — .atlasproject file schema
+  - [x] ProjectFileVersion (major.minor.patch): toString/parse/isCompatible/current()
+  - [x] ProjectFileSection — named k/v section (MAX_ENTRIES=256): set/get/getOr/has/remove/clear/entries
+  - [x] WorkspaceProjectFile — root document; project identity (id/name/contentRoot/version); section management (section/findSection/hasSection/removeSection); isValid(); serialize() / static parse()
+  - [x] Wire format: `#atlasproject:<version>\nproject.id=…\n[SectionName]\nkey=value\n`
+- [x] Create `ProjectSerializer.h` — WorkspaceShell snapshot serialization
+  - [x] WorkspaceShellSnapshot — projectId/projectName/contentRoot/activeToolId/registeredToolIds/visiblePanelIds/fileVersion; isValid()
+  - [x] SerializeResult — succeeded/errorMessage; ok()/fail() factory helpers
+  - [x] ProjectSerializer::serialize — writes Core+Tools+Panels sections into project file
+  - [x] ProjectSerializer::deserialize — restores snapshot from Core+Tools+Panels sections
+  - [x] ProjectSerializer::roundTrip — serialize→text→parse→deserialize helper
+- [x] Create `AssetCatalogSerializer.h` — AssetCatalog persistence
+  - [x] CatalogSerializeResult — succeeded/assetCount/errorMessage; ok(n)/fail()
+  - [x] AssetCatalogSerializer::serialize — writes one record per asset into "AssetCatalog" section; pipe-delimited fields with escape (`\P` for literal `|`)
+  - [x] AssetCatalogSerializer::deserialize — reads back all asset records; reconstructs descriptors and metadata
+  - [x] AssetCatalogSerializer::roundTrip — helper for self-contained round-trip testing
+  - [x] Metadata round-trips losslessly (asset.<n>.meta.<i>.k/v)
+  - [x] Pipe characters in field values are escaped/unescaped transparently
+- [x] Create `SettingsStore.h` — layered typed settings (Default < Project < User)
+  - [x] SettingsLayer enum (Default/Project/User) with name helper
+  - [x] set/get/getOr/getBool/getInt32/getFloat — typed read/write with layer parameter
+  - [x] setDefault — convenience for populating Default layer at startup
+  - [x] Layer-aware getFromLayer / hasInLayer / remove / clearLayer / countInLayer / totalCount
+  - [x] addObserver/clearObservers — SettingsChangeCallback (key, value, layer)
+  - [x] serializeLayer / deserializeLayer / serializeAll / deserializeAll — WorkspaceProjectFile integration using "Settings.User/Project/Default" sections
+- [x] Add `Tests/Workspace/test_phase10_persistence.cpp` — 62 test cases / 200 assertions:
+  - [x] WorkspaceProjectFile (17 tests): version parse/compat/current, section CRUD, identity, isValid, serialize magic, round-trip identity/sections, parse rejections, version in version struct
+  - [x] ProjectSerializer (12 tests): snapshot isValid, result factories, serialize fields, Core/Tools/Panels sections, invalid snapshot rejection, deserialize identity/tools/panels, round-trip, empty tool list
+  - [x] AssetCatalogSerializer (10 tests): result factories, empty catalog, section key population, deserialize descriptor, missing section, round-trip 3 assets, import state, metadata, pipe escape
+  - [x] SettingsStore (20 tests): layer name strings, set/get, getOr, bool/int32/float typed accessors, layer precedence (User>Project>Default), getFromLayer, hasInLayer, remove, clearLayer, count, observer notifications, clearObservers, serializeLayer, deserializeLayer, round-trip all layers, missing section
+  - [x] Integration (3 tests): full cycle (snapshot+catalog+settings serialize→text→parse→restore), version round-trip + newer-minor incompatibility, settings override precedence
+- [x] Wire `NF_Phase10Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- .atlasproject file format is documented, versioned, and human-readable ✓
+- WorkspaceShell state survives a full serialize/text/parse/deserialize round-trip ✓
+- AssetCatalog (with metadata and import state) round-trips losslessly ✓
+- SettingsStore resolves User > Project > Default with correct precedence ✓
+- Integration test exercises all four components in one pipeline ✓
+- 62 test cases pass (200 assertions) ✓
+- Total test suite: 1654 tests passing ✓
