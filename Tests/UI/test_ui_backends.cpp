@@ -258,9 +258,10 @@ TEST_CASE("D3D11Backend text shim delegates to ITextRenderBackend when set",
     NF::NullTextRenderBackend textb;
     d3d.setTextBackend(&textb);
 
-    // measureText should use NullTextRenderBackend's 8px/char approximation
+    // measureText should use NullTextRenderBackend's approximation (8px per char)
+    static constexpr float kCharWidthPx = 8.f;
     NF::Vec2 size = d3d.measureText("Hello", 14.f);
-    REQUIRE(size.x == 5 * 8.f); // 5 chars × 8px
+    REQUIRE(size.x == 5 * kCharWidthPx); // 5 chars × 8px
     REQUIRE(size.y > 0.f);
 }
 

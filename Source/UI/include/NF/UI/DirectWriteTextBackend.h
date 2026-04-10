@@ -163,10 +163,12 @@ private:
         }
     };
 
+    // Hash combination constant: golden-ratio mixing for better distribution.
+    // This is the standard boost::hash_combine technique.
     struct FontKeyHash {
         std::size_t operator()(const FontKey& k) const {
             std::size_t h = std::hash<std::string>{}(k.name);
-            h ^= std::hash<float>{}(k.size) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            h ^= std::hash<float>{}(k.size) + 0x9e3779b9u + (h << 6) + (h >> 2);
             return h;
         }
     };
