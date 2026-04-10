@@ -144,20 +144,40 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 5 – Hosted Project Support
 
-**Status: Planned**
+**Status: Done**
 
-- [ ] NovaForge as hosted project with full adapter
-- [ ] Project loading contracts
-- [ ] Build gating for hosted projects
-- [ ] Plugin/project model for future projects
+- [x] Project loading contracts (ProjectLoadContract: state, validation, build-readiness)
+- [x] ProjectRegistry — multi-project factory model, load/unload lifecycle
+- [x] Build gating for hosted projects (BuildGateController: rules, blocking errors, status)
+- [x] Plugin/project model for future projects (factory-based ProjectRegistry)
+- [x] 63 Phase 5 tests pass (158 assertions)
+
+**Success Criteria:**
+- ProjectLoadContract captures project identity, load state, validation errors, inventory ✓
+- ProjectRegistry supports factory registration, load/unload, one-active constraint ✓
+- BuildGateController gates builds on contract validity and custom rules ✓
+- Plugin/project model: any project registers a factory; registry is project-agnostic ✓
 
 ---
 
 ## Phase 6 – Build, Patch, and Release Pipeline
 
-**Status: Planned**
+**Status: Done**
 
-- [ ] Stabilize build presets and dependency policy
-- [ ] Finalize patch apply/remove workflow
-- [ ] Improve repo audit tooling
-- [ ] Define packaging and release path
+- [x] Stabilize build presets and dependency policy
+  - [x] Add `ci-release-tests` configure/build/test preset (Release + tests for CI smoke-testing)
+  - [x] Add `DependencyPolicy.h` — dependency tier (Required/Optional/Forbidden), acquisition source (Vendored/FetchContent/vcpkg/System), evaluation with online-dep gating, canonical workspace policy
+- [x] Finalize patch apply/remove workflow
+  - [x] Add `PatchApplier.h` — PatchRecord, PatchState machine, dependency-ordered apply/remove, reset-on-failure, file entry inventory
+- [x] Improve repo audit tooling
+  - [x] Add `RepoAuditReport.h` — programmatic audit result: pass/warn/fail/skip checks, category classification, summary counters, CI-consumable failures list
+- [x] Define packaging and release path
+  - [x] Add `ReleaseManifest.h` — SemanticVersion, ReleaseTarget+ReleaseArtifact, ReleaseManifestValidator with gate callables
+- [x] 74 Phase 6 tests pass (187 assertions)
+
+**Success Criteria:**
+- `ci-release-tests` preset enables release+tests on CI without a separate build step ✓
+- DependencyPolicy classifies and evaluates all workspace deps including ATLAS_ENABLE_ONLINE_DEPS gating ✓
+- PatchApplier enforces ordered apply/remove and dependency constraints ✓
+- RepoAuditReport is a typed programmatic audit consumable by CI and the workspace Diagnostics panel ✓
+- ReleaseManifest + validator gates on stable version, target presence, and custom rules ✓

@@ -206,3 +206,25 @@ target_link_libraries(NF_WorkspaceSubsystemTests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_WorkspaceSubsystemTests)
+
+# Phase 5 — Hosted Project Support tests
+add_executable(NF_Phase5Tests
+    Workspace/test_phase5_hosted_project.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase5Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase5Tests)
+
+# Phase 6 — Build, Patch, and Release Pipeline tests
+add_executable(NF_Phase6Tests
+    Workspace/test_phase6_build_release.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase6Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase6Tests)
