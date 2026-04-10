@@ -349,3 +349,49 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration test exercises all four components in one pipeline ✓
 - 62 test cases pass (200 assertions) ✓
 - Total test suite: 1654 tests passing ✓
+
+---
+
+## Phase 11 – Command Bus and Action System
+
+**Status: Done**
+
+- [x] Create `WorkspaceCommand.h` — typed command descriptor
+  - [x] CommandCategory enum (File/Edit/View/Selection/Tools/Window/Help/Custom) with name helper
+  - [x] CommandState struct (enabled/visible/checked) with equality operators
+  - [x] WorkspaceCommand — id/label/tooltip/shortcut/iconKey/category; state getters/setters; setHandler/setUndoHandler; execute() (gated by enabled+handler); undo(); isReversible(); isValid()
+- [x] Create `CommandRegistry.h` — command store with execution and hooks
+  - [x] ExecuteStatus enum (Success/NotFound/Disabled/NoHandler/HandlerFailed) with name helper
+  - [x] CommandExecuteResult (status/commandId; succeeded()/failed(); factory helpers)
+  - [x] CommandPreHook / CommandPostHook type aliases
+  - [x] CommandRegistry — registerCommand/unregisterCommand/isRegistered/count; findById/findByShortcut/findByCategory/all; setEnabled/setVisible/setChecked; execute() with pre/post hook dispatch; setPreHook/setPostHook/clearHooks; enableAll/disableAll/clear
+  - [x] Hooks do NOT fire for NotFound/Disabled/NoHandler — only on actual dispatch attempt
+- [x] Create `CommandHistory.h` — linear undo/redo with group support
+  - [x] UndoRedoStatus enum (Success/NothingToUndo/NothingToRedo/HandlerFailed); UndoRedoResult with factory helpers
+  - [x] HistoryEntry (commandId/label/undoFn/isGroupEntry)
+  - [x] CommandGroup (name + sub-entries vector)
+  - [x] CommandHistory — push(commandId, label, undoFn); beginGroup/endGroup/discardGroup; undo/redo; canUndo/canRedo/undoDepth/redoDepth/maxDepth; nextUndoLabel/nextRedoLabel; undoLabels(); clearHistory(); setMaxDepth()
+  - [x] endGroup packs sub-entries into a single HistoryEntry whose undoFn undoes all in reverse order
+  - [x] MAX_DEPTH (default 128) enforced; oldest entry trimmed; new push clears redo stack
+- [x] Create `ActionBinding.h` — gesture-to-command bindings
+  - [x] GestureType enum (Keyboard/Toolbar/MenuItem) with name helper
+  - [x] ActionBinding struct (commandId/gestureType/gestureKey; isValid(); equality)
+  - [x] ActionMap — addBinding/addKeyboardBinding/addMenuBinding/addToolbarBinding; removeBindingsForCommand/removeBinding; resolveGesture/resolveKeyboard/resolveMenu/resolveToolbar; bindingsForCommand/bindingsByType/hasBinding/count/empty/all; serialize/deserialize (pipe-delimited text); clear()
+  - [x] Duplicate bindings (same commandId+type+key) rejected
+  - [x] Multiple bindings per command allowed (different type or key)
+- [x] Add `Tests/Workspace/test_phase11_command_bus.cpp` — 81 test cases / 207 assertions:
+  - [x] WorkspaceCommand (13 tests): category name, state equality, validity, setters, default state, execute gating, undo handler
+  - [x] CommandRegistry (20 tests): status names, result factories, empty registry, register/reject/duplicate/unregister, findById/findByShortcut/findByCategory, state mutation, execute outcomes, pre/post hooks, hooks not fired for NotFound, clearHooks, enableAll/disableAll, clear
+  - [x] CommandHistory (18 tests): result factories, empty stack, push/reject, undo/redo, new push clears redo, nextUndo/RedoLabel, undoLabels newest-first, maxDepth trim, clearHistory, setMaxDepth, group beginGroup/endGroup, double-open rejection, empty group, discardGroup, openGroupName/Size, push-to-group defers depth
+  - [x] ActionBinding/ActionMap (18 tests): gestureTypeName, ActionBinding.isValid, empty map, addKeyboard/Menu/Toolbar, duplicate rejection, multiple bindings per command, resolve*, removeBindingsForCommand, removeBinding, bindingsByType, serialize/deserialize round-trip, empty input rejection, clear
+  - [x] Integration (5 tests): register→execute→history→undo, keyboard shortcut→lookup→execute, group undo collapses 3 actions in reverse, hook logging with status, actionMap serialize→deserialize→resolve→execute
+- [x] Wire `NF_Phase11Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- WorkspaceCommand executes/undos via handler closures, gated by enabled flag ✓
+- CommandRegistry dispatches commands and calls pre/post hooks only on actual dispatch ✓
+- CommandHistory linear undo/redo with group transactions and max-depth trimming ✓
+- ActionMap resolves all three gesture types; duplicate rejection; serialize/deserialize lossless ✓
+- Integration tests: keyboard→command, group undo, hook logging, full serialize pipeline ✓
+- 81 test cases pass (207 assertions) ✓
+- Total test suite: 1735 tests passing ✓

@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase 10 Complete — Project Persistence and Serialization**
+Current Phase: **Phase 11 Complete — Command Bus and Action System**
 
 ## Build Status
 
@@ -32,6 +32,7 @@ Current Phase: **Phase 10 Complete — Project Persistence and Serialization**
 | 8 | Runtime Wiring and First Real Tool Loop | ✅ Done |
 | 9 | Asset Pipeline and Content Routing | ✅ Done |
 | 10 | Project Persistence and Serialization | ✅ Done |
+| 11 | Command Bus and Action System | ✅ Done |
 
 ## Active Problems
 
@@ -41,10 +42,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 11: Command Bus and Action System**
+**Phase 12: Event Bus and Workspace Notifications**
 
-Implement the workspace-level command and action infrastructure:
-- WorkspaceCommand — typed command descriptor (id, label, category, shortcut, enabled/visible)
-- CommandRegistry — register/unregister/find/enable commands; execute with pre/post hooks
-- CommandHistory — undo/redo stack with command grouping and partial rollback
-- ActionBinding — bind commands to UI gestures (keyboard shortcut, toolbar button, menu item)
+Implement the workspace-level publish/subscribe event infrastructure:
+- WorkspaceEvent — typed event descriptor (eventType, source, payload string, timestamp token)
+- EventBus — subscribe/unsubscribe/publish; per-type subscriber lists; synchronous dispatch; wildcard subscriptions
+- EventQueue — deferred/async event accumulation with tick-based drain; priority ordering
+- WorkspaceNotification — higher-level notification model (info/warning/error severity) layered on EventBus

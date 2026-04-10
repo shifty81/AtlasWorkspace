@@ -280,3 +280,14 @@ target_link_libraries(NF_Phase10Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase10Tests)
+
+# Phase 11 — Command Bus and Action System tests
+add_executable(NF_Phase11Tests
+    Workspace/test_phase11_command_bus.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase11Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase11Tests)
