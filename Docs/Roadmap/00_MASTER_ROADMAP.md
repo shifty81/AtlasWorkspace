@@ -125,13 +125,20 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 4 – AtlasAI and Codex Integration
 
-**Status: Planned**
+**Status: Done**
 
-- [ ] Complete AtlasAI naming migration
-- [ ] Formalize broker flow
-- [ ] Wire build-log routing into AtlasAI
-- [ ] Define Codex mirroring, validation, deduplication
-- [ ] Define snippet promotion rules
+- [x] Complete AtlasAI naming migration
+- [x] Formalize broker flow (BrokerFlowController: broker→reasoner→action surface→notifications)
+- [x] Wire build-log routing into AtlasAI (BuildLogRouter: log sink→classify→AtlasAI analysis)
+- [x] Define Codex mirroring, validation, deduplication (SnippetPromotionRules: FNV-1a content hashing, validation limits)
+- [x] Define snippet promotion rules (PromotionRule: Manual/AutoOnSave/AutoOnUse/AutoOnReview triggers)
+
+**Success Criteria:**
+- BrokerFlowController wires WorkspaceBroker→AtlasAIReasoner→AIActionSurface→NotificationSystem ✓
+- BuildLogRouter captures build errors/warnings and routes to AtlasAI ✓
+- CodexSnippetMirror has validation (body/title limits, tag limits) and dedup (FNV-1a) ✓
+- Snippet promotion rules with 4 trigger types and configurable criteria ✓
+- 67 Phase 4 tests pass (163 assertions) ✓
 
 ---
 

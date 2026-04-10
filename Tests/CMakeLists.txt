@@ -178,3 +178,17 @@ add_executable(NF_WorkspaceWiringTests
 )
 target_link_libraries(NF_WorkspaceWiringTests PRIVATE NF::Editor NF::UI NF::Core NF::Input Catch2::Catch2)
 catch_discover_tests(NF_WorkspaceWiringTests)
+
+# Phase 4 — AtlasAI and Codex Integration tests
+add_executable(NF_Phase4Tests
+    Workspace/test_phase4_atlasai.cpp
+    catch_main.cpp
+)
+target_include_directories(NF_Phase4Tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src
+)
+target_link_libraries(NF_Phase4Tests PRIVATE
+    NF::Workspace NF::Pipeline NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase4Tests)
