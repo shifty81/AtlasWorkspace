@@ -5,25 +5,22 @@
 // For tool-specific or feature-specific includes, use:
 //   - EditorSharedPanels.h   (shared reusable panels)
 //   - EditorToolRegistry.h   (tool registration and ecosystem)
+//   - CoreToolRoster.h       (registers the ~8 primary tools into a shell)
 //
 // Individual headers can always be included directly for faster compilation.
 
 // ── Core editor infrastructure ──────────────────────────────────
 #include "NF/Editor/EditorApp.h"
 #include "NF/Editor/EditorPanel.h"
-#include "NF/Editor/EditorEventBus.h"
 #include "NF/Editor/EditorTheme.h"
 #include "NF/Editor/DockLayout.h"
-#include "NF/Editor/LayoutPersistence.h"
 #include "NF/Editor/MenuBar.h"
 #include "NF/Editor/CommandPalette.h"
 #include "NF/Editor/ShortcutManager.h"
-#include "NF/Editor/SelectionService.h"
-#include "NF/Editor/UndoRedoSystem.h"
 #include "NF/Editor/EditorSettings.h"
 #include "NF/Editor/EditorCamera.h"
 
-// ── Workspace shell ─────────────────────────────────────────────
+// ── Workspace shell (now in NF::Workspace, forwarded here) ──────
 #include "NF/Editor/WorkspaceShell.h"
 #include "NF/Editor/IHostedTool.h"
 #include "NF/Editor/ToolRegistry.h"
@@ -34,6 +31,10 @@
 #include "NF/Editor/WorkspaceInputBridge.h"
 #include "NF/Editor/WorkspaceShellContract.h"
 #include "NF/Editor/WorkspaceLayout.h"
+#include "NF/Editor/EditorEventBus.h"
+#include "NF/Editor/SelectionService.h"
+#include "NF/Editor/UndoRedoSystem.h"
+#include "NF/Editor/LayoutPersistence.h"
 
 // ── Shared panels (always available) ────────────────────────────
 #include "NF/Editor/EditorSharedPanels.h"
@@ -41,5 +42,5 @@
 // ── Tool ecosystem and registration ─────────────────────────────
 #include "NF/Editor/EditorToolRegistry.h"
 
-// ── Primary hosted tools (Phase 3 consolidation) ─────────────────
-#include "NF/Editor/SceneEditorTool.h"
+// ── Primary tool roster ─────────────────────────────────────────
+#include "NF/Editor/CoreToolRoster.h"
