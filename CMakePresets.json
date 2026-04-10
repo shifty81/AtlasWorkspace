@@ -158,7 +158,7 @@
     {
       "name": "ci-release-tests",
       "displayName": "CI — Release + Tests (Linux/macOS)",
-      "description": "Ninja-based release build with tests enabled (smoke-test release artefacts on CI).",
+      "description": "Ninja-based release build with tests enabled (smoke-test release artifacts on CI).",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/Builds/ci-release-tests",
       "cacheVariables": {
