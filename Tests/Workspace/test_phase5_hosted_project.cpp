@@ -45,6 +45,8 @@ struct FailAdapter final : public NF::IGameProjectAdapter {
     bool  initialize() override { return false; } // always fails
     void  shutdown()   override {}
     std::vector<NF::GameplaySystemPanelDescriptor> panelDescriptors() const override { return {}; }
+    std::vector<std::string> contentRoots()   const override { return {}; }
+    std::vector<std::string> customCommands() const override { return {}; }
 };
 
 struct NoRootsAdapter final : public NF::IGameProjectAdapter {
@@ -544,8 +546,7 @@ TEST_CASE("BuildGateController: rule receives contract data", "[BuildGateControl
     NF::ProjectLoadContract c;
     c.state     = NF::ProjectLoadState::Ready;
     c.projectId = "checked_project";
-    auto ignored = gate.evaluate(c);
-    (void)ignored;
+    static_cast<void>(gate.evaluate(c));
     CHECK(capturedProjectId == "checked_project");
 }
 

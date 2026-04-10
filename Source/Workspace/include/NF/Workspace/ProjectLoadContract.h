@@ -44,7 +44,7 @@ inline const char* projectLoadStateName(ProjectLoadState s) {
 
 enum class ProjectValidationSeverity : uint8_t {
     Info,     // informational — does not block anything
-    Warning,  // advisory — does not block load but may block build
+    Warning,  // advisory — does NOT block loads or builds
     Error,    // blocks build
     Fatal,    // blocks load
 };
@@ -60,6 +60,10 @@ inline const char* validationSeverityName(ProjectValidationSeverity s) {
 }
 
 // ── Validation entry ──────────────────────────────────────────────────────
+//
+// Warning — advisory only; does NOT block loads or builds.
+// Error   — blocks builds (but not loads).
+// Fatal   — blocks loads.
 
 struct ProjectValidationEntry {
     ProjectValidationSeverity severity = ProjectValidationSeverity::Info;

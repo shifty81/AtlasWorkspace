@@ -127,13 +127,13 @@ public:
 
         // Gate: custom rules
         bool allRulesPassed = true;
-        for (const auto& [ruleId, rule] : m_rules) {
+        for (const auto& [entryRuleId, rule] : m_rules) {
             auto rr = rule(contract);
-            rr.ruleId = ruleId;
+            rr.ruleId = entryRuleId;
             if (!rr.passed) {
                 allRulesPassed = false;
                 result.blockingErrors.push_back(
-                    "[Rule:" + ruleId + "] " + rr.reason);
+                    "[Rule:" + entryRuleId + "] " + rr.reason);
             }
             result.ruleResults.push_back(std::move(rr));
         }
