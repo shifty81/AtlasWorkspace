@@ -190,10 +190,14 @@ TEST_CASE("SelectionService: selectExclusive replaces selection", "[SelectionSer
 
 TEST_CASE("SelectionService: toggleSelect", "[SelectionService]") {
     SelectionService svc;
+    uint32_t v = svc.version();
     svc.toggleSelect(5u);
     CHECK(svc.isSelected(5u));
+    CHECK(svc.version() == v + 1);
+    v = svc.version();
     svc.toggleSelect(5u);
     CHECK_FALSE(svc.isSelected(5u));
+    CHECK(svc.version() == v + 1);
 }
 
 TEST_CASE("SelectionService: clearSelection", "[SelectionService]") {
