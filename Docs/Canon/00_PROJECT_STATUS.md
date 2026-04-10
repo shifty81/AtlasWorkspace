@@ -1,11 +1,11 @@
 # Project Status
 
-Current Phase: **Phase 12 Complete — Event Bus and Workspace Notifications**
+Current Phase: **Phase 13 Complete — Workspace Preferences and Configuration**
 
 ## Build Status
 
 - **Passing**
-- All 21 test suites build and pass
+- All 22 test suites build and pass
 - Tests require online fetch of Catch2 (gated behind `ATLAS_ENABLE_ONLINE_DEPS`)
 
 ## Repo Condition
@@ -35,6 +35,7 @@ Current Phase: **Phase 12 Complete — Event Bus and Workspace Notifications**
 | 10 | Project Persistence and Serialization | ✅ Done |
 | 11 | Command Bus and Action System | ✅ Done |
 | 12 | Event Bus and Workspace Notifications | ✅ Done |
+| 13 | Workspace Preferences and Configuration | ✅ Done |
 
 ## Active Problems
 
@@ -44,10 +45,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 13: Workspace Preferences and Configuration**
+**Phase 14: Workspace Plugin System**
 
-Implement the workspace-level preferences system:
-- PreferenceCategory — typed grouping (General/Appearance/Keybindings/Editor/Build/AI/Plugin)
-- PreferenceEntry — typed entry (string/bool/int/float) with default, min/max, description
-- PreferenceStore — load/save/reset preferences with observer notifications via EventBus
-- PreferenceSerializer — serialize/deserialize preferences to/from WorkspaceProjectFile sections
+Implement the workspace plugin infrastructure:
+- PluginDescriptor — plugin identity, version, dependencies, capabilities
+- PluginLifecycle — load/activate/deactivate/unload state machine
+- PluginRegistry — register/discover/manage plugins with dependency resolution
+- PluginSandbox — capability-based permission model for plugin isolation

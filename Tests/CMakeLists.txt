@@ -302,3 +302,14 @@ target_link_libraries(NF_Phase12Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase12Tests)
+
+# Phase 13 — Workspace Preferences and Configuration tests
+add_executable(NF_Phase13Tests
+    Workspace/test_phase13_preferences.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase13Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase13Tests)

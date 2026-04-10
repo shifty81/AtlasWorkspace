@@ -430,3 +430,36 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify the full pipeline: bus + queue + notifications ✓
 - 50 test cases pass (168 assertions) ✓
 - Total test suite: 1785 tests passing ✓
+
+---
+
+## Phase 13 – Workspace Preferences and Configuration
+
+**Status: Done**
+
+- [x] Create `WorkspacePreferences.h` — workspace preference infrastructure
+  - [x] PreferenceCategory enum (General/Appearance/Keybindings/Editor/Build/AI/Plugin/Custom) with name helper
+  - [x] PreferenceType enum (String/Bool/Int/Float) with name helper
+  - [x] PreferenceEntry — key/displayName/description/defaultValue/category/type/min/max/hasRange/readOnly; isValid(); validate(); static factories (makeString/makeBool/makeInt/makeFloat)
+  - [x] PreferenceRegistry — registerEntry/unregisterEntry/find/isRegistered/findByCategory/countByCategory/validate; populateDefaults(); loadWorkspaceDefaults(); MAX_ENTRIES=512
+  - [x] PreferenceController — coordinated access binding Registry+SettingsStore+EventBus; set(with validation)/get/getOr/getBool/getInt/getFloat; resetToDefault/resetAll; initialize(); fires System events on change
+  - [x] PreferenceSerializeResult — succeeded/entryCount/errorMessage; ok()/fail() factories
+  - [x] PreferenceSerializer — serializeRegistry/deserializeRegistry to WorkspaceProjectFile "Preferences.Registry" section; roundTrip() helper
+- [x] Add `Tests/Workspace/test_phase13_preferences.cpp` — 42 test cases / 157 assertions:
+  - [x] PreferenceCategory/PreferenceType (2 tests): enum name strings
+  - [x] PreferenceEntry (10 tests): default invalid, makeString/makeBool/makeInt/makeFloat, validate Bool/Int/Float/String, empty always valid
+  - [x] PreferenceRegistry (10 tests): empty state, register+find, duplicate rejection, invalid rejection, unregister, findByCategory, countByCategory, validate delegation, populateDefaults, loadWorkspaceDefaults, clear
+  - [x] PreferenceController (10 tests): set+get, reject unregistered, reject readOnly, validate before set, typed getters, resetToDefault, resetAll, EventBus on set, EventBus on reset, getOr fallback
+  - [x] PreferenceSerializer (7 tests): result factories, serialize writes section, deserialize reads entries, missing section fails, roundTrip preserves entries, roundTrip preserves readOnly
+  - [x] Integration (3 tests): full lifecycle, serialization round-trip, preferences + event bus + notification bus
+- [x] Wire `NF_Phase13Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- PreferenceEntry validates typed values with optional range constraints ✓
+- PreferenceRegistry provides centralized preference registration with category organization ✓
+- PreferenceController coordinates validated access with EventBus change notifications ✓
+- PreferenceSerializer round-trips registry through WorkspaceProjectFile losslessly ✓
+- 13 workspace-default preferences auto-registered by loadWorkspaceDefaults ✓
+- Integration tests: lifecycle, serialization, and multi-system pipeline ✓
+- 42 test cases pass (157 assertions) ✓
+- Total test suite: 1827 tests passing ✓
