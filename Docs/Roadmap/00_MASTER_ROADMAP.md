@@ -144,12 +144,19 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 5 – Hosted Project Support
 
-**Status: Planned**
+**Status: Done**
 
-- [ ] NovaForge as hosted project with full adapter
-- [ ] Project loading contracts
-- [ ] Build gating for hosted projects
-- [ ] Plugin/project model for future projects
+- [x] Project loading contracts (ProjectLoadContract: state, validation, build-readiness)
+- [x] ProjectRegistry — multi-project factory model, load/unload lifecycle
+- [x] Build gating for hosted projects (BuildGateController: rules, blocking errors, status)
+- [x] Plugin/project model for future projects (factory-based ProjectRegistry)
+- [x] 63 Phase 5 tests pass (158 assertions)
+
+**Success Criteria:**
+- ProjectLoadContract captures project identity, load state, validation errors, inventory ✓
+- ProjectRegistry supports factory registration, load/unload, one-active constraint ✓
+- BuildGateController gates builds on contract validity and custom rules ✓
+- Plugin/project model: any project registers a factory; registry is project-agnostic ✓
 
 ---
 
