@@ -1,14 +1,15 @@
 // Tests/Editor/test_workspace_bootstrap.cpp
 // Phase 3 bootstrap integration tests: verify that WorkspaceShell::initialize()
-// automatically registers and initializes the full primary tool roster.
+// registers and initializes the full primary tool roster when wired through
+// CoreToolRoster.
 //
 // These tests are the integration gate for Phase 3 "Wire all primary tools into
 // WorkspaceShell at bootstrap" (see Docs/Roadmap/00_MASTER_ROADMAP.md).
 
 #include <catch2/catch_test_macros.hpp>
-#include "NF/Editor/WorkspaceShell.h"
+#include "NF/Editor/CoreToolRoster.h"
 
-// All tool headers are transitively included via WorkspaceShell.h
+// CoreToolRoster.h includes WorkspaceShell.h and all 8 primary tool headers.
 
 using namespace NF;
 
@@ -20,12 +21,15 @@ static bool hasToolId(const WorkspaceShell& shell, const char* id) {
     return shell.toolRegistry().isRegistered(std::string(id));
 }
 
+
+
 // ─────────────────────────────────────────────────────────────────
 // Full roster presence
 // ─────────────────────────────────────────────────────────────────
 
 TEST_CASE("Bootstrap: WorkspaceShell registers 8 core tools on initialize", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     REQUIRE(shell.initialize());
     CHECK(shell.toolRegistry().count() == 8);
     shell.shutdown();
@@ -33,6 +37,7 @@ TEST_CASE("Bootstrap: WorkspaceShell registers 8 core tools on initialize", "[bo
 
 TEST_CASE("Bootstrap: SceneEditorTool is registered at bootstrap", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     CHECK(hasToolId(shell, SceneEditorTool::kToolId));
     shell.shutdown();
@@ -40,6 +45,7 @@ TEST_CASE("Bootstrap: SceneEditorTool is registered at bootstrap", "[bootstrap][
 
 TEST_CASE("Bootstrap: AssetEditorTool is registered at bootstrap", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     CHECK(hasToolId(shell, AssetEditorTool::kToolId));
     shell.shutdown();
@@ -47,6 +53,7 @@ TEST_CASE("Bootstrap: AssetEditorTool is registered at bootstrap", "[bootstrap][
 
 TEST_CASE("Bootstrap: MaterialEditorTool is registered at bootstrap", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     CHECK(hasToolId(shell, MaterialEditorTool::kToolId));
     shell.shutdown();
@@ -54,6 +61,7 @@ TEST_CASE("Bootstrap: MaterialEditorTool is registered at bootstrap", "[bootstra
 
 TEST_CASE("Bootstrap: AnimationEditorTool is registered at bootstrap", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     CHECK(hasToolId(shell, AnimationEditorTool::kToolId));
     shell.shutdown();
@@ -61,6 +69,7 @@ TEST_CASE("Bootstrap: AnimationEditorTool is registered at bootstrap", "[bootstr
 
 TEST_CASE("Bootstrap: DataEditorTool is registered at bootstrap", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     CHECK(hasToolId(shell, DataEditorTool::kToolId));
     shell.shutdown();
@@ -68,6 +77,7 @@ TEST_CASE("Bootstrap: DataEditorTool is registered at bootstrap", "[bootstrap][p
 
 TEST_CASE("Bootstrap: VisualLogicEditorTool is registered at bootstrap", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     CHECK(hasToolId(shell, VisualLogicEditorTool::kToolId));
     shell.shutdown();
@@ -75,6 +85,7 @@ TEST_CASE("Bootstrap: VisualLogicEditorTool is registered at bootstrap", "[boots
 
 TEST_CASE("Bootstrap: BuildTool is registered at bootstrap", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     CHECK(hasToolId(shell, BuildTool::kToolId));
     shell.shutdown();
@@ -82,6 +93,7 @@ TEST_CASE("Bootstrap: BuildTool is registered at bootstrap", "[bootstrap][phase3
 
 TEST_CASE("Bootstrap: AtlasAITool is registered at bootstrap", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     CHECK(hasToolId(shell, AtlasAITool::kToolId));
     shell.shutdown();
@@ -93,6 +105,7 @@ TEST_CASE("Bootstrap: AtlasAITool is registered at bootstrap", "[bootstrap][phas
 
 TEST_CASE("Bootstrap: all core tools are in Ready state after initialize", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
 
     auto check = [&](const char* id) {
@@ -119,6 +132,7 @@ TEST_CASE("Bootstrap: all core tools are in Ready state after initialize", "[boo
 
 TEST_CASE("Bootstrap: all core tools are Unloaded after shutdown", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     shell.shutdown();
 
@@ -145,6 +159,7 @@ TEST_CASE("Bootstrap: all core tools are Unloaded after shutdown", "[bootstrap][
 
 TEST_CASE("Bootstrap: all 8 core tools are marked primary", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
     auto primaries = shell.toolRegistry().primaryTools();
     CHECK(primaries.size() == 8);
@@ -159,6 +174,7 @@ TEST_CASE("Bootstrap: all 8 core tools are marked primary", "[bootstrap][phase3]
 
 TEST_CASE("Bootstrap: each primary category has at least one tool", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
 
     auto has = [&](HostedToolCategory cat) {
@@ -183,6 +199,7 @@ TEST_CASE("Bootstrap: each primary category has at least one tool", "[bootstrap]
 
 TEST_CASE("Bootstrap: no duplicate tool IDs in bootstrap roster", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
 
     auto descriptors = shell.toolRegistry().allDescriptors();
@@ -203,6 +220,7 @@ TEST_CASE("Bootstrap: no duplicate tool IDs in bootstrap roster", "[bootstrap][p
 
 TEST_CASE("Bootstrap: double initialize does not add extra tools", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     REQUIRE(shell.initialize());
     REQUIRE_FALSE(shell.initialize()); // second call rejected
     CHECK(shell.toolRegistry().count() == 8);
@@ -215,6 +233,7 @@ TEST_CASE("Bootstrap: double initialize does not add extra tools", "[bootstrap][
 
 TEST_CASE("Bootstrap: project events propagate to all bootstrapped tools", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
 
     // This must not crash and should reach all 8 tools.
@@ -230,6 +249,7 @@ TEST_CASE("Bootstrap: project events propagate to all bootstrapped tools", "[boo
 
 TEST_CASE("Bootstrap: SceneEditorTool can be activated through shell", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
 
     CHECK(shell.toolRegistry().activateTool(std::string(SceneEditorTool::kToolId)));
@@ -243,6 +263,7 @@ TEST_CASE("Bootstrap: SceneEditorTool can be activated through shell", "[bootstr
 
 TEST_CASE("Bootstrap: switching active tool suspends the previous one", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
 
     shell.toolRegistry().activateTool(std::string(SceneEditorTool::kToolId));
@@ -265,6 +286,7 @@ TEST_CASE("Bootstrap: switching active tool suspends the previous one", "[bootst
 
 TEST_CASE("Bootstrap: update dispatches to active core tool", "[bootstrap][phase3]") {
     WorkspaceShell shell;
+    registerCoreTools(shell);
     shell.initialize();
 
     shell.toolRegistry().activateTool(std::string(SceneEditorTool::kToolId));

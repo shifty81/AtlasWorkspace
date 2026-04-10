@@ -66,6 +66,7 @@ add_subdirectory(Source/UI)
 add_subdirectory(Source/GraphVM)
 add_subdirectory(Source/AI)
 add_subdirectory(Source/Pipeline)
+add_subdirectory(Source/Workspace)
 add_subdirectory(Source/Editor)
 
 if(ATLAS_BUILD_WORKSPACE)
