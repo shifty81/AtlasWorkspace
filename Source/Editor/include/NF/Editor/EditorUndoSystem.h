@@ -13,9 +13,9 @@
 #include <map>
 #include <deque>
 #include <unordered_map>
-#include "NF/Editor/EntityPlacement.h"
-#include "NF/Editor/VoxelPaint.h"
-#include "NF/Editor/PCGTuning.h"
+#include "NF/Editor/Scene/EntityPlacement.h"
+#include "NF/Editor/Scene/VoxelPaint.h"
+#include "NF/Editor/Legacy/PCGTuning.h"
 
 namespace NF {
 

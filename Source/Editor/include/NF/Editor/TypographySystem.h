@@ -2,7 +2,7 @@
 // NF::Editor — Typography system: font families, weights, scales, and line height rules
 #include "NF/Core/Core.h"
 #include "NF/UI/UI.h"
-#include "NF/Editor/FontEditor.h"
+#include "NF/Editor/Asset/FontEditor.h"
 #include <cstdint>
 #include <string>
 #include <vector>
