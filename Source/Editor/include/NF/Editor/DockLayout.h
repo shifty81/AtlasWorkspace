@@ -99,6 +99,7 @@ public:
 
     static constexpr int   kDockSlotCount  = 5;
     static constexpr float kTabBarHeight   = 22.f;
+    static constexpr float kMinPanelSize   = 50.f;
 
     // ── Splitter resizing ────────────────────────────────────────
     void beginResize(DockSlot slot, float mousePos) {
