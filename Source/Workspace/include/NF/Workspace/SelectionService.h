@@ -1,21 +1,12 @@
 #pragma once
-// NF::Editor — Selection service
+// NF::Workspace — Selection service and dock layout primitives
 #include "NF/Core/Core.h"
 #include "NF/Engine/Engine.h"
-#include "NF/Renderer/Renderer.h"
-#include "NF/UI/UI.h"
-#include "NF/GraphVM/GraphVM.h"
-#include "NF/Input/Input.h"
-#include "NF/UI/UIWidgets.h"
-#include <filesystem>
-#include <fstream>
+#include <cstdint>
 #include <set>
-#include <map>
-#include <deque>
-#include <unordered_map>
+#include <string>
 
 namespace NF {
-
 
 // ── Dock layout ──────────────────────────────────────────────────
 

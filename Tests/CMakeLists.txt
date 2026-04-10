@@ -192,3 +192,17 @@ target_link_libraries(NF_Phase4Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase4Tests)
+
+# Phase 2 — Workspace shell subsystem tests
+add_executable(NF_WorkspaceSubsystemTests
+    Workspace/test_workspace_shell_subsystems.cpp
+    catch_main.cpp
+)
+target_include_directories(NF_WorkspaceSubsystemTests PRIVATE
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src
+)
+target_link_libraries(NF_WorkspaceSubsystemTests PRIVATE
+    NF::Workspace NF::Editor NF::Engine NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_WorkspaceSubsystemTests)

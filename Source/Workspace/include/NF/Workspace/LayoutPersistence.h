@@ -28,7 +28,7 @@ public:
         return out.str();
     }
 
-    static bool deserialize(const std::string& data, WorkspaceLayout& outLayout) {
+    static bool deserialize(const std::string& data, WorkspaceLayout& /*outLayout*/) {
         if (data.empty()) return false;
         std::istringstream in(data);
         std::string line;

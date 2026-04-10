@@ -137,19 +137,19 @@ struct WidgetContainer {
         return true;
     }
 
-    bool removeWidget(uint32_t id) {
+    bool removeWidget(uint32_t widgetId) {
         for (auto it = widgets.begin(); it != widgets.end(); ++it) {
-            if (it->id == id) { widgets.erase(it); return true; }
+            if (it->id == widgetId) { widgets.erase(it); return true; }
         }
         return false;
     }
 
-    WidgetDescriptor* findWidget(uint32_t id) {
-        for (auto& w : widgets) if (w.id == id) return &w;
+    WidgetDescriptor* findWidget(uint32_t widgetId) {
+        for (auto& w : widgets) if (w.id == widgetId) return &w;
         return nullptr;
     }
-    const WidgetDescriptor* findWidget(uint32_t id) const {
-        for (const auto& w : widgets) if (w.id == id) return &w;
+    const WidgetDescriptor* findWidget(uint32_t widgetId) const {
+        for (const auto& w : widgets) if (w.id == widgetId) return &w;
         return nullptr;
     }
 };
