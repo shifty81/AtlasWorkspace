@@ -147,7 +147,7 @@ public:
         return nullptr;
     }
 
-    ScriptResult execute(const std::string& code, ScriptContext* context = nullptr) {
+    ScriptResult execute(const std::string& code, ScriptContext* /*context*/ = nullptr) {
         ScriptResult result;
         if (!m_initialized) {
             result.exitCode    = -1;

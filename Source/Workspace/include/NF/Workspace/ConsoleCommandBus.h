@@ -1,18 +1,9 @@
 #pragma once
-// NF::Editor — Console command bus and command palette backend
-#include "NF/Core/Core.h"
-#include "NF/Engine/Engine.h"
-#include "NF/Renderer/Renderer.h"
-#include "NF/UI/UI.h"
-#include "NF/GraphVM/GraphVM.h"
-#include "NF/Input/Input.h"
-#include "NF/UI/UIWidgets.h"
-#include <filesystem>
-#include <fstream>
-#include <set>
-#include <map>
-#include <deque>
-#include <unordered_map>
+// NF::Workspace — Console command bus and command palette backend
+#include <cstdint>
+#include <functional>
+#include <string>
+#include <vector>
 
 namespace NF {
 

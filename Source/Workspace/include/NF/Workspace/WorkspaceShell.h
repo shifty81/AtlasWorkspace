@@ -26,6 +26,9 @@
 #include "NF/Workspace/WorkspaceShellContract.h"
 #include "NF/Workspace/IGameProjectAdapter.h"
 #include "NF/Workspace/ProjectSystemsTool.h"
+#include "NF/Workspace/ConsoleCommandBus.h"
+#include "NF/Workspace/SelectionService.h"
+#include "NF/Workspace/EditorEventBus.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -172,6 +175,15 @@ public:
     [[nodiscard]] LayoutManagerV1&           layoutManager()       { return m_layoutManager;   }
     [[nodiscard]] const LayoutManagerV1&     layoutManager() const { return m_layoutManager;   }
 
+    [[nodiscard]] ConsoleCommandBus&         commandBus()          { return m_commandBus;       }
+    [[nodiscard]] const ConsoleCommandBus&   commandBus()    const { return m_commandBus;       }
+
+    [[nodiscard]] SelectionService&          selectionService()          { return m_selectionService; }
+    [[nodiscard]] const SelectionService&    selectionService()    const { return m_selectionService; }
+
+    [[nodiscard]] EditorEventBus&            eventBus()            { return m_eventBus;         }
+    [[nodiscard]] const EditorEventBus&      eventBus()      const { return m_eventBus;         }
+
     [[nodiscard]] ShellPhase phase() const { return m_phase; }
 
 private:
@@ -217,6 +229,9 @@ private:
     WorkspaceShellContract    m_shellContract;
     ProjectSystemsTool        m_projectSystemsTool;
     LayoutManagerV1           m_layoutManager;
+    ConsoleCommandBus         m_commandBus;
+    SelectionService          m_selectionService;
+    EditorEventBus            m_eventBus;
 
     std::vector<ToolFactory>  m_toolFactories;   // pending factories (before init)
     std::unique_ptr<IGameProjectAdapter> m_projectAdapter;
