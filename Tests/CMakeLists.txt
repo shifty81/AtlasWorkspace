@@ -236,3 +236,14 @@ target_link_libraries(NF_Phase6Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase6Tests)
+
+# Phase 7 — Workspace Integration Surfaces tests
+add_executable(NF_Phase7Tests
+    Workspace/test_phase7_workspace_integration.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase7Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase7Tests)

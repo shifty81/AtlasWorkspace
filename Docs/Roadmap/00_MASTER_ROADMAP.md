@@ -186,3 +186,37 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - PatchApplier enforces ordered apply/remove and dependency constraints ✓
 - RepoAuditReport is a typed programmatic audit consumable by CI and the workspace Diagnostics panel ✓
 - ReleaseManifest + validator gates on stable version, target presence, and custom rules ✓
+
+---
+
+## Phase 7 – Workspace Integration Surfaces
+
+**Status: Done**
+
+- [x] Create `ViewportHostContract.h` — formal contract for 3D viewport surface hosting
+  - [x] ViewportHandle, ViewportBounds, ViewportState, ViewportRenderMode enums
+  - [x] ViewportCameraDescriptor, ViewportGridDescriptor
+  - [x] ViewportSlot — live slot owned by tool with activate/pause/resume lifecycle
+  - [x] ViewportHostRegistry — slot allocator (requestSlot/releaseSlot/activate/pause/setCamera/setRenderMode)
+- [x] Create `TypographySystem.h` — workspace-wide typography enforcement
+  - [x] FontWeight, TextRole (13 semantic roles: Heading1-3, Body/BodySmall, Label/LabelSmall, Caption, Code/CodeSmall, Data, Icon, Badge)
+  - [x] TypefaceDescriptor — (family, size, weight, italic, lineHeight, letterSpacing)
+  - [x] TypographyRegistry — role→descriptor map with loadDefaults/setRole/applyScale/validate
+  - [x] TypographyEnforcer — validates registry: size minimums, heading hierarchy, monospace code roles
+  - [x] TypographyEnforcementReport — typed violation list
+- [x] Add `Tests/Workspace/test_phase7_workspace_integration.cpp` — 79 test cases / 269 assertions covering:
+  - [x] FileIntakePipeline (8 tests) — enums, type detection, ingest, handler reject, batch, findById, clearPending
+  - [x] DropTargetHandler (7 tests) — state names, drag enter/over/leave/drop, pipeline binding, reject unknown
+  - [x] NotificationWorkflow (12 tests) — action names, WorkflowRule matches, RateLimiter throttle/reset, PriorityQueue ordering, WorkflowEngine defaults/rules/suppress
+  - [x] DockTreeSerializer (8 tests) — addNode, duplicates, removeNode, kind names, TabStack roundtrip, Split roundtrip, empty fails
+  - [x] PanelStateSerializer (5 tests) — set/get types, roundtrip, invalid skip, empty fails
+  - [x] LayoutPersistence (10 tests) — LayoutPreset validity/modified, save/find/overwrite/load/remove/built-in/rename/autoSave
+  - [x] ViewportHostContract (14 tests) — bounds, contains, state/mode names, camera validity, request/activate/pause/release/setRenderMode/setCamera/frameCount/updateBounds
+  - [x] TypographySystem (15 tests) — role/weight names, descriptor validity, lineHeight, loadDefaults, getRole, setRole, applyScale, enforce pass/fail cases
+- [x] Wire `NF_Phase7Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ViewportHostContract formally defines the 3D viewport hosting contract ✓
+- TypographySystem defines all 13 text roles with enforcement rules ✓
+- All previously untested workspace integration surfaces now have test coverage ✓
+- 79 test cases pass (269 assertions) ✓

@@ -51,7 +51,8 @@ The backend contract should separate:
 ## Current State
 
 - GDI backend: **implemented**, used in active workspace path
-- OpenGL backend: **implemented**, stubbed in some areas
-- D3D11 backend: **planned**, not yet implemented
-- DirectWrite backend: **planned**, not yet implemented
-- Backend selector: **planned**, not yet implemented
+- OpenGL backend: **implemented**, isolated in `Compat/` subdirectory
+- D3D11 backend: **architecturally complete stub** — HLSL shaders, COM handle structure, IFrameBackend+IGeometryBackend+ITextureBackend (see `D3D11Backend.h`)
+- DirectWrite backend: **architecturally complete stub** — IDWriteFactory hierarchy, glyph atlas strategy, ITextRenderBackend with FontKey cache (see `DirectWriteTextBackend.h`)
+- Backend selector: **implemented** — UIBackendSelector.h with priority chain (D3D11→GDI→Null) and BackendCapabilities query
+- Backend interface split: **done** — IUIBackendInterfaces.h formalizes IFrameBackend, IGeometryBackend, ITextRenderBackend, ITextureBackend
