@@ -324,3 +324,47 @@ target_link_libraries(NF_Phase14Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase14Tests)
+
+# Phase 15 — Workspace Diagnostics and Telemetry tests
+add_executable(NF_Phase15Tests
+    Workspace/test_phase15_diagnostics.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase15Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase15Tests)
+
+# Phase 16 — Workspace Scripting and Automation tests
+add_executable(NF_Phase16Tests
+    Workspace/test_phase16_scripting.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase16Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase16Tests)
+
+# Phase 17 — Workspace Search and Indexing tests
+add_executable(NF_Phase17Tests
+    Workspace/test_phase17_search.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase17Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase17Tests)
+
+# Phase 18 — Workspace Undo/Redo Stack tests
+add_executable(NF_Phase18Tests
+    Workspace/test_phase18_undo_redo.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase18Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase18Tests)

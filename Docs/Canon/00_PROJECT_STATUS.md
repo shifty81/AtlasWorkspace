@@ -1,11 +1,11 @@
 # Project Status
 
-Current Phase: **Phase 14 Complete — Workspace Plugin System**
+Current Phase: **Phase 18 Complete — Workspace Undo/Redo Stack**
 
 ## Build Status
 
 - **Passing**
-- All 23 test suites build and pass
+- All 24 test suites build and pass
 - Tests require online fetch of Catch2 (gated behind `ATLAS_ENABLE_ONLINE_DEPS`)
 
 ## Repo Condition
@@ -37,6 +37,10 @@ Current Phase: **Phase 14 Complete — Workspace Plugin System**
 | 12 | Event Bus and Workspace Notifications | ✅ Done |
 | 13 | Workspace Preferences and Configuration | ✅ Done |
 | 14 | Workspace Plugin System | ✅ Done |
+| 15 | Workspace Diagnostics and Telemetry | ✅ Done |
+| 16 | Workspace Scripting and Automation | ✅ Done |
+| 17 | Workspace Search and Indexing | ✅ Done |
+| 18 | Workspace Undo/Redo Stack | ✅ Done |
 
 ## Active Problems
 
@@ -46,10 +50,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 15: Workspace Diagnostics and Telemetry**
+**Phase 19: Workspace Clipboard and Data Transfer**
 
-Implement workspace-level diagnostics and telemetry infrastructure:
-- DiagnosticEntry — structured diagnostic record (category, severity, source, message, timestamp)
-- DiagnosticCollector — collect and query diagnostics with category/severity filtering
-- TelemetryEvent — typed telemetry event (feature usage, performance, errors)
-- TelemetryCollector — accumulate telemetry events with session-scoped lifecycle
+Implement workspace-level clipboard with typed data transfer:
+- ClipboardDataType — data type classification
+- ClipboardEntry — typed data payload with source tracking
+- ClipboardStack — multi-entry clipboard with history
+- ClipboardManager — workspace-scoped clipboard with observers

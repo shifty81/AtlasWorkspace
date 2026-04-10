@@ -497,3 +497,141 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify full plugin pipeline with sandbox and handlers ✓
 - 42 test cases pass (127 assertions) ✓
 - Total test suite: 1869 tests passing ✓
+
+---
+
+## Phase 15 – Workspace Diagnostics and Telemetry
+
+**Status: Done**
+
+- [x] Create `WorkspaceDiagnostics.h` — workspace diagnostics and telemetry infrastructure
+  - [x] DiagnosticSeverity enum (Info/Warning/Error/Fatal) with name helper
+  - [x] DiagnosticCategory enum (Build/Asset/Plugin/Project/Tool/Render/Performance/IO/Network/System/Custom) with name helper
+  - [x] DiagnosticEntry — structured diagnostic record (id/category/severity/source/message/detail/timestampMs/acknowledged); isValid/isError; equality
+  - [x] DiagnosticCollector — submit/submitInfo/submitWarning/submitError; query (findById/findByCategory/findBySeverity/findBySource); countBySeverity/countByCategory/errorCount/unacknowledgedCount/hasErrors; acknowledge/acknowledgeAll; observer callbacks; clear; MAX_ENTRIES=4096
+  - [x] TelemetryEventType enum (FeatureUsage/Performance/Error/Navigation/Session/Command/Asset/Plugin/Custom) with name helper
+  - [x] TelemetryEvent — name/type/source/timestampMs/durationMs; Property bag (setProperty/getProperty/hasProperty, MAX_PROPERTIES=32); isValid
+  - [x] TelemetryCollector — session lifecycle (beginSession/endSession/isActive); record/recordFeature/recordPerformance/recordError; query (findByType/findBySource/findByName/countByType); observer callbacks; clear; MAX_EVENTS=8192
+  - [x] DiagnosticSnapshot — point-in-time capture of DiagnosticCollector state (total/info/warning/error/fatal/unacknowledged counts)
+  - [x] TelemetrySnapshot — point-in-time capture of TelemetryCollector state (session/active/total/feature/perf/error counts)
+- [x] Add `Tests/Workspace/test_phase15_diagnostics.cpp` — 52 test cases / 200 assertions:
+  - [x] Enum name strings (3 tests): severity, category, telemetry event type
+  - [x] DiagnosticEntry (5 tests): default invalid, valid construction, isError for Error/Fatal, equality, validation rules
+  - [x] DiagnosticCollector (16 tests): empty state, submit/count, reject invalid, findById, findByCategory, findBySeverity, findBySource, countBySeverity/countByCategory, hasErrors/errorCount, acknowledge, acknowledgeAll, observer, clearObservers, clear, all
+  - [x] TelemetryEvent (5 tests): default invalid, valid construction, property bag, property overwrite, reject empty key, properties()
+  - [x] TelemetryCollector (15 tests): inactive state, beginSession/endSession, reject inactive, reject invalid, record/count, findByType, findBySource, findByName, countByType, observer, clearObservers, clear, all, session restart, performance duration
+  - [x] DiagnosticSnapshot (2 tests): capture with entries, empty collector
+  - [x] TelemetrySnapshot (2 tests): capture with events, inactive collector
+  - [x] Integration (4 tests): diagnostic→telemetry wiring, snapshot accuracy, full lifecycle with acknowledge, session restart
+- [x] Wire `NF_Phase15Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- DiagnosticEntry provides structured diagnostic records with severity/category classification ✓
+- DiagnosticCollector accumulates and queries diagnostics with filtering and acknowledgment ✓
+- TelemetryEvent supports property bags and typed event classification ✓
+- TelemetryCollector provides session-scoped telemetry accumulation ✓
+- Snapshot types capture point-in-time state for UI display ✓
+- Integration tests verify diagnostic→telemetry wiring and lifecycle ✓
+- 52 test cases pass (200 assertions) ✓
+- Total test suite: 1921 tests passing ✓
+
+---
+
+## Phase 16 – Workspace Scripting and Automation
+
+**Status: Done**
+
+- [x] Create `WorkspaceScripting.h` — workspace scripting and automation infrastructure
+  - [x] ScriptParamType enum (Void/Bool/Int/Float/String/Path/Id/Custom) with name helper
+  - [x] ScriptParam — typed parameter descriptor (name/type/defaultValue/required); isValid; equality
+  - [x] ScriptBinding — typed function binding: name/description/params/handler/returnType; addParam/findParam/requiredParamCount; invoke; isValid
+  - [x] ScriptContext — execution environment: variable scope (set/get/getOr/has/remove/clear, MAX_VARIABLES=512); output capture (append/clear); error state (set/has/clear); full reset
+  - [x] ScriptExecStatus enum (Success/NotFound/InvalidArgs/HandlerFailed/BindingInvalid) with name helper
+  - [x] ScriptExecResult — status/bindingId/errorMessage; succeeded/failed; ok/fail factories
+  - [x] ScriptEngine — registerBinding/unregisterBinding/isRegistered/findBinding/allBindings; execute with arg validation and handler dispatch; totalExecutions/successfulExecutions; clear; MAX_BINDINGS=1024
+  - [x] AutomationStepStatus enum (Pending/Running/Succeeded/Failed/Skipped) with name helper
+  - [x] AutomationStep — named step with handler, status tracking, reset
+  - [x] AutomationTaskState enum (Idle/Running/Completed/Failed/Aborted) with name helper
+  - [x] AutomationTask — named sequence: addStep/removeStep/enableStep/findStep; run with abort-on-failure; step counters (run/succeeded/failed/skipped); reset; MAX_STEPS=256
+- [x] Add `Tests/Workspace/test_phase16_scripting.cpp` — 62 test cases / 194 assertions:
+  - [x] Enum name strings (4 tests): paramType, execStatus, stepStatus, taskState
+  - [x] ScriptParam (4 tests): default invalid, valid construction, void invalid, equality
+  - [x] ScriptBinding (9 tests): default invalid, valid with handler, addParam/findParam, duplicate rejection, invalid rejection, invoke, invoke without handler, returnType, params()
+  - [x] ScriptContext (11 tests): empty state, set/get/has, missing key, getOr, overwrite, empty key rejection, remove, clearVariables, output, error state, reset
+  - [x] ScriptExecResult (2 tests): ok/fail factories
+  - [x] ScriptEngine (12 tests): empty, register/find, duplicate rejection, invalid rejection, unregister, execute success, NotFound, HandlerFailed, InvalidArgs, sufficient args, allBindings, clear
+  - [x] AutomationStep (3 tests): default invalid, valid construction, reset
+  - [x] AutomationTask (13 tests): default state, addStep/findStep, duplicate rejection, invalid rejection, removeStep, enableStep, run all succeed, abort on failure, continue on failure, skip disabled, reset, steps(), run empty
+  - [x] Integration (4 tests): engine+context output, automation+engine pipeline, abort on engine failure, context variable persistence
+- [x] Wire `NF_Phase16Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ScriptBinding provides typed function descriptors with parameter validation ✓
+- ScriptContext provides isolated execution environment with variable scope ✓
+- ScriptEngine dispatches bindings with arg validation and error handling ✓
+- AutomationTask executes step sequences with abort-on-failure and step skip support ✓
+- Integration tests verify engine→context→task pipeline end-to-end ✓
+- 62 test cases pass (194 assertions) ✓
+- Total test suite: 1983 tests passing ✓
+
+---
+
+## Phase 17 – Workspace Search and Indexing
+
+**Status: Done**
+
+- [x] Create `WorkspaceSearch.h` — workspace search and indexing infrastructure
+  - [x] SearchScope enum (All/Project/Assets/Tools/Panels/Commands/Settings/Plugins/Scripts/Custom) with name helper
+  - [x] SearchResultType enum (File/Asset/Tool/Panel/Command/Setting/Plugin/Script/Text/Symbol/Custom) with name helper
+  - [x] SearchMatchKind enum (Exact/Prefix/Contains/Fuzzy) with name helper
+  - [x] SearchQuery — typed query: text/scope/caseSensitive/maxResults; type filters (add/has/clear); sourceFilter; equality; isValid
+  - [x] SearchResult — ranked result: id/title/description/source/context/type/matchKind/score/matchStart/matchLen; isValid; sorted by score descending; equality by id+source
+  - [x] SearchIndex — in-memory content index: Entry (id/title/content/description/type); addEntry/removeEntry/updateEntry/findEntry; query with exact/prefix/contains/content matching; case-insensitive by default; type filter; maxResults; sorted results; clear; MAX_ENTRIES=16384
+  - [x] SearchEngine — registerIndex/unregisterIndex/isRegistered/findIndex; cross-index search with scope filter and source filter; maxResults enforcement; totalSearches/totalResults/totalEntries stats; allIndices; clear; MAX_INDICES=64
+- [x] Add `Tests/Workspace/test_phase17_search.cpp` — 51 test cases / 164 assertions:
+  - [x] Enum name strings (3 tests): scope, resultType, matchKind
+  - [x] SearchQuery (7 tests): default invalid, valid construction, case sensitivity, maxResults, type filters with duplicate rejection, source filter, equality
+  - [x] SearchResult (4 tests): default invalid, valid construction, sorting by score, equality by id+source
+  - [x] SearchIndex (17 tests): default state, unnamed invalid, addEntry/findEntry, duplicate rejection, invalid rejection, removeEntry, updateEntry, entries(), exact match, prefix match, title contains, content match, case insensitive, case sensitive, no match, type filter, invalid query, maxResults, sorted results, clear
+  - [x] SearchEngine (12 tests): empty state, register/find, duplicate rejection, invalid rejection, unregister, cross-index search, scope filter, source filter, invalid query, maxResults across indices, totalEntries, allIndices, clear
+  - [x] Integration (4 tests): multi-index ranking, add-after-register, scope-filtered mixed indices, statistics accumulation
+- [x] Wire `NF_Phase17Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- SearchQuery provides typed queries with scope/type/source filters ✓
+- SearchResult ranks matches with Exact>Prefix>Contains>Content scoring ✓
+- SearchIndex provides in-memory content indexing with case-insensitive search ✓
+- SearchEngine dispatches cross-index queries with scope and source filtering ✓
+- Integration tests verify multi-index ranking and scoped search pipelines ✓
+- 51 test cases pass (164 assertions) ✓
+- Total test suite: 2034 tests passing ✓
+
+---
+
+## Phase 18 – Workspace Undo/Redo Stack
+
+**Status: Done**
+
+- [x] Create `WorkspaceUndoRedo.h` — workspace undo/redo infrastructure
+  - [x] UndoActionType enum (Generic/Property/Create/Delete/Move/Transform/Reparent/Command/Batch/Custom) with name helper
+  - [x] UndoAction — reversible action: label/type/doHandler/undoHandler/targetId; execute/undo; isValid; equality
+  - [x] UndoTransaction — grouped action sequence: label/addAction/actions/actionCount; execute (with rollback on failure); undo (reverse order); MAX_ACTIONS=256
+  - [x] UndoStack — linear undo/redo: push/pushTransaction; undo/redo; canUndo/canRedo; nextUndoLabel/nextRedoLabel; undoLabels/redoLabels; beginTransaction/addToTransaction/commitTransaction/discardTransaction; depth/undoDepth/redoDepth; isDirty/markClean; maxDepth with trim; statistics (totalPushes/Undos/Redos); clear; DEFAULT_MAX_DEPTH=128
+  - [x] UndoManager — workspace-scoped: registerStack/unregisterStack/setActiveStack/findStack; push/undo/redo/canUndo/canRedo on active stack; observer callbacks (addObserver/removeObserver/clearObservers); stackNames; clear; MAX_STACKS=64; MAX_OBSERVERS=32
+- [x] Add `Tests/Workspace/test_phase18_undo_redo.cpp` — 45 test cases / 189 assertions:
+  - [x] Enum name strings (1 test): undoActionType
+  - [x] UndoAction (5 tests): default invalid, valid construction, execute/undo, without handler fails, targetId, equality
+  - [x] UndoTransaction (6 tests): default state, valid construction, addAction, reject invalid, execute all, undo reverse order, execute rollback on failure
+  - [x] UndoStack (15 tests): empty state, push/undo, redo, push clears redo, reject invalid, labels, maxDepth trim, dirty/markClean, transaction grouping, transaction atomic undo, reject double begin, discard transaction, commit empty fails, statistics, clear, undoDepth/redoDepth
+  - [x] UndoManager (10 tests): empty state, register/find, reject duplicate, reject empty name, unregister, set active, push/undo/redo, stackNames, observers, clear, push without stack fails
+  - [x] Integration (4 tests): multi-step property undo, transaction atomic undo with manager, multi-stack manager, observer notifications across operations
+- [x] Wire `NF_Phase18Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- UndoAction provides reversible do/undo handlers with type classification ✓
+- UndoTransaction groups actions for atomic execute/undo with rollback on failure ✓
+- UndoStack provides linear undo/redo with transaction grouping and dirty tracking ✓
+- UndoManager provides workspace-scoped multi-stack undo with observer notifications ✓
+- Integration tests verify multi-step undo, atomic transactions, multi-stack isolation, and observer logging ✓
+- 45 test cases pass (189 assertions) ✓
+- Total test suite: 2079 tests passing ✓
