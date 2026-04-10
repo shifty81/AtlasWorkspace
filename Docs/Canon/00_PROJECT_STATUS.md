@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase 14 Complete — Workspace Plugin System**
+Current Phase: **Phase 15 Complete — Workspace Diagnostics and Telemetry**
 
 ## Build Status
 
@@ -37,6 +37,7 @@ Current Phase: **Phase 14 Complete — Workspace Plugin System**
 | 12 | Event Bus and Workspace Notifications | ✅ Done |
 | 13 | Workspace Preferences and Configuration | ✅ Done |
 | 14 | Workspace Plugin System | ✅ Done |
+| 15 | Workspace Diagnostics and Telemetry | ✅ Done |
 
 ## Active Problems
 
@@ -46,10 +47,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 15: Workspace Diagnostics and Telemetry**
+**Phase 16: Workspace Scripting and Automation**
 
-Implement workspace-level diagnostics and telemetry infrastructure:
-- DiagnosticEntry — structured diagnostic record (category, severity, source, message, timestamp)
-- DiagnosticCollector — collect and query diagnostics with category/severity filtering
-- TelemetryEvent — typed telemetry event (feature usage, performance, errors)
-- TelemetryCollector — accumulate telemetry events with session-scoped lifecycle
+Implement workspace-level scripting and automation infrastructure:
+- ScriptBinding — typed script function binding with parameter descriptors
+- ScriptContext — execution environment with variable scope
+- ScriptEngine — register/execute script bindings with error handling
+- AutomationTask — named automation sequence with step execution

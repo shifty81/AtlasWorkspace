@@ -324,3 +324,14 @@ target_link_libraries(NF_Phase14Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase14Tests)
+
+# Phase 15 — Workspace Diagnostics and Telemetry tests
+add_executable(NF_Phase15Tests
+    Workspace/test_phase15_diagnostics.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase15Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase15Tests)

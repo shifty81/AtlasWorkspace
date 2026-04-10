@@ -497,3 +497,40 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify full plugin pipeline with sandbox and handlers ✓
 - 42 test cases pass (127 assertions) ✓
 - Total test suite: 1869 tests passing ✓
+
+---
+
+## Phase 15 – Workspace Diagnostics and Telemetry
+
+**Status: Done**
+
+- [x] Create `WorkspaceDiagnostics.h` — workspace diagnostics and telemetry infrastructure
+  - [x] DiagnosticSeverity enum (Info/Warning/Error/Fatal) with name helper
+  - [x] DiagnosticCategory enum (Build/Asset/Plugin/Project/Tool/Render/Performance/IO/Network/System/Custom) with name helper
+  - [x] DiagnosticEntry — structured diagnostic record (id/category/severity/source/message/detail/timestampMs/acknowledged); isValid/isError; equality
+  - [x] DiagnosticCollector — submit/submitInfo/submitWarning/submitError; query (findById/findByCategory/findBySeverity/findBySource); countBySeverity/countByCategory/errorCount/unacknowledgedCount/hasErrors; acknowledge/acknowledgeAll; observer callbacks; clear; MAX_ENTRIES=4096
+  - [x] TelemetryEventType enum (FeatureUsage/Performance/Error/Navigation/Session/Command/Asset/Plugin/Custom) with name helper
+  - [x] TelemetryEvent — name/type/source/timestampMs/durationMs; Property bag (setProperty/getProperty/hasProperty, MAX_PROPERTIES=32); isValid
+  - [x] TelemetryCollector — session lifecycle (beginSession/endSession/isActive); record/recordFeature/recordPerformance/recordError; query (findByType/findBySource/findByName/countByType); observer callbacks; clear; MAX_EVENTS=8192
+  - [x] DiagnosticSnapshot — point-in-time capture of DiagnosticCollector state (total/info/warning/error/fatal/unacknowledged counts)
+  - [x] TelemetrySnapshot — point-in-time capture of TelemetryCollector state (session/active/total/feature/perf/error counts)
+- [x] Add `Tests/Workspace/test_phase15_diagnostics.cpp` — 52 test cases / 200 assertions:
+  - [x] Enum name strings (3 tests): severity, category, telemetry event type
+  - [x] DiagnosticEntry (5 tests): default invalid, valid construction, isError for Error/Fatal, equality, validation rules
+  - [x] DiagnosticCollector (16 tests): empty state, submit/count, reject invalid, findById, findByCategory, findBySeverity, findBySource, countBySeverity/countByCategory, hasErrors/errorCount, acknowledge, acknowledgeAll, observer, clearObservers, clear, all
+  - [x] TelemetryEvent (5 tests): default invalid, valid construction, property bag, property overwrite, reject empty key, properties()
+  - [x] TelemetryCollector (15 tests): inactive state, beginSession/endSession, reject inactive, reject invalid, record/count, findByType, findBySource, findByName, countByType, observer, clearObservers, clear, all, session restart, performance duration
+  - [x] DiagnosticSnapshot (2 tests): capture with entries, empty collector
+  - [x] TelemetrySnapshot (2 tests): capture with events, inactive collector
+  - [x] Integration (4 tests): diagnostic→telemetry wiring, snapshot accuracy, full lifecycle with acknowledge, session restart
+- [x] Wire `NF_Phase15Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- DiagnosticEntry provides structured diagnostic records with severity/category classification ✓
+- DiagnosticCollector accumulates and queries diagnostics with filtering and acknowledgment ✓
+- TelemetryEvent supports property bags and typed event classification ✓
+- TelemetryCollector provides session-scoped telemetry accumulation ✓
+- Snapshot types capture point-in-time state for UI display ✓
+- Integration tests verify diagnostic→telemetry wiring and lifecycle ✓
+- 52 test cases pass (200 assertions) ✓
+- Total test suite: 1921 tests passing ✓
