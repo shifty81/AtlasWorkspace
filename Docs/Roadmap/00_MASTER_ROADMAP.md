@@ -255,3 +255,49 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - WorkspaceLaunchContract, AppRegistry, ConsoleCommandBus, SelectionService, EditorEventBus all have direct test coverage ✓
 - 78 test cases pass (251 assertions) ✓
 - Total test suite: 1521 tests passing ✓
+
+---
+
+## Phase 9 – Asset Pipeline and Content Routing
+
+**Status: Done**
+
+- [x] Create `AssetCatalog.h` — authoritative asset registry
+  - [x] AssetTypeTag (15 tags: Unknown/Texture/Mesh/Audio/Script/Shader/Scene/Font/Video/Archive/Project/Material/Animation/Prefab/Custom) with name helper
+  - [x] AssetImportState (Unknown/Staged/Importing/Imported/Dirty/Error/Excluded) with name helper
+  - [x] AssetMetadata — key-value bag (MAX_ENTRIES=64): set/get/getOr/has/remove/clear
+  - [x] AssetDescriptor — id+sourcePath+catalogPath+displayName+typeTag+importState+metadata; isValid/isImported/needsReimport/extension
+  - [x] AssetCatalog — add/remove/find/findByPath/contains/countByState/countByType/query/all/clear; duplicate catalogPath rejected
+- [x] Create `AssetTransformer.h` — typed import step chain
+  - [x] TransformStepStatus (Ok/Skip/Error) + factory helpers (ok/skip/error)
+  - [x] TransformContext — assetId/sourcePath/outputPath/typeTag/progress/metadata/scratchData (setScratch/getScratch)
+  - [x] TransformStep — name+fn+enabled, isValid()
+  - [x] TransformChain — addStep/removeStep/enableStep/run; run aborts on Error, continues on Skip
+  - [x] TransformResult — succeeded/errorStep/errorMessage/stepsRun/stepsSkipped/finalProgress
+  - [x] AssetTransformer — registerChain per-type + setDefaultChain; transform() validates ctx, routes to chain, tracks totalTransforms/Succeeded/Failed
+- [x] Create `ContentRouter.h` — file-type to tool routing rules
+  - [x] ContentRouterPolicy (Reject/UseDefault/Prompt) with name helper
+  - [x] RouteResult — matched/toolId/ruleName/needsPrompt
+  - [x] RoutingRule — name/toolId/typeTag(wildcard=Unknown)/sourceFilter/priority/enabled; matches()
+  - [x] ContentRouter — addRule/removeRule/enableRule/clearRules; rules sorted by priority descending; route(tag)/route(descriptor)/route(intakeItem); Reject/UseDefault/Prompt policies; routeCount/missCount
+- [x] Create `AssetWatcher.h` — logical file-change detection with debounce
+  - [x] ChangeType (Created/Modified/Deleted/Renamed) with name helper
+  - [x] ChangeEvent — watchId/path/newPath/type/timestamp; isValid()
+  - [x] WatchEntry — id/path/recursive/enabled/eventCount; isValid()
+  - [x] AssetWatcher — addWatch/removeWatch/removeWatchByPath/enableWatch; notifyChanged (dedup pending); tick(nowMs, debounceMs) delivers settled events; subscribe/clearCallbacks; clearPending; totalDelivered
+- [x] Add `Tests/Workspace/test_phase9_asset_pipeline.cpp` — 71 test cases / 236 assertions:
+  - [x] AssetCatalog (18 tests) — type/state names, metadata, descriptor validity, add/find/findByPath, duplicate rejection, remove, setImportState/setImportError, markDirty, setMetadata, countByState/countByType, query, all, clear
+  - [x] AssetTransformer (17 tests) — status names, step result factories, context validity, scratch data, step validity, chain add/remove/run, skip/error/disabled handling, transformer routing/stats, default chain, missing chain, invalid context, hasChainFor
+  - [x] ContentRouter (14 tests) — policy names, rule validity/matching, wildcard/source-filter, add/route basic, Reject/UseDefault/Prompt policies, priority ordering, remove/enable, hasRule, route by descriptor, route by intake item, clearRules
+  - [x] AssetWatcher (17 tests) — change type names, event validity, addWatch/isWatching, duplicate dedup, empty path, removeWatch/byPath, enableWatch, notifyChanged queuing, ignore unregistered, tick debounce, event dedup, recursive matching, non-recursive, multi-callback, clearCallbacks, clearPending, eventCount
+  - [x] Integration (3 tests) — intake→route→catalog, transform chain updates catalog metadata, watcher dirties catalog entry on file change
+- [x] Wire `NF_Phase9Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- AssetCatalog is the single typed registry for all workspace assets ✓
+- AssetTransformer provides a testable, composable step-chain for import transforms ✓
+- ContentRouter routes any asset type or intake item to the correct tool ✓
+- AssetWatcher delivers debounced change events without filesystem dependencies ✓
+- Integration tests verify the pipeline end-to-end ✓
+- 71 test cases pass (236 assertions) ✓
+- Total test suite: 1592 tests passing ✓

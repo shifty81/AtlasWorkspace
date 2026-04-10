@@ -258,3 +258,14 @@ target_link_libraries(NF_Phase8Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase8Tests)
+
+# Phase 9 — Asset Pipeline and Content Routing tests
+add_executable(NF_Phase9Tests
+    Workspace/test_phase9_asset_pipeline.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase9Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase9Tests)

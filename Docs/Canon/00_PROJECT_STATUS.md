@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase 8 Complete — Runtime Wiring and First Real Tool Loop**
+Current Phase: **Phase 9 Complete — Asset Pipeline and Content Routing**
 
 ## Build Status
 
@@ -30,6 +30,7 @@ Current Phase: **Phase 8 Complete — Runtime Wiring and First Real Tool Loop**
 | 6 | Build, Patch, and Release Pipeline | ✅ Done |
 | 7 | Workspace Integration Surfaces | ✅ Done |
 | 8 | Runtime Wiring and First Real Tool Loop | ✅ Done |
+| 9 | Asset Pipeline and Content Routing | ✅ Done |
 
 ## Active Problems
 
@@ -39,10 +40,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 9: Asset Pipeline and Content Routing**
+**Phase 10: Project Persistence and Serialization**
 
-Formalize the asset import, transform, and content routing pipeline:
-- AssetCatalog — asset descriptor, type tags, import state, metadata
-- AssetTransformer — import steps, transform chain, output format, error reporting
-- ContentRouter — file type → tool routing rules, drag-drop integration
-- AssetWatcher — file system change detection, debounce, callback routing
+Formalize the save/load contract for workspace state:
+- WorkspaceProjectFile — canonical .atlasproject file format (JSON schema)
+- ProjectSerializer — write/read WorkspaceShell state to/from disk
+- AssetCatalogSerializer — serialize/deserialize AssetCatalog (add/remove/dirty)
+- SettingsStore — typed key-value store for workspace settings with layering (user/project/defaults)
