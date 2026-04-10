@@ -395,3 +395,38 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests: keyboard→command, group undo, hook logging, full serialize pipeline ✓
 - 81 test cases pass (207 assertions) ✓
 - Total test suite: 1735 tests passing ✓
+
+---
+
+## Phase 12 – Event Bus and Workspace Notifications
+
+**Status: Done**
+
+- [x] Create `WorkspaceEventBus.h` — workspace-level event infrastructure
+  - [x] WorkspaceEventType enum (Tool/Panel/Project/Asset/Command/Selection/Layout/Notification/AI/System/Custom) with name helper
+  - [x] WorkspaceEventPriority enum (Low/Normal/High/Critical) with name helper
+  - [x] WorkspaceEvent — typed event descriptor: eventType/source/payload/timestampToken/priority; isValid/isHighPriority/isCritical; static make() factory
+  - [x] WorkspaceEventSubscription — id/type/sourceFilter/handler/active/wildcard; matches()/deliver()/cancel(); deliveryCount tracking
+  - [x] WorkspaceEventBus — subscribe/subscribeAll/unsubscribe/publish; per-type subscriber dispatch; wildcard subscriptions; find/countByType; totalPublished/totalDispatches stats; clear()
+  - [x] WorkspaceEventQueue — deferred event accumulation; enqueue/drain; priority-sorted drain (Critical>High>Normal>Low); tick-based drain with configurable interval; pending()/clearQueue(); totalDrained tracking
+  - [x] WsNotificationSeverity enum (Info/Success/Warning/Error/Critical) with name helper
+  - [x] WorkspaceNotificationEntry — id/title/message/source/severity/timestampMs/read; markRead/isValid/isError/isCritical/isUnread
+  - [x] WorkspaceNotificationBus — layered on WorkspaceEventBus; notify/info/success/warning/error/critical; markRead/markAllRead; find/unreadCount/countBySeverity/errorCount; history management (MAX_HISTORY=256); clearHistory
+- [x] Add `Tests/Workspace/test_phase12_event_bus.cpp` — 50 test cases / 168 assertions:
+  - [x] WorkspaceEventType (2 tests): event type names, priority names
+  - [x] WorkspaceEvent (4 tests): default invalid, make factory, priority queries, empty source invalid
+  - [x] WorkspaceEventBus (14 tests): empty state, subscribe, publish/dispatch, non-matching type, source filter, wildcard, unsubscribe, unknown unsubscribe, invalid publish, multiple subscribers, find by id, countByType, deliveryCount, clear
+  - [x] WorkspaceEventQueue (10 tests): empty state, enqueue, reject invalid, drain, priority sort, empty drain, tick-based drain, tick empty, clearQueue, pending view, interval defaults
+  - [x] WorkspaceNotificationBus (15 tests): severity names, entry validity, markRead, isError/isCritical, empty bus, notify stores history, publishes on bus, convenience helpers, markRead/markAllRead, errorCount, clearHistory, priority escalation, default source
+  - [x] Integration (5 tests): multi-type dispatch, queue accumulate+drain, notification bus events, tick-based mixed priority, full pipeline
+- [x] Wire `NF_Phase12Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- WorkspaceEventBus provides synchronous pub/sub with per-type dispatch and wildcard subscriptions ✓
+- WorkspaceEventQueue accumulates events and drains with priority ordering (Critical first) ✓
+- Tick-based drain enables frame-aligned event delivery ✓
+- WorkspaceNotificationBus layers notification semantics on EventBus with history management ✓
+- Error/Critical notifications auto-escalate to High/Critical bus priority ✓
+- Integration tests verify the full pipeline: bus + queue + notifications ✓
+- 50 test cases pass (168 assertions) ✓
+- Total test suite: 1785 tests passing ✓

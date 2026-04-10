@@ -291,3 +291,14 @@ target_link_libraries(NF_Phase11Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase11Tests)
+
+# Phase 12 — Event Bus and Workspace Notifications tests
+add_executable(NF_Phase12Tests
+    Workspace/test_phase12_event_bus.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase12Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase12Tests)
