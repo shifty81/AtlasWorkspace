@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Workspace — UI Preview</title>
+<style>
+/* ─── Reset ────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── Theme colors (from EditorTheme.h, RRGGBBAA → CSS hex) ──── */
+:root {
+  --panel-bg:        #2B2B2B;
+  --panel-header:    #3C3C3C;
+  --panel-border:    #555555;
+  --panel-text:      #DCDCDC;
+  --selection-hi:    #264F78;
+  --selection-bd:    #007ACC;
+  --hover-hi:        #383838;
+  --input-bg:        #1E1E1E;
+  --input-border:    #474747;
+  --input-text:      #D4D4D4;
+  --button-bg:       #3C3C3C;
+  --button-hover:    #505050;
+  --button-pressed:  #007ACC;
+  --button-text:     #CCCCCC;
+  --toolbar-bg:      #333333;
+  --toolbar-sep:     #4A4A4A;
+  --statusbar-bg:    #007ACC;
+  --statusbar-text:  #FFFFFF;
+  --viewport-bg:     #1A1A1A;
+  --grid-color:      #333333;
+  --prop-label:      #BBBBBB;
+  --prop-value:      #E0E0E0;
+  --prop-sep:        #404040;
+  --dirty:           #E8A435;
+  --accent:          #007ACC;
+}
+
+body {
+  font-family: 'Segoe UI', 'SF Pro Text', system-ui, sans-serif;
+  font-size: 13px;
+  background: #1a1a1a;
+  color: var(--panel-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+h1 {
+  color: #eee;
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.subtitle {
+  color: #888;
+  font-size: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin: 0 4px;
+}
+
+/* ─── Workspace shell ───────────────────────────────────────────── */
+.workspace {
+  width: 1280px;
+  height: 800px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #444;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  flex-shrink: 0;
+}
+
+/* ─── Menu bar (24px) ───────────────────────────────────────────── */
+.menubar {
+  height: 24px;
+  background: #252526;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+.menubar-brand {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 6px;
+  border-right: 1px solid #333;
+  height: 100%;
+}
+.menubar-brand-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.menubar-brand-name {
+  color: #ccc;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.menu-item {
+  padding: 0 10px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.menu-item:hover { background: #3e3e42; }
+.menu-item.active { background: var(--accent); color: #fff; }
+
+/* ─── Toolbar (56px) ────────────────────────────────────────────── */
+.toolbar {
+  height: 56px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid #444;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.toolbar-sep {
+  width: 1px;
+  height: 32px;
+  background: var(--toolbar-sep);
+  margin: 0 4px;
+}
+.tb-btn {
+  height: 32px;
+  padding: 0 12px;
+  background: var(--button-bg);
+  border: 1px solid #555;
+  border-radius: 3px;
+  color: var(--button-text);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.tb-btn:hover { background: var(--button-hover); }
+.tb-btn.primary {
+  background: var(--accent);
+  border-color: #005fa3;
+  color: #fff;
+}
+.tb-btn.active { background: #264F78; border-color: var(--accent); color: #fff; }
+.tb-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+.tb-mode-label {
+  color: #888;
+  font-size: 11px;
+  margin-left: 4px;
+}
+.tb-dropdown {
+  height: 32px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  color: var(--input-text);
+  font-size: 12px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tb-spacer { flex: 1; }
+.tb-stats {
+  color: #777;
+  font-size: 11px;
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+  text-align: right;
+  line-height: 1.5;
+}
+.tb-stats span { color: #aaa; }
+
+/* ─── Main area (below toolbar, above status bar) ─────────────── */
+.main-area {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ─── Left panel — Hierarchy (250px) ───────────────────────────── */
+.panel-left {
+  width: 250px;
+  background: var(--panel-bg);
+  border-right: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* ─── Right panel — Inspector (300px) ──────────────────────────── */
+.panel-right {
+  width: 300px;
+  background: var(--panel-bg);
+  border-left: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* ─── Center area ───────────────────────────────────────────────── */
+.center-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Viewport ───────────────────────────────────────────────────── */
+.viewport {
+  flex: 1;
+  background: var(--viewport-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Grid lines */
+.viewport::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.5;
+}
+
+/* Horizon line */
+.viewport-horizon {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: #2a2a2a;
+  top: 50%;
+}
+
+/* Gizmo axes overlay */
+.viewport-gizmo {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  opacity: 0.7;
+}
+.gizmo-label {
+  position: absolute;
+  font-size: 9px;
+  font-weight: bold;
+  color: #888;
+}
+.gizmo-x { color: #E44; }
+.gizmo-y { color: #4E4; }
+.gizmo-z { color: #44E; }
+
+/* Viewport toolbar overlay */
+.viewport-overlay-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 28px;
+  background: rgba(43,43,43,0.85);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 6px;
+  border-bottom: 1px solid #444;
+}
+.vp-btn {
+  font-size: 11px;
+  color: #aaa;
+  padding: 2px 7px;
+  background: rgba(60,60,60,0.8);
+  border: 1px solid #555;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.vp-btn:hover { background: rgba(80,80,80,0.9); color: #eee; }
+
+/* Axis indicator in bottom-left */
+.viewport-axis {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.6;
+}
+.axis-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-family: monospace;
+}
+.axis-line {
+  height: 2px;
+  border-radius: 1px;
+}
+.axis-x { width: 20px; background: #E44; }
+.axis-y { width: 20px; background: #4E4; }
+.axis-z { width: 16px; background: #44E; }
+.axis-lbl { color: #888; }
+
+/* Camera info overlay */
+.viewport-cam {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(30,30,30,0.75);
+  border: 1px solid #404040;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: monospace;
+  color: #777;
+  line-height: 1.6;
+}
+.viewport-cam b { color: #999; }
+
+/* ─── Bottom panel — Console / ContentBrowser ─────────────────── */
+.panel-bottom {
+  height: 200px;
+  background: var(--panel-bg);
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* ─── Panel header (shared) ─────────────────────────────────────── */
+.panel-header {
+  height: 28px;
+  background: var(--panel-header);
+  border-bottom: 1px solid var(--panel-border);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 0;
+  flex-shrink: 0;
+}
+.panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #bbb;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.panel-tab {
+  padding: 0 12px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #888;
+  cursor: pointer;
+  border-right: 1px solid var(--panel-border);
+}
+.panel-tab.active {
+  color: var(--panel-text);
+  background: var(--panel-bg);
+  border-bottom: 2px solid var(--accent);
+  margin-bottom: -1px;
+}
+.panel-tab:hover:not(.active) { color: #ccc; background: rgba(255,255,255,0.04); }
+.panel-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+.panel-icon-btn {
+  width: 20px; height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 13px;
+}
+.panel-icon-btn:hover { background: rgba(255,255,255,0.08); color: #ccc; }
+
+/* ─── Panel body ────────────────────────────────────────────────── */
+.panel-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.panel-scroll {
+  overflow-y: auto;
+  height: 100%;
+}
+
+/* ─── Hierarchy items ────────────────────────────────────────────── */
+.hierarchy-search {
+  margin: 6px 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #666;
+}
+.hierarchy-item {
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--panel-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.hierarchy-item:hover { background: var(--hover-hi); }
+.hierarchy-item.selected { background: var(--selection-hi); border-left: 2px solid var(--accent); }
+.hierarchy-item .arrow { color: #666; font-size: 9px; width: 10px; }
+.hierarchy-item .icon { font-size: 11px; }
+.hierarchy-item .label { flex: 1; font-size: 12px; }
+.hierarchy-item .type-badge {
+  font-size: 9px;
+  color: #666;
+  background: rgba(255,255,255,0.06);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.indent-1 { padding-left: 20px; }
+.indent-2 { padding-left: 36px; }
+.indent-3 { padding-left: 52px; }
+
+/* ─── Inspector ─────────────────────────────────────────────────── */
+.inspector-component {
+  border-bottom: 1px solid var(--prop-sep);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+.component-header {
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.component-header:hover { background: var(--hover-hi); }
+.component-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--panel-text);
+  flex: 1;
+}
+.component-toggle { color: #666; font-size: 10px; }
+.prop-row {
+  display: flex;
+  align-items: center;
+  padding: 3px 8px;
+  gap: 8px;
+}
+.prop-row:hover { background: rgba(255,255,255,0.03); }
+.prop-label {
+  width: 90px;
+  font-size: 11px;
+  color: var(--prop-label);
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prop-value {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 2px;
+  padding: 2px 5px;
+  font-size: 11px;
+  color: var(--prop-value);
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+}
+.prop-value-xyz {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+}
+.prop-xyz {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 2px;
+  padding: 2px 4px;
+  font-size: 10px;
+  color: var(--prop-value);
+  font-family: monospace;
+  text-align: center;
+}
+.xyz-label {
+  font-size: 9px;
+  font-weight: bold;
+}
+.xyz-x .xyz-label { color: #E44; }
+.xyz-y .xyz-label { color: #4E4; }
+.xyz-z .xyz-label { color: #44E; }
+.prop-checkbox {
+  width: 13px; height: 13px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 2px;
+}
+.prop-checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ─── Console ────────────────────────────────────────────────────── */
+.console-input {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 4px;
+  border-top: 1px solid var(--panel-border);
+  background: var(--input-bg);
+  flex-shrink: 0;
+}
+.console-prompt { color: var(--accent); font-size: 12px; font-family: monospace; }
+.console-field {
+  flex: 1;
+  background: transparent;
+  color: var(--input-text);
+  font-size: 12px;
+  font-family: 'Consolas', monospace;
+  border: none;
+  outline: none;
+}
+.log-entry {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: 'Consolas', monospace;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.log-info   { color: #888; }
+.log-warning { color: #E8A435; }
+.log-error   { color: #F44747; }
+.log-success { color: #4EC9B0; }
+.log-ts { color: #555; font-size: 10px; width: 60px; flex-shrink: 0; }
+.log-tag { color: #569CD6; }
+.log-msg { flex: 1; }
+
+/* ─── Content Browser ────────────────────────────────────────────── */
+.cb-path {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 4px;
+  background: var(--input-bg);
+  border-bottom: 1px solid var(--panel-border);
+  flex-shrink: 0;
+}
+.cb-path-seg { font-size: 11px; color: #888; cursor: pointer; }
+.cb-path-seg:hover { color: var(--accent); }
+.cb-path-sep { color: #555; font-size: 11px; }
+.cb-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 8px;
+  gap: 8px;
+  overflow-y: auto;
+  height: 100%;
+}
+.cb-item {
+  width: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+}
+.cb-item:hover { background: var(--hover-hi); }
+.cb-item.selected { background: var(--selection-hi); border: 1px solid var(--selection-bd); }
+.cb-icon { font-size: 24px; line-height: 1; }
+.cb-name { font-size: 10px; color: #aaa; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+
+/* ─── Status bar (24px) ─────────────────────────────────────────── */
+.statusbar {
+  height: 24px;
+  background: var(--statusbar-bg);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.statusbar-item {
+  font-size: 11px;
+  color: var(--statusbar-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.9;
+}
+.statusbar-item + .statusbar-item::before {
+  content: '|';
+  opacity: 0.4;
+  margin-right: 6px;
+}
+.statusbar-mode {
+  font-weight: 600;
+  opacity: 1;
+}
+.statusbar-spacer { flex: 1; }
+.statusbar-fps {
+  font-family: monospace;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+/* ─── Resize handle visual ──────────────────────────────────────── */
+.resize-handle-v {
+  width: 4px;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  flex-shrink: 0;
+}
+.resize-handle-v:hover { background: rgba(0,122,204,0.3); }
+
+/* ─── Notification toast ─────────────────────────────────────────── */
+.notification-area {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: none;
+}
+.notification {
+  background: #252525;
+  border: 1px solid #444;
+  border-left: 3px solid var(--accent);
+  border-radius: 3px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #ccc;
+  min-width: 200px;
+  max-width: 280px;
+  pointer-events: auto;
+  opacity: 0.92;
+}
+.notification.success { border-left-color: #4EC9B0; }
+.notification.warning { border-left-color: #E8A435; }
+.notification.error   { border-left-color: #F44747; }
+
+/* ─── Caption strip above workspace ────────────────────────────── */
+.caption {
+  width: 1280px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+.caption-title {
+  font-size: 13px;
+  color: #aaa;
+  font-weight: 500;
+}
+.caption-note {
+  font-size: 11px;
+  color: #666;
+}
+
+/* ─── Legend below workspace ────────────────────────────────────── */
+.legend {
+  width: 1280px;
+  margin-top: 16px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.legend-section {
+  flex: 1;
+  min-width: 200px;
+}
+.legend-section h3 {
+  color: #888;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #333;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: #888;
+}
+.legend-swatch {
+  width: 14px; height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.legend-key {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 2px;
+  padding: 1px 5px;
+  font-family: monospace;
+  font-size: 10px;
+  color: #aaa;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--panel-bg); }
+::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #5a5a5a; }
+</style>
+</head>
+<body>
+
+<h1>⬡ Atlas Workspace</h1>
+<p class="subtitle">
+  UI Preview — generated from source (<code>EditorTheme.h</code> · <code>DockLayout.h</code> · <code>EditorApp.h</code>)
+  <span class="badge">Phase 18</span>
+  <span class="badge" style="background:#3C3C3C;border:1px solid #555">Dark Theme</span>
+</p>
+
+<div class="caption">
+  <span class="caption-title">AtlasWorkspace.exe · 1280 × 800 · GDI Backend</span>
+  <span class="caption-note">Left 250px · Right 300px · Bottom 200px · Toolbar 56px · StatusBar 24px</span>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════ -->
+<!-- WORKSPACE SHELL                                               -->
+<!-- ═════════════════════════════════════════════════════════════ -->
+<div class="workspace">
+
+  <!-- ── Menu Bar ── -->
+  <div class="menubar">
+    <div class="menubar-brand">
+      <div class="menubar-brand-dot"></div>
+      <span class="menubar-brand-name">ATLAS</span>
+    </div>
+    <div class="menu-item active">File</div>
+    <div class="menu-item">Edit</div>
+    <div class="menu-item">View</div>
+    <div class="menu-item">Graph</div>
+    <div class="menu-item">Build</div>
+    <div class="menu-item">Help</div>
+  </div>
+
+  <!-- ── Toolbar ── -->
+  <div class="toolbar">
+    <!-- File actions -->
+    <div class="tb-btn">
+      <span class="tb-icon">📂</span> Open
+    </div>
+    <div class="tb-btn">
+      <span class="tb-icon">💾</span> Save
+    </div>
+    <div class="toolbar-sep"></div>
+
+    <!-- Entity actions -->
+    <div class="tb-btn">
+      <span class="tb-icon">＋</span> Entity
+    </div>
+    <div class="toolbar-sep"></div>
+
+    <!-- Playback -->
+    <div class="tb-btn primary">
+      <span class="tb-icon">▶</span> Play
+    </div>
+    <div class="tb-btn">
+      <span class="tb-icon">⏸</span> Pause
+    </div>
+    <div class="tb-btn">
+      <span class="tb-icon">⏭</span> Step
+    </div>
+    <div class="toolbar-sep"></div>
+
+    <!-- Mode selector -->
+    <div class="tb-dropdown">
+      <span class="tb-icon">🌐</span> World
+      <span style="color:#555;margin-left:4px">▾</span>
+    </div>
+    <div class="tb-dropdown">
+      <span class="tb-icon">🔲</span> Translate
+      <span style="color:#555;margin-left:4px">▾</span>
+    </div>
+    <div class="toolbar-sep"></div>
+
+    <!-- Snap -->
+    <div class="tb-btn active">
+      <span class="tb-icon">🔲</span> Snap
+    </div>
+    <div class="tb-dropdown">
+      1.0 u <span style="color:#555;margin-left:4px">▾</span>
+    </div>
+
+    <div class="tb-spacer"></div>
+
+    <!-- Frame stats (right side) -->
+    <div class="tb-stats">
+      <span>60.0</span> fps &nbsp; <span>16.7</span> ms<br>
+      <span>Entities:</span> 47 &nbsp; <span>Draws:</span> 312
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="tb-btn">⚙ Settings</div>
+  </div>
+
+  <!-- ── Main area ── -->
+  <div class="main-area">
+
+    <!-- ── Left — Hierarchy ── -->
+    <div class="panel-left">
+      <div class="panel-header">
+        <span class="panel-title">Hierarchy</span>
+        <div class="panel-actions">
+          <div class="panel-icon-btn" title="Add entity">＋</div>
+          <div class="panel-icon-btn" title="Filter">⋯</div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="hierarchy-search">
+          🔍 <span>Search entities…</span>
+        </div>
+        <div class="panel-scroll">
+
+          <!-- World root -->
+          <div class="hierarchy-item">
+            <span class="arrow">▾</span>
+            <span class="icon">🌐</span>
+            <span class="label">World</span>
+            <span class="type-badge">Scene</span>
+          </div>
+
+          <!-- Lighting -->
+          <div class="hierarchy-item indent-1">
+            <span class="arrow">▾</span>
+            <span class="icon">💡</span>
+            <span class="label">Lighting</span>
+            <span class="type-badge">Group</span>
+          </div>
+          <div class="hierarchy-item indent-2">
+            <span class="arrow"></span>
+            <span class="icon">☀️</span>
+            <span class="label">DirectionalLight</span>
+            <span class="type-badge">Light</span>
+          </div>
+          <div class="hierarchy-item indent-2">
+            <span class="arrow"></span>
+            <span class="icon">✨</span>
+            <span class="label">AmbientOcclusion</span>
+            <span class="type-badge">PP</span>
+          </div>
+
+          <!-- Terrain -->
+          <div class="hierarchy-item indent-1 selected">
+            <span class="arrow">▾</span>
+            <span class="icon">🏔️</span>
+            <span class="label">Terrain</span>
+            <span class="type-badge">Mesh</span>
+          </div>
+          <div class="hierarchy-item indent-2">
+            <span class="arrow"></span>
+            <span class="icon">🌿</span>
+            <span class="label">Foliage_Dense</span>
+            <span class="type-badge">Inst</span>
+          </div>
+          <div class="hierarchy-item indent-2">
+            <span class="arrow"></span>
+            <span class="icon">🌿</span>
+            <span class="label">Foliage_Sparse</span>
+            <span class="type-badge">Inst</span>
+          </div>
+
+          <!-- Player -->
+          <div class="hierarchy-item indent-1">
+            <span class="arrow">▾</span>
+            <span class="icon">🧑</span>
+            <span class="label">PlayerStart</span>
+            <span class="type-badge">Actor</span>
+          </div>
+          <div class="hierarchy-item indent-2">
+            <span class="arrow"></span>
+            <span class="icon">📷</span>
+            <span class="label">Camera</span>
+            <span class="type-badge">Cam</span>
+          </div>
+          <div class="hierarchy-item indent-2">
+            <span class="arrow"></span>
+            <span class="icon">🔊</span>
+            <span class="label">AudioListener</span>
+            <span class="type-badge">Audio</span>
+          </div>
+
+          <!-- Environment -->
+          <div class="hierarchy-item indent-1">
+            <span class="arrow">▸</span>
+            <span class="icon">🏘️</span>
+            <span class="label">Environment</span>
+            <span class="type-badge">Group</span>
+          </div>
+
+          <!-- VFX -->
+          <div class="hierarchy-item indent-1">
+            <span class="arrow">▸</span>
+            <span class="icon">🌊</span>
+            <span class="label">Water_Ocean</span>
+            <span class="type-badge">Sim</span>
+          </div>
+
+          <!-- Triggers -->
+          <div class="hierarchy-item indent-1">
+            <span class="arrow">▸</span>
+            <span class="icon">⬡</span>
+            <span class="label">TriggerVolumes</span>
+            <span class="type-badge">Group</span>
+          </div>
+
+          <!-- Nav -->
+          <div class="hierarchy-item indent-1">
+            <span class="arrow"></span>
+            <span class="icon">🗺️</span>
+            <span class="label">NavMesh</span>
+            <span class="type-badge">Nav</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Resize handle ── -->
+    <div class="resize-handle-v"></div>
+
+    <!-- ── Center: Viewport + Bottom ── -->
+    <div class="center-area">
+
+      <!-- Viewport -->
+      <div class="viewport">
+
+        <!-- Viewport toolbar overlay -->
+        <div class="viewport-overlay-bar">
+          <div class="vp-btn">Perspective</div>
+          <div class="vp-btn">Lit</div>
+          <div class="vp-btn">Show ▾</div>
+          <span style="flex:1"></span>
+          <div class="vp-btn">📷 Camera</div>
+          <div class="vp-btn">Maximize</div>
+        </div>
+
+        <!-- Horizon -->
+        <div class="viewport-horizon"></div>
+
+        <!-- XYZ axis indicator -->
+        <div class="viewport-axis">
+          <div class="axis-row">
+            <div class="axis-line axis-x"></div>
+            <span class="axis-lbl">X</span>
+          </div>
+          <div class="axis-row">
+            <div class="axis-line axis-y"></div>
+            <span class="axis-lbl">Y</span>
+          </div>
+          <div class="axis-row">
+            <div class="axis-line axis-z"></div>
+            <span class="axis-lbl">Z</span>
+          </div>
+        </div>
+
+        <!-- Camera info -->
+        <div class="viewport-cam">
+          <b>Position</b><br>
+          X: 120.4 &nbsp; Y: 85.2 &nbsp; Z: -44.7<br>
+          <b>Rotation</b><br>
+          Pitch: -18° &nbsp; Yaw: 42°
+        </div>
+
+        <!-- Notification toasts -->
+        <div class="notification-area">
+          <div class="notification success">✓ World saved successfully</div>
+          <div class="notification" style="border-left-color:#4EC9B0">
+            ℹ Panel layout reset
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom panel -->
+      <div class="panel-bottom">
+        <div class="panel-header">
+          <div class="panel-tab active">Console</div>
+          <div class="panel-tab">Content Browser</div>
+          <div class="panel-tab">Graph Editor</div>
+          <div class="panel-actions">
+            <div class="panel-icon-btn" title="Clear">🗑</div>
+            <div class="panel-icon-btn" title="Filter">⋯</div>
+          </div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;">
+          <div class="panel-scroll" style="flex:1;">
+            <div class="log-entry log-success"><span class="log-ts">0:00.001</span><span class="log-tag">[AtlasWorkspace]</span><span class="log-msg">=== Atlas Workspace ===</span></div>
+            <div class="log-entry log-info"><span class="log-ts">0:00.002</span><span class="log-tag">[AtlasWorkspace]</span><span class="log-msg">Version: 0.1.0-dev</span></div>
+            <div class="log-entry log-info"><span class="log-ts">0:00.003</span><span class="log-tag">[AtlasWorkspace]</span><span class="log-msg">App registry: 3 registered apps</span></div>
+            <div class="log-entry log-info"><span class="log-ts">0:00.012</span><span class="log-tag">[Editor]</span><span class="log-msg">Workspace window created (1280x800)</span></div>
+            <div class="log-entry log-success"><span class="log-ts">0:00.014</span><span class="log-tag">[Editor]</span><span class="log-msg">Workspace ready — entering main loop</span></div>
+            <div class="log-entry log-info"><span class="log-ts">0:01.240</span><span class="log-tag">[DockLayout]</span><span class="log-msg">Added panel 'Viewport'</span></div>
+            <div class="log-entry log-info"><span class="log-ts">0:01.241</span><span class="log-tag">[DockLayout]</span><span class="log-msg">Added panel 'Inspector'</span></div>
+            <div class="log-entry log-info"><span class="log-ts">0:01.241</span><span class="log-tag">[DockLayout]</span><span class="log-msg">Added panel 'Hierarchy'</span></div>
+            <div class="log-entry log-info"><span class="log-ts">0:01.242</span><span class="log-tag">[DockLayout]</span><span class="log-msg">Added panel 'Console'</span></div>
+            <div class="log-entry log-info"><span class="log-ts">0:01.242</span><span class="log-tag">[DockLayout]</span><span class="log-msg">Added panel 'ContentBrowser'</span></div>
+            <div class="log-entry log-success"><span class="log-ts">0:01.243</span><span class="log-tag">[Editor]</span><span class="log-msg">Panel layout reset to defaults</span></div>
+            <div class="log-entry log-warning"><span class="log-ts">0:02.500</span><span class="log-tag">[ContentBrowser]</span><span class="log-msg">Content path not configured — using fallback</span></div>
+          </div>
+          <div class="console-input">
+            <span class="console-prompt">&gt;</span>
+            <input type="text" class="console-field" placeholder="Enter command…" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Resize handle ── -->
+    <div class="resize-handle-v"></div>
+
+    <!-- ── Right — Inspector ── -->
+    <div class="panel-right">
+      <div class="panel-header">
+        <span class="panel-title">Inspector</span>
+        <div class="panel-actions">
+          <div class="panel-icon-btn" title="Lock">🔒</div>
+          <div class="panel-icon-btn" title="Options">⋯</div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="panel-scroll">
+
+          <!-- Entity header -->
+          <div style="padding:8px 8px 4px;border-bottom:1px solid var(--prop-sep);">
+            <div style="font-size:13px;font-weight:600;color:var(--panel-text);">🏔️ Terrain</div>
+            <div style="font-size:10px;color:#666;margin-top:2px;">Entity · ID 0x0042</div>
+          </div>
+
+          <!-- Transform component -->
+          <div class="inspector-component">
+            <div class="component-header">
+              <span style="color:var(--accent)">▾</span>
+              <span class="component-name">Transform</span>
+              <div class="prop-checkbox checked"></div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Position</span>
+              <div class="prop-value-xyz">
+                <div class="prop-xyz xyz-x"><span class="xyz-label">X </span>0.00</div>
+                <div class="prop-xyz xyz-y"><span class="xyz-label">Y </span>0.00</div>
+                <div class="prop-xyz xyz-z"><span class="xyz-label">Z </span>0.00</div>
+              </div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Rotation</span>
+              <div class="prop-value-xyz">
+                <div class="prop-xyz xyz-x"><span class="xyz-label">X </span>0.00°</div>
+                <div class="prop-xyz xyz-y"><span class="xyz-label">Y </span>0.00°</div>
+                <div class="prop-xyz xyz-z"><span class="xyz-label">Z </span>0.00°</div>
+              </div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Scale</span>
+              <div class="prop-value-xyz">
+                <div class="prop-xyz xyz-x"><span class="xyz-label">X </span>1.00</div>
+                <div class="prop-xyz xyz-y"><span class="xyz-label">Y </span>1.00</div>
+                <div class="prop-xyz xyz-z"><span class="xyz-label">Z </span>1.00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mesh component -->
+          <div class="inspector-component">
+            <div class="component-header">
+              <span style="color:var(--accent)">▾</span>
+              <span class="component-name">Static Mesh</span>
+              <div class="prop-checkbox checked"></div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Mesh</span>
+              <div class="prop-value" style="color:var(--accent);cursor:pointer;">terrain_heightmap.obj</div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Material</span>
+              <div class="prop-value" style="color:var(--accent);cursor:pointer;">mat_terrain_grass</div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Cast Shadow</span>
+              <div class="prop-checkbox checked"></div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Receive Shadow</span>
+              <div class="prop-checkbox checked"></div>
+            </div>
+          </div>
+
+          <!-- Collider -->
+          <div class="inspector-component">
+            <div class="component-header">
+              <span style="color:var(--accent)">▾</span>
+              <span class="component-name">Mesh Collider</span>
+              <div class="prop-checkbox checked"></div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Layer</span>
+              <div class="prop-value">terrain</div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Friction</span>
+              <div class="prop-value">0.65</div>
+            </div>
+          </div>
+
+          <!-- Terrain params -->
+          <div class="inspector-component">
+            <div class="component-header">
+              <span style="color:var(--accent)">▾</span>
+              <span class="component-name">Terrain Parameters</span>
+              <div class="prop-checkbox checked"></div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Width</span>
+              <div class="prop-value">1024</div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Length</span>
+              <div class="prop-value">1024</div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">Max Height</span>
+              <div class="prop-value">256.0</div>
+            </div>
+            <div class="prop-row">
+              <span class="prop-label">LOD Levels</span>
+              <div class="prop-value">5</div>
+            </div>
+          </div>
+
+          <!-- Add component button -->
+          <div style="padding:8px;">
+            <div class="tb-btn" style="width:100%;justify-content:center;font-size:12px;">
+              ＋ Add Component
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- main-area -->
+
+  <!-- ── Status Bar ── -->
+  <div class="statusbar">
+    <div class="statusbar-item statusbar-mode">🌐 World Mode</div>
+    <div class="statusbar-item">MyGame / world_01.nfw</div>
+    <div class="statusbar-item" style="color:#E8A435;opacity:1;">● Modified</div>
+    <div class="statusbar-spacer"></div>
+    <div class="statusbar-item statusbar-fps">60.0 fps · 16.7 ms</div>
+    <div class="statusbar-item">Entities: 47</div>
+    <div class="statusbar-item">NovaForge: Connected</div>
+    <div class="statusbar-item">GDI Backend</div>
+  </div>
+
+</div><!-- workspace -->
+
+<!-- ═════════════════════════════════════════════════════════════ -->
+<!-- LEGEND                                                        -->
+<!-- ═════════════════════════════════════════════════════════════ -->
+<div class="legend">
+
+  <div class="legend-section">
+    <h3>Layout · Default Sizes</h3>
+    <div class="legend-item"><div class="legend-swatch" style="background:#3C3C3C;border:1px solid #555"></div>Menu Bar — 24px</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#333333;border:1px solid #555"></div>Toolbar — 56px</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#2B2B2B;border:1px solid #555"></div>Hierarchy (Left) — 250px</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#1A1A1A;border:1px solid #555"></div>Viewport (Center) — flexible</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#2B2B2B;border:1px solid #555"></div>Inspector (Right) — 300px</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#2B2B2B;border:1px solid #555"></div>Console/ContentBrowser (Bottom) — 200px</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#007ACC;border:1px solid #005fa3"></div>Status Bar — 24px</div>
+  </div>
+
+  <div class="legend-section">
+    <h3>Theme Colors (EditorTheme::dark)</h3>
+    <div class="legend-item"><div class="legend-swatch" style="background:#2B2B2B"></div>Panel background — #2B2B2B</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#3C3C3C"></div>Panel header — #3C3C3C</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#007ACC"></div>Accent / selection — #007ACC</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#264F78"></div>Selection highlight — #264F78</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#1E1E1E"></div>Input background — #1E1E1E</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#E8A435"></div>Dirty indicator — #E8A435</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#1A1A1A"></div>Viewport background — #1A1A1A</div>
+  </div>
+
+  <div class="legend-section">
+    <h3>Panels &amp; Tools</h3>
+    <div class="legend-item">🌐 Viewport — center, flexible, 3D scene view</div>
+    <div class="legend-item">📋 Hierarchy — left 250px, entity scene tree</div>
+    <div class="legend-item">🔍 Inspector — right 300px, component properties</div>
+    <div class="legend-item">📟 Console — bottom tab, log sink from NF_LOG_*</div>
+    <div class="legend-item">📁 Content Browser — bottom tab, asset catalog</div>
+    <div class="legend-item">🔷 Graph Editor — hidden by default, toggle via View</div>
+  </div>
+
+  <div class="legend-section">
+    <h3>How to Run Natively (Windows)</h3>
+    <div class="legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+      <span class="legend-key">cmake -S . -B build</span>
+      <span class="legend-key">cmake --build build --target AtlasWorkspace</span>
+      <span class="legend-key">./build/bin/AtlasWorkspace.exe</span>
+    </div>
+    <div class="legend-item" style="margin-top:6px;color:#666;font-size:10px;">
+      Requires Windows for GDI backend rendering.<br>
+      D3D11 backend planned (see 04_UI_BACKEND_STRATEGY.md).
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
