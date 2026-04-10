@@ -1,11 +1,11 @@
 # Project Status
 
-Current Phase: **Phase 13 Complete — Workspace Preferences and Configuration**
+Current Phase: **Phase 14 Complete — Workspace Plugin System**
 
 ## Build Status
 
 - **Passing**
-- All 22 test suites build and pass
+- All 23 test suites build and pass
 - Tests require online fetch of Catch2 (gated behind `ATLAS_ENABLE_ONLINE_DEPS`)
 
 ## Repo Condition
@@ -36,6 +36,7 @@ Current Phase: **Phase 13 Complete — Workspace Preferences and Configuration**
 | 11 | Command Bus and Action System | ✅ Done |
 | 12 | Event Bus and Workspace Notifications | ✅ Done |
 | 13 | Workspace Preferences and Configuration | ✅ Done |
+| 14 | Workspace Plugin System | ✅ Done |
 
 ## Active Problems
 
@@ -45,10 +46,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 14: Workspace Plugin System**
+**Phase 15: Workspace Diagnostics and Telemetry**
 
-Implement the workspace plugin infrastructure:
-- PluginDescriptor — plugin identity, version, dependencies, capabilities
-- PluginLifecycle — load/activate/deactivate/unload state machine
-- PluginRegistry — register/discover/manage plugins with dependency resolution
-- PluginSandbox — capability-based permission model for plugin isolation
+Implement workspace-level diagnostics and telemetry infrastructure:
+- DiagnosticEntry — structured diagnostic record (category, severity, source, message, timestamp)
+- DiagnosticCollector — collect and query diagnostics with category/severity filtering
+- TelemetryEvent — typed telemetry event (feature usage, performance, errors)
+- TelemetryCollector — accumulate telemetry events with session-scoped lifecycle

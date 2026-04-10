@@ -463,3 +463,37 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests: lifecycle, serialization, and multi-system pipeline ✓
 - 42 test cases pass (157 assertions) ✓
 - Total test suite: 1827 tests passing ✓
+
+---
+
+## Phase 14 – Workspace Plugin System
+
+**Status: Done**
+
+- [x] Create `WorkspacePluginSystem.h` — workspace plugin infrastructure
+  - [x] PluginState enum (Unloaded/Discovered/Loaded/Activated/Deactivated/Error) with name helper
+  - [x] PluginCapability enum (ReadSettings/WriteSettings/RegisterTools/RegisterPanels/FileSystem/Network/EventBus/Commands) with name helper
+  - [x] PluginVersion — semver with comparison operators, parse(), toString(), isValid()
+  - [x] PluginDescriptor — id/displayName/author/description/version/dependencies/requiredCapabilities; isValid/dependsOn/requiresCapability
+  - [x] PluginInstance — lifecycle state machine: load/activate/deactivate/unload; activate/deactivate handlers; setError
+  - [x] PluginSandbox — capability-based permissions: grant/revoke/hasCapability; grantRequired(descriptor); revokeAll; countFor
+  - [x] PluginRegistry — registerPlugin/unregisterPlugin/find/isRegistered; loadPlugin/activatePlugin/deactivatePlugin/unloadPlugin; areDependenciesMet (dependency check); recursive cascading deactivation; activeCount/findByState; MAX_PLUGINS=128
+- [x] Add `Tests/Workspace/test_phase14_plugin_system.cpp` — 42 test cases / 127 assertions:
+  - [x] PluginState/PluginCapability (2 tests): enum name strings
+  - [x] PluginVersion (5 tests): make/toString, zero invalid, comparison operators, parse
+  - [x] PluginDescriptor (4 tests): default invalid, valid construction, dependsOn, requiresCapability
+  - [x] PluginInstance (9 tests): initial state, lifecycle (load→activate→deactivate→unload), no activate without load, handler failure→Error, handlers called, unload from active, reactivation, setError
+  - [x] PluginSandbox (8 tests): empty state, grant+check, duplicate rejection, revoke, grantRequired, revokeAll, countFor, clear
+  - [x] PluginRegistry (10 tests): empty state, register+find, duplicate rejection, invalid rejection, load+activate, dependency check, cascade deactivation, unregister active fails, unregister inactive, findByState, areDependenciesMet, clear
+  - [x] Integration (4 tests): full lifecycle with sandbox, dependency chain A→B→C with recursive cascade, plugin handlers, version compatibility
+- [x] Wire `NF_Phase14Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- PluginInstance lifecycle state machine: Discovered→Loaded→Activated→Deactivated→Unloaded ✓
+- Activate/deactivate handlers called at correct lifecycle points ✓
+- PluginSandbox capability-based permissions with grant/revoke/check ✓
+- PluginRegistry dependency checking blocks activation of unmet dependencies ✓
+- Recursive cascading deactivation (A→B→C chain) ✓
+- Integration tests verify full plugin pipeline with sandbox and handlers ✓
+- 42 test cases pass (127 assertions) ✓
+- Total test suite: 1869 tests passing ✓

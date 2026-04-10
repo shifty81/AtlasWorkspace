@@ -313,3 +313,14 @@ target_link_libraries(NF_Phase13Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase13Tests)
+
+# Phase 14 — Workspace Plugin System tests
+add_executable(NF_Phase14Tests
+    Workspace/test_phase14_plugin_system.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase14Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase14Tests)
