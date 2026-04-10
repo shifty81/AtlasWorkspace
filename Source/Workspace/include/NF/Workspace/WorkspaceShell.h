@@ -22,6 +22,7 @@
 
 #include "NF/Workspace/ToolRegistry.h"
 #include "NF/Workspace/PanelRegistry.h"
+#include "NF/Workspace/SharedPanels.h"
 #include "NF/Workspace/WorkspaceShellContract.h"
 #include "NF/Workspace/IGameProjectAdapter.h"
 #include "NF/Workspace/ProjectSystemsTool.h"
@@ -112,8 +113,9 @@ public:
         // Unload project adapter first
         unloadProject();
 
-        // Shut down tools, then shell contract
+        // Shut down tools, then panels, then shell contract
         m_toolRegistry.shutdownAll();
+        m_panelRegistry.shutdownAll();
         m_shellContract.shutdown();
 
         m_phase = ShellPhase::Destroyed;
@@ -174,13 +176,33 @@ public:
 
 private:
     // Register the canonical set of shared panels that every tool can use.
+    // Panels with factories create ISharedPanel instances on demand.
     void registerDefaultPanels() {
+        // Panels with ISharedPanel factory (workspace-owned, lifecycle-managed)
+        m_panelRegistry.registerPanelWithFactory(
+            {"content_browser",      "Content Browser",      SharedPanelCategory::Navigation},
+            [] { return std::make_unique<ContentBrowserSharedPanel>(); });
+        m_panelRegistry.registerPanelWithFactory(
+            {"component_inspector",  "Component Inspector",  SharedPanelCategory::Inspector},
+            [] { return std::make_unique<ComponentInspectorSharedPanel>(); });
+        m_panelRegistry.registerPanelWithFactory(
+            {"diagnostics",          "Diagnostics",          SharedPanelCategory::Output, false},
+            [] { return std::make_unique<DiagnosticsSharedPanel>(); });
+        m_panelRegistry.registerPanelWithFactory(
+            {"memory_profiler",      "Memory Profiler",      SharedPanelCategory::Output, false},
+            [] { return std::make_unique<MemoryProfilerSharedPanel>(); });
+        m_panelRegistry.registerPanelWithFactory(
+            {"pipeline_monitor",     "Pipeline Monitor",     SharedPanelCategory::Output, false},
+            [] { return std::make_unique<PipelineMonitorSharedPanel>(); });
+        m_panelRegistry.registerPanelWithFactory(
+            {"notification_center",  "Notification Center",  SharedPanelCategory::Status},
+            [] { return std::make_unique<NotificationCenterSharedPanel>(); });
+
+        // Descriptor-only panels (no factory yet — legacy or lightweight)
         m_panelRegistry.registerPanel({"inspector",       "Inspector",       SharedPanelCategory::Inspector});
         m_panelRegistry.registerPanel({"outliner",         "Outliner",        SharedPanelCategory::Navigation});
-        m_panelRegistry.registerPanel({"content_browser",  "Content Browser", SharedPanelCategory::Navigation});
         m_panelRegistry.registerPanel({"console",          "Console",         SharedPanelCategory::Output});
         m_panelRegistry.registerPanel({"log_output",       "Log Output",      SharedPanelCategory::Output});
-        m_panelRegistry.registerPanel({"diagnostics",      "Diagnostics",     SharedPanelCategory::Output, false});
         m_panelRegistry.registerPanel({"atlasai_chat",     "AtlasAI Chat",    SharedPanelCategory::AI, false});
         m_panelRegistry.registerPanel({"notifications",    "Notifications",   SharedPanelCategory::Status});
         m_panelRegistry.registerPanel({"command_palette",  "Command Palette", SharedPanelCategory::Editing, false});

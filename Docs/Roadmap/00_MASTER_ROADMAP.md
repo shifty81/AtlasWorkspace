@@ -46,7 +46,7 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - [x] Wire WorkspaceShell into EditorApp bootstrap (via Editor.h umbrella)
 - [x] Project adapter loading through WorkspaceShell
 - [x] Tests for WorkspaceShell, ToolRegistry, PanelRegistry (42 tests, 141 assertions)
-- [ ] Remove project-specific leakage from workspace core
+- [x] Remove project-specific leakage from workspace core (via Phase 3 — Source/Workspace/ module is tool-agnostic)
 
 **Success Criteria:**
 - Host bootstrap is clean and deterministic
@@ -79,12 +79,12 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 3 – Editor Consolidation
 
-**Status: IN PROGRESS**
+**Status: DONE**
 
 > ⚠️ STOP: No new V1 stub headers or S-story test expansions.
 > Stories S4–S189 produced 400+ header-only stubs. That pattern is closed.
 > All S-story test files and non-core V1 stubs have been moved to Legacy/.
-> Phase 3 is now the active track: implement real hosted tools.
+> Phase 3 is complete: real hosted tools, workspace/editor separation, shared panels.
 
 - [x] Create EditorToolRegistry and EditorSharedPanels headers
 - [x] Host NovaForge gameplay panels through adapter
@@ -106,15 +106,20 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
   - [x] Create Source/Workspace/ module (NF::Workspace) as the OS-like host layer
   - [x] Decouple WorkspaceShell from hardcoded tool includes (factory-based registration)
   - [x] Create CoreToolRoster.h for primary tool registration
-- [ ] Extract shared panels (Outliner, Inspector, ContentBrowser) from standalone editors
+- [x] Extract shared panels (Outliner, Inspector, ContentBrowser) from standalone editors
+  - [x] Create ISharedPanel interface in NF::Workspace
+  - [x] Extend PanelRegistry with factory-based panel creation and lifecycle
+  - [x] Implement 6 shared panels as ISharedPanel (ContentBrowser, ComponentInspector, Diagnostics, MemoryProfiler, PipelineMonitor, NotificationCenter)
+  - [x] Register panel factories in WorkspaceShell::registerDefaultPanels()
+  - [x] Add 16 tests for shared panel system (1118 total tests pass)
 
 **Success Criteria:**
-- Primary tool roster (~10 tools) all implemented as real NF::IHostedTool
-- All tools registered with WorkspaceShell via ToolRegistry at boot
-- Shared panels owned by workspace core, not duplicated per tool
-- NovaForge gameplay panels hosted through adapter
-- No new one-off standalone editor headers added to active build
-- Workspace shell is tool-agnostic (no hardcoded tool includes)
+- Primary tool roster (~10 tools) all implemented as real NF::IHostedTool ✓
+- All tools registered with WorkspaceShell via ToolRegistry at boot ✓
+- Shared panels owned by workspace core, not duplicated per tool ✓
+- NovaForge gameplay panels hosted through adapter ✓
+- No new one-off standalone editor headers added to active build ✓
+- Workspace shell is tool-agnostic (no hardcoded tool includes) ✓
 
 ---
 

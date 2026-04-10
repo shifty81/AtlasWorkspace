@@ -4,6 +4,9 @@
 // These panels are owned by workspace core and shared across multiple tools.
 // Include this header when you need access to the common panel set.
 
+// ── Workspace-owned shared panels (ISharedPanel implementations) ──
+#include "NF/Workspace/SharedPanels.h"
+
 // ── Core shared panels ──────────────────────────────────────────
 #include "NF/Editor/ViewportPanel.h"
 #include "NF/Editor/InspectorPanel.h"

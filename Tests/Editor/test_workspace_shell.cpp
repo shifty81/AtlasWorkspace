@@ -1,12 +1,14 @@
 // Tests/Editor/test_workspace_shell.cpp
 // Comprehensive tests for Phase 1 workspace core stabilization:
 //   IHostedTool, ToolRegistry, PanelRegistry, WorkspaceShell
+//   ISharedPanel, SharedPanels (Phase 3 shared panel extraction)
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include "NF/Editor/WorkspaceShell.h"
 #include "NF/Editor/ToolRegistry.h"
 #include "NF/Editor/PanelRegistry.h"
 #include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/SharedPanels.h"
 
 // ── Concrete test tool ────────────────────────────────────────────
 // Minimal IHostedTool implementation for test purposes.
@@ -394,16 +396,22 @@ TEST_CASE("WorkspaceShell: initialize registers default panels", "[workspace][sh
     NF::WorkspaceShell shell;
     REQUIRE(shell.initialize());
     REQUIRE(shell.phase() == NF::ShellPhase::Ready);
-    // canonical panels
+    // canonical descriptor-only panels
     REQUIRE(shell.panelRegistry().isRegistered("inspector"));
     REQUIRE(shell.panelRegistry().isRegistered("outliner"));
-    REQUIRE(shell.panelRegistry().isRegistered("content_browser"));
     REQUIRE(shell.panelRegistry().isRegistered("console"));
     REQUIRE(shell.panelRegistry().isRegistered("notifications"));
     REQUIRE(shell.panelRegistry().isRegistered("atlasai_chat"));
     REQUIRE(shell.panelRegistry().isRegistered("command_palette"));
     REQUIRE(shell.panelRegistry().isRegistered("asset_preview"));
-    REQUIRE(shell.panelRegistry().count() == 10);
+    // factory-backed shared panels
+    REQUIRE(shell.panelRegistry().isRegistered("content_browser"));
+    REQUIRE(shell.panelRegistry().isRegistered("component_inspector"));
+    REQUIRE(shell.panelRegistry().isRegistered("diagnostics"));
+    REQUIRE(shell.panelRegistry().isRegistered("memory_profiler"));
+    REQUIRE(shell.panelRegistry().isRegistered("pipeline_monitor"));
+    REQUIRE(shell.panelRegistry().isRegistered("notification_center"));
+    REQUIRE(shell.panelRegistry().count() == 14);
 }
 
 TEST_CASE("WorkspaceShell: double-init fails", "[workspace][shell]") {
@@ -521,8 +529,8 @@ TEST_CASE("ShellPhase: name round-trip", "[workspace][shell]") {
 TEST_CASE("WorkspaceShell: accessors return correct registries", "[workspace][shell]") {
     NF::WorkspaceShell shell;
     shell.initialize();
-    // Panel registry has default panels
-    REQUIRE(shell.panelRegistry().count() == 10);
+    // Panel registry has default panels (8 descriptor-only + 6 factory-backed)
+    REQUIRE(shell.panelRegistry().count() == 14);
     // Tool registry has no auto-registered tools (factories must be added externally)
     REQUIRE(shell.toolRegistry().count() == 0);
     // App registry is accessible
@@ -842,6 +850,302 @@ TEST_CASE("SceneEditorTool: project events propagate through WorkspaceShell", "[
 
     shell.toolRegistry().notifyProjectLoaded("atlas_project");
     shell.toolRegistry().notifyProjectUnloaded();
+
+    shell.shutdown();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ISharedPanel + PanelRegistry factory tests
+// ═══════════════════════════════════════════════════════════════════
+
+TEST_CASE("PanelRegistry: registerPanelWithFactory creates entry", "[workspace][panel][shared]") {
+    NF::PanelRegistry reg;
+    bool ok = reg.registerPanelWithFactory(
+        {"test_panel", "Test Panel", NF::SharedPanelCategory::Output},
+        [] { return std::make_unique<NF::DiagnosticsSharedPanel>(); });
+    REQUIRE(ok);
+    REQUIRE(reg.isRegistered("test_panel"));
+    REQUIRE(reg.hasFactory("test_panel"));
+    REQUIRE_FALSE(reg.hasInstance("test_panel"));
+}
+
+TEST_CASE("PanelRegistry: getOrCreatePanel creates instance on demand", "[workspace][panel][shared]") {
+    NF::PanelRegistry reg;
+    reg.registerPanelWithFactory(
+        {"diagnostics", "Diagnostics", NF::SharedPanelCategory::Output},
+        [] { return std::make_unique<NF::DiagnosticsSharedPanel>(); });
+
+    REQUIRE_FALSE(reg.hasInstance("diagnostics"));
+    auto* panel = reg.getOrCreatePanel("diagnostics");
+    REQUIRE(panel != nullptr);
+    REQUIRE(panel->panelId() == "diagnostics");
+    REQUIRE(panel->displayName() == "Diagnostics");
+    REQUIRE(reg.hasInstance("diagnostics"));
+}
+
+TEST_CASE("PanelRegistry: getOrCreatePanel returns same instance", "[workspace][panel][shared]") {
+    NF::PanelRegistry reg;
+    reg.registerPanelWithFactory(
+        {"mem", "Memory", NF::SharedPanelCategory::Output},
+        [] { return std::make_unique<NF::MemoryProfilerSharedPanel>(); });
+
+    auto* p1 = reg.getOrCreatePanel("mem");
+    auto* p2 = reg.getOrCreatePanel("mem");
+    REQUIRE(p1 == p2);
+}
+
+TEST_CASE("PanelRegistry: getOrCreatePanel returns nullptr for no factory", "[workspace][panel][shared]") {
+    NF::PanelRegistry reg;
+    reg.registerPanel({"inspector", "Inspector", NF::SharedPanelCategory::Inspector});
+    REQUIRE(reg.getOrCreatePanel("inspector") == nullptr);
+    REQUIRE(reg.getOrCreatePanel("nonexistent") == nullptr);
+}
+
+TEST_CASE("PanelRegistry: shutdownAll destroys panel instances", "[workspace][panel][shared]") {
+    NF::PanelRegistry reg;
+    reg.registerPanelWithFactory(
+        {"diag", "Diag", NF::SharedPanelCategory::Output},
+        [] { return std::make_unique<NF::DiagnosticsSharedPanel>(); });
+    auto* panel = reg.getOrCreatePanel("diag");
+    REQUIRE(panel != nullptr);
+    REQUIRE(reg.hasInstance("diag"));
+
+    reg.shutdownAll();
+    REQUIRE_FALSE(reg.hasInstance("diag"));
+}
+
+TEST_CASE("PanelRegistry: notifyToolActivated propagates to instances", "[workspace][panel][shared]") {
+    NF::PanelRegistry reg;
+    reg.registerPanelWithFactory(
+        {"cb", "Content Browser", NF::SharedPanelCategory::Navigation},
+        [] { return std::make_unique<NF::ContentBrowserSharedPanel>(); });
+
+    auto* panel = reg.getOrCreatePanel("cb");
+    REQUIRE(panel != nullptr);
+    reg.notifyToolActivated("workspace.scene_editor");
+    // ContentBrowserSharedPanel stores tool id internally
+    auto* cbPanel = dynamic_cast<NF::ContentBrowserSharedPanel*>(panel);
+    REQUIRE(cbPanel != nullptr);
+}
+
+TEST_CASE("PanelRegistry: notifySelectionChanged propagates to instances", "[workspace][panel][shared]") {
+    NF::PanelRegistry reg;
+    reg.registerPanelWithFactory(
+        {"ci", "Component Inspector", NF::SharedPanelCategory::Inspector},
+        [] { return std::make_unique<NF::ComponentInspectorSharedPanel>(); });
+
+    auto* panel = reg.getOrCreatePanel("ci");
+    auto* ciPanel = dynamic_cast<NF::ComponentInspectorSharedPanel*>(panel);
+    REQUIRE(ciPanel != nullptr);
+    REQUIRE_FALSE(ciPanel->isDirty());
+    reg.notifySelectionChanged();
+    REQUIRE(ciPanel->isDirty());
+}
+
+// ── ContentBrowserSharedPanel ────────────────────────────────────
+
+TEST_CASE("ContentBrowserSharedPanel: lifecycle", "[workspace][panel][content_browser]") {
+    NF::ContentBrowserSharedPanel panel;
+    REQUIRE(panel.panelId() == "content_browser");
+    REQUIRE(panel.displayName() == "Content Browser");
+    REQUIRE_FALSE(panel.isInitialized());
+
+    REQUIRE(panel.initialize());
+    REQUIRE(panel.isInitialized());
+    REQUIRE(panel.currentPath() == "/");
+
+    panel.setCurrentPath("/assets/textures");
+    REQUIRE(panel.currentPath() == "/assets/textures");
+
+    panel.navigateUp();
+    REQUIRE(panel.currentPath() == "/assets");
+
+    panel.shutdown();
+    REQUIRE_FALSE(panel.isInitialized());
+}
+
+// ── ComponentInspectorSharedPanel ────────────────────────────────
+
+TEST_CASE("ComponentInspectorSharedPanel: lifecycle", "[workspace][panel][component_inspector]") {
+    NF::ComponentInspectorSharedPanel panel;
+    REQUIRE(panel.panelId() == "component_inspector");
+    REQUIRE(panel.displayName() == "Component Inspector");
+    REQUIRE_FALSE(panel.isInitialized());
+
+    REQUIRE(panel.initialize());
+    REQUIRE(panel.isInitialized());
+    REQUIRE(panel.selectedEntityId() == 0);
+
+    panel.selectEntity(42);
+    REQUIRE(panel.selectedEntityId() == 42);
+    REQUIRE(panel.isDirty());
+
+    panel.clearDirty();
+    REQUIRE_FALSE(panel.isDirty());
+
+    panel.onSelectionChanged();
+    REQUIRE(panel.isDirty());
+
+    panel.shutdown();
+    REQUIRE_FALSE(panel.isInitialized());
+    REQUIRE(panel.selectedEntityId() == 0);
+}
+
+// ── DiagnosticsSharedPanel ───────────────────────────────────────
+
+TEST_CASE("DiagnosticsSharedPanel: lifecycle", "[workspace][panel][diagnostics]") {
+    NF::DiagnosticsSharedPanel panel;
+    REQUIRE(panel.panelId() == "diagnostics");
+    REQUIRE(panel.displayName() == "Diagnostics");
+
+    REQUIRE(panel.initialize());
+    REQUIRE(panel.entryCount() == 0);
+
+    panel.addEntry({"test warning", NF::DiagnosticsSharedPanel::DiagLevel::Warning, "test"});
+    panel.addEntry({"test error",   NF::DiagnosticsSharedPanel::DiagLevel::Error,   "test"});
+    panel.addEntry({"test info",    NF::DiagnosticsSharedPanel::DiagLevel::Info,    "test"});
+
+    REQUIRE(panel.entryCount() == 3);
+    REQUIRE(panel.countByLevel(NF::DiagnosticsSharedPanel::DiagLevel::Warning) == 1);
+    REQUIRE(panel.countByLevel(NF::DiagnosticsSharedPanel::DiagLevel::Error) == 1);
+    REQUIRE(panel.countByLevel(NF::DiagnosticsSharedPanel::DiagLevel::Info) == 1);
+
+    panel.clearEntries();
+    REQUIRE(panel.entryCount() == 0);
+
+    panel.shutdown();
+}
+
+// ── MemoryProfilerSharedPanel ────────────────────────────────────
+
+TEST_CASE("MemoryProfilerSharedPanel: lifecycle", "[workspace][panel][memory_profiler]") {
+    NF::MemoryProfilerSharedPanel panel;
+    REQUIRE(panel.panelId() == "memory_profiler");
+    REQUIRE(panel.displayName() == "Memory Profiler");
+
+    REQUIRE(panel.initialize());
+    REQUIRE(panel.totalAllocated() == 0);
+    REQUIRE(panel.allocationCount() == 0);
+    REQUIRE(panel.deallocationCount() == 0);
+
+    panel.recordAllocation(1024);
+    panel.recordAllocation(512);
+    REQUIRE(panel.totalAllocated() == 1536);
+    REQUIRE(panel.allocationCount() == 2);
+
+    panel.recordDeallocation(512);
+    REQUIRE(panel.totalAllocated() == 1024);
+    REQUIRE(panel.deallocationCount() == 1);
+
+    panel.update(0.016f);
+    REQUIRE(panel.frameCount() == 1);
+
+    panel.shutdown();
+}
+
+// ── PipelineMonitorSharedPanel ───────────────────────────────────
+
+TEST_CASE("PipelineMonitorSharedPanel: lifecycle", "[workspace][panel][pipeline_monitor]") {
+    NF::PipelineMonitorSharedPanel panel;
+    REQUIRE(panel.panelId() == "pipeline_monitor");
+    REQUIRE(panel.displayName() == "Pipeline Monitor");
+
+    REQUIRE(panel.initialize());
+    REQUIRE(panel.stageCount() == 0);
+
+    panel.addStage({"compile", NF::PipelineMonitorSharedPanel::StageStatus::Idle, 0.f});
+    panel.addStage({"link",    NF::PipelineMonitorSharedPanel::StageStatus::Idle, 0.f});
+    REQUIRE(panel.stageCount() == 2);
+
+    REQUIRE(panel.setStageStatus("compile", NF::PipelineMonitorSharedPanel::StageStatus::Running));
+    REQUIRE(panel.setStageProgress("compile", 0.5f));
+    REQUIRE(panel.stages()[0].status == NF::PipelineMonitorSharedPanel::StageStatus::Running);
+    REQUIRE(panel.stages()[0].progress == 0.5f);
+
+    REQUIRE_FALSE(panel.setStageStatus("nonexistent", NF::PipelineMonitorSharedPanel::StageStatus::Failed));
+
+    panel.clearStages();
+    REQUIRE(panel.stageCount() == 0);
+
+    panel.shutdown();
+}
+
+// ── NotificationCenterSharedPanel ────────────────────────────────
+
+TEST_CASE("NotificationCenterSharedPanel: lifecycle", "[workspace][panel][notification_center]") {
+    NF::NotificationCenterSharedPanel panel;
+    REQUIRE(panel.panelId() == "notification_center");
+    REQUIRE(panel.displayName() == "Notification Center");
+
+    REQUIRE(panel.initialize());
+
+    NF::NotifEntry e1(1, "Build complete", NF::NotifChannel::InEditor, NF::NotifPriority::Normal);
+    NF::NotifEntry e2(2, "Error detected", NF::NotifChannel::InEditor, NF::NotifPriority::High);
+
+    REQUIRE(panel.editor().addNotif(e1));
+    REQUIRE(panel.editor().addNotif(e2));
+    REQUIRE(panel.editor().notifCount() == 2);
+    REQUIRE(panel.editor().countUnread() == 2);
+
+    auto* found = panel.editor().findNotif(1);
+    REQUIRE(found != nullptr);
+    found->setIsRead(true);
+    REQUIRE(panel.editor().countUnread() == 1);
+
+    REQUIRE(panel.editor().removeNotif(2));
+    REQUIRE(panel.editor().notifCount() == 1);
+
+    panel.shutdown();
+}
+
+// ── WorkspaceShell integration with shared panels ────────────────
+
+TEST_CASE("WorkspaceShell: factory panels are created on getOrCreatePanel", "[workspace][shell][shared]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    // Before creation
+    REQUIRE_FALSE(shell.panelRegistry().hasInstance("content_browser"));
+    REQUIRE(shell.panelRegistry().hasFactory("content_browser"));
+
+    // Create on demand
+    auto* panel = shell.panelRegistry().getOrCreatePanel("content_browser");
+    REQUIRE(panel != nullptr);
+    REQUIRE(panel->panelId() == "content_browser");
+    REQUIRE(shell.panelRegistry().hasInstance("content_browser"));
+
+    shell.shutdown();
+    // After shutdown, instances are destroyed
+    REQUIRE_FALSE(shell.panelRegistry().hasInstance("content_browser"));
+}
+
+TEST_CASE("WorkspaceShell: all 6 factory panels can be created", "[workspace][shell][shared]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    const char* factoryPanels[] = {
+        "content_browser", "component_inspector", "diagnostics",
+        "memory_profiler", "pipeline_monitor", "notification_center"
+    };
+
+    for (const char* id : factoryPanels) {
+        REQUIRE(shell.panelRegistry().hasFactory(id));
+        auto* panel = shell.panelRegistry().getOrCreatePanel(id);
+        REQUIRE(panel != nullptr);
+        REQUIRE(panel->panelId() == id);
+    }
+
+    shell.shutdown();
+}
+
+TEST_CASE("WorkspaceShell: descriptor-only panels have no factory", "[workspace][shell][shared]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    REQUIRE_FALSE(shell.panelRegistry().hasFactory("inspector"));
+    REQUIRE_FALSE(shell.panelRegistry().hasFactory("outliner"));
+    REQUIRE_FALSE(shell.panelRegistry().hasFactory("console"));
+    REQUIRE(shell.panelRegistry().getOrCreatePanel("inspector") == nullptr);
 
     shell.shutdown();
 }

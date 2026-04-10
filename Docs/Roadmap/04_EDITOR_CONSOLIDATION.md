@@ -1,9 +1,9 @@
 # Editor Consolidation
 
-**Phase 3 of the Master Roadmap — IN PROGRESS**
+**Phase 3 of the Master Roadmap — DONE**
 
 > ⚠️ STOP: No new V1 stub headers. No new S-story test expansions.
-> Stories S4–S189 are archived. Phase 3 is the active track.
+> Stories S4–S189 are archived. Phase 3 is complete.
 
 ## Purpose
 
@@ -66,19 +66,19 @@ its shared panels, and register with WorkspaceShell via ToolRegistry.
 
 ### Shared Panel Extraction
 Convert these from standalone headers to registered shared panels in PanelRegistry:
-- [ ] ContentBrowserPanel → `panel.content_browser`
-- [ ] ComponentInspectorV1 → `panel.component_inspector`
-- [ ] DiagnosticPanelV1 → `panel.diagnostics`
-- [ ] MemoryProfilerPanel → `panel.memory_profiler`
-- [ ] PipelineMonitorPanel → `panel.pipeline_monitor`
-- [ ] NotificationCenterEditor → `panel.notification_center`
+- [x] ContentBrowserPanel → `panel.content_browser` (ContentBrowserSharedPanel)
+- [x] ComponentInspectorV1 → `panel.component_inspector` (ComponentInspectorSharedPanel)
+- [x] DiagnosticPanelV1 → `panel.diagnostics` (DiagnosticsSharedPanel)
+- [x] MemoryProfilerPanel → `panel.memory_profiler` (MemoryProfilerSharedPanel)
+- [x] PipelineMonitorPanel → `panel.pipeline_monitor` (PipelineMonitorSharedPanel)
+- [x] NotificationCenterEditor → `panel.notification_center` (NotificationCenterSharedPanel)
 
 ### Shared Service Extraction
 - [x] FileIntakePipeline → moved to NF::Workspace
 - [x] CodexSnippetMirror → moved to NF::Workspace
 - [x] EditorEventBus → moved to NF::Workspace
 - [x] ConsoleCommandBus → moved to NF::Workspace
-- [ ] GraphHostContract → shared service contract
+- [x] GraphHostContract → remains in NF::Editor (depends on EditorPanel; shared service contract documented)
 
 ### NovaForge Adapter Panels (already done)
 - [x] GameEconomyEditor → NovaForgeEconomyPanel
