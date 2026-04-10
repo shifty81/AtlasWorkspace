@@ -1,11 +1,18 @@
 #pragma once
-// NF::OpenGLBackend — GPU-accelerated compatibility rendering backend.
-// Uses OpenGL for quad batching, font atlas rendering, and 3D viewport.
-// Requires OpenGL headers and a valid GL context.
+// NF::OpenGLBackend — GPU-accelerated COMPATIBILITY rendering backend.
 //
-// NOTE: This is a COMPATIBILITY backend, not the canonical long-term path.
-// The intended primary backend is D3D11 + DirectWrite.
+// ⚠️  COMPAT ONLY: This backend is not the canonical render path.
+//     Primary target: D3D11 + DirectWrite (Windows, GPU-first).
+//     Fallback:       GDI   (Windows bootstrap/recovery only).
+//
+// OpenGLBackend exists for cross-platform bring-up and compatibility
+// testing. It is not included in the default Atlas build and is not
+// a supported production target.
+//
+// Include via: NF/UI/Compat/CompatBackends.h
+// Requires:    OpenGL headers + a valid GL context (GLFW or platform).
 #include "NF/UI/UIBackend.h"
+#include "NF/UI/IUIBackendInterfaces.h"
 
 namespace NF {
 
@@ -85,11 +92,13 @@ void main() {
 } // namespace GLShaders
 
 // ── OpenGLBackend ────────────────────────────────────────────────
-// Stub implementation.  When a real OpenGL context is available,
-// this will compile shaders, create VAO/VBO/EBO, bake a font atlas,
-// and render UI quads via glDrawElements.
+// Compat stub implementation.  Implements IFrameBackend and IGeometryBackend.
+// When a real OpenGL context is available, this will compile shaders,
+// create VAO/VBO/EBO, bake a font atlas, and render UI quads via glDrawElements.
 
-class OpenGLBackend final : public UIBackend {
+class OpenGLBackend final : public UIBackend,
+                            public IFrameBackend,
+                            public IGeometryBackend {
 public:
     bool init(int width, int height) override {
         m_width  = width;

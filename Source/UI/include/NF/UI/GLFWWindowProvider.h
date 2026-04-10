@@ -1,5 +1,10 @@
 #pragma once
-// NF::GLFWWindowProvider — GLFW window abstraction for the editor.
+// NF::GLFWWindowProvider — GLFW window abstraction for compat / OpenGL path.
+//
+// ⚠️  COMPAT ONLY: Part of the OpenGL compatibility backend.
+//     Not used by the primary D3D11 / Win32 window path.
+//     Include via: NF/UI/Compat/CompatBackends.h
+//
 // Provides window creation, event polling, and frame timing.
 // Compiles as a stub without GLFW headers; real implementation requires
 // linking against GLFW and a valid display server.

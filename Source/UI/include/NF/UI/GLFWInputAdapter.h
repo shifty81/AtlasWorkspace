@@ -1,5 +1,10 @@
 #pragma once
 // NF::GLFWInputAdapter — Bridges GLFW input events to the InputSystem.
+//
+// ⚠️  COMPAT ONLY: Part of the OpenGL compatibility backend.
+//     Not used by the primary Win32 input path.
+//     Include via: NF/UI/Compat/CompatBackends.h
+//
 // Installs GLFW callbacks that translate key/mouse/scroll events into
 // InputSystem calls.  Compiles as a stub without GLFW headers; real
 // implementation would use glfwSetKeyCallback, glfwSetCursorPosCallback, etc.
