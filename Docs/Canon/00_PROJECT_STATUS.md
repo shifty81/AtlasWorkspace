@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase 15 Complete — Workspace Diagnostics and Telemetry**
+Current Phase: **Phase 16 Complete — Workspace Scripting and Automation**
 
 ## Build Status
 
@@ -38,6 +38,7 @@ Current Phase: **Phase 15 Complete — Workspace Diagnostics and Telemetry**
 | 13 | Workspace Preferences and Configuration | ✅ Done |
 | 14 | Workspace Plugin System | ✅ Done |
 | 15 | Workspace Diagnostics and Telemetry | ✅ Done |
+| 16 | Workspace Scripting and Automation | ✅ Done |
 
 ## Active Problems
 
@@ -47,10 +48,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 16: Workspace Scripting and Automation**
+**Phase 17: Workspace Search and Indexing**
 
-Implement workspace-level scripting and automation infrastructure:
-- ScriptBinding — typed script function binding with parameter descriptors
-- ScriptContext — execution environment with variable scope
-- ScriptEngine — register/execute script bindings with error handling
-- AutomationTask — named automation sequence with step execution
+Implement workspace-level search and content indexing infrastructure:
+- SearchQuery — typed search query with filters and scope
+- SearchResult — ranked result with match context
+- SearchIndex — in-memory content index with add/remove/query
+- SearchEngine — register indices and execute cross-index queries

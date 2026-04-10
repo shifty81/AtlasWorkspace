@@ -335,3 +335,14 @@ target_link_libraries(NF_Phase15Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase15Tests)
+
+# Phase 16 — Workspace Scripting and Automation tests
+add_executable(NF_Phase16Tests
+    Workspace/test_phase16_scripting.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase16Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase16Tests)

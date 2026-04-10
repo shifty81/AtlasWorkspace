@@ -534,3 +534,42 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify diagnostic→telemetry wiring and lifecycle ✓
 - 52 test cases pass (200 assertions) ✓
 - Total test suite: 1921 tests passing ✓
+
+---
+
+## Phase 16 – Workspace Scripting and Automation
+
+**Status: Done**
+
+- [x] Create `WorkspaceScripting.h` — workspace scripting and automation infrastructure
+  - [x] ScriptParamType enum (Void/Bool/Int/Float/String/Path/Id/Custom) with name helper
+  - [x] ScriptParam — typed parameter descriptor (name/type/defaultValue/required); isValid; equality
+  - [x] ScriptBinding — typed function binding: name/description/params/handler/returnType; addParam/findParam/requiredParamCount; invoke; isValid
+  - [x] ScriptContext — execution environment: variable scope (set/get/getOr/has/remove/clear, MAX_VARIABLES=512); output capture (append/clear); error state (set/has/clear); full reset
+  - [x] ScriptExecStatus enum (Success/NotFound/InvalidArgs/HandlerFailed/BindingInvalid) with name helper
+  - [x] ScriptExecResult — status/bindingId/errorMessage; succeeded/failed; ok/fail factories
+  - [x] ScriptEngine — registerBinding/unregisterBinding/isRegistered/findBinding/allBindings; execute with arg validation and handler dispatch; totalExecutions/successfulExecutions; clear; MAX_BINDINGS=1024
+  - [x] AutomationStepStatus enum (Pending/Running/Succeeded/Failed/Skipped) with name helper
+  - [x] AutomationStep — named step with handler, status tracking, reset
+  - [x] AutomationTaskState enum (Idle/Running/Completed/Failed/Aborted) with name helper
+  - [x] AutomationTask — named sequence: addStep/removeStep/enableStep/findStep; run with abort-on-failure; step counters (run/succeeded/failed/skipped); reset; MAX_STEPS=256
+- [x] Add `Tests/Workspace/test_phase16_scripting.cpp` — 62 test cases / 194 assertions:
+  - [x] Enum name strings (4 tests): paramType, execStatus, stepStatus, taskState
+  - [x] ScriptParam (4 tests): default invalid, valid construction, void invalid, equality
+  - [x] ScriptBinding (9 tests): default invalid, valid with handler, addParam/findParam, duplicate rejection, invalid rejection, invoke, invoke without handler, returnType, params()
+  - [x] ScriptContext (11 tests): empty state, set/get/has, missing key, getOr, overwrite, empty key rejection, remove, clearVariables, output, error state, reset
+  - [x] ScriptExecResult (2 tests): ok/fail factories
+  - [x] ScriptEngine (12 tests): empty, register/find, duplicate rejection, invalid rejection, unregister, execute success, NotFound, HandlerFailed, InvalidArgs, sufficient args, allBindings, clear
+  - [x] AutomationStep (3 tests): default invalid, valid construction, reset
+  - [x] AutomationTask (13 tests): default state, addStep/findStep, duplicate rejection, invalid rejection, removeStep, enableStep, run all succeed, abort on failure, continue on failure, skip disabled, reset, steps(), run empty
+  - [x] Integration (4 tests): engine+context output, automation+engine pipeline, abort on engine failure, context variable persistence
+- [x] Wire `NF_Phase16Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ScriptBinding provides typed function descriptors with parameter validation ✓
+- ScriptContext provides isolated execution environment with variable scope ✓
+- ScriptEngine dispatches bindings with arg validation and error handling ✓
+- AutomationTask executes step sequences with abort-on-failure and step skip support ✓
+- Integration tests verify engine→context→task pipeline end-to-end ✓
+- 62 test cases pass (194 assertions) ✓
+- Total test suite: 1983 tests passing ✓
