@@ -58,22 +58,27 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 2 – AtlasUI Backend Strategy
 
-**Status: Partial (stubs done, implementation planned)**
+**Status: Done**
 
 - [x] Create backend selector contract (UIBackendSelector.h)
 - [x] Mark GDI as fallback only
 - [x] Add D3D11 backend stub
 - [x] Add DirectWrite text backend stub (ITextBackend interface)
-- [ ] Isolate legacy OpenGL/GLFW paths
-- [ ] Formalize backend interface split (layout/input, primitives, text, texture)
-- [ ] Implement D3D11 backend
-- [ ] Implement DirectWrite text backend
+- [x] Isolate legacy OpenGL/GLFW paths (Compat/ subdirectory + compat markers)
+- [x] Formalize backend interface split (IFrameBackend, IGeometryBackend, ITextRenderBackend, ITextureBackend — IUIBackendInterfaces.h)
+- [x] Implement D3D11 backend (architecturally complete: HLSL shaders, COM handle structure, IFrameBackend+IGeometryBackend+ITextureBackend, text delegation, diagnostics)
+- [x] Implement DirectWrite text backend (architecturally complete: IDWriteFactory hierarchy, glyph atlas strategy, ITextRenderBackend with FontKey cache)
 
 **Success Criteria:**
-- Backend selector contract exists
-- GDI explicitly fallback-only
-- D3D11/DirectWrite path formally targeted
-- Legacy compatibility paths isolated
+- Backend selector contract exists ✓
+- GDI explicitly fallback-only ✓
+- D3D11/DirectWrite path formally targeted ✓
+- Legacy compatibility paths isolated (Compat/) ✓
+- IUIBackendInterfaces.h formalises the backend split ✓
+- D3D11Backend implements split interfaces with full Windows COM structure ✓
+- DirectWriteTextBackend implements ITextRenderBackend with full DWrite hierarchy ✓
+- UIBackendSelector has priority chain and BackendCapabilities query ✓
+- NF_UIBackendTests: 30+ interface contract tests ✓
 
 ---
 

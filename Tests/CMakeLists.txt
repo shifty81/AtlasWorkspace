@@ -171,6 +171,14 @@ add_executable(NF_UITests
 target_link_libraries(NF_UITests PRIVATE NF::UI NF::Core NF::Input Catch2::Catch2)
 catch_discover_tests(NF_UITests)
 
+# Phase 2 — UI backend interface contract tests
+add_executable(NF_UIBackendTests
+    UI/test_ui_backends.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_UIBackendTests PRIVATE NF::UI NF::Core Catch2::Catch2)
+catch_discover_tests(NF_UIBackendTests)
+
 # Workspace wiring tests (DrawListDispatcher, InputBridge, new widgets)
 add_executable(NF_WorkspaceWiringTests
     UI/test_workspace_wiring.cpp
