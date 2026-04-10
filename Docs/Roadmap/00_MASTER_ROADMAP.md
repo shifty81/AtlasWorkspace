@@ -395,3 +395,105 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests: keyboard→command, group undo, hook logging, full serialize pipeline ✓
 - 81 test cases pass (207 assertions) ✓
 - Total test suite: 1735 tests passing ✓
+
+---
+
+## Phase 12 – Event Bus and Workspace Notifications
+
+**Status: Done**
+
+- [x] Create `WorkspaceEventBus.h` — workspace-level event infrastructure
+  - [x] WorkspaceEventType enum (Tool/Panel/Project/Asset/Command/Selection/Layout/Notification/AI/System/Custom) with name helper
+  - [x] WorkspaceEventPriority enum (Low/Normal/High/Critical) with name helper
+  - [x] WorkspaceEvent — typed event descriptor: eventType/source/payload/timestampToken/priority; isValid/isHighPriority/isCritical; static make() factory
+  - [x] WorkspaceEventSubscription — id/type/sourceFilter/handler/active/wildcard; matches()/deliver()/cancel(); deliveryCount tracking
+  - [x] WorkspaceEventBus — subscribe/subscribeAll/unsubscribe/publish; per-type subscriber dispatch; wildcard subscriptions; find/countByType; totalPublished/totalDispatches stats; clear()
+  - [x] WorkspaceEventQueue — deferred event accumulation; enqueue/drain; priority-sorted drain (Critical>High>Normal>Low); tick-based drain with configurable interval; pending()/clearQueue(); totalDrained tracking
+  - [x] WsNotificationSeverity enum (Info/Success/Warning/Error/Critical) with name helper
+  - [x] WorkspaceNotificationEntry — id/title/message/source/severity/timestampMs/read; markRead/isValid/isError/isCritical/isUnread
+  - [x] WorkspaceNotificationBus — layered on WorkspaceEventBus; notify/info/success/warning/error/critical; markRead/markAllRead; find/unreadCount/countBySeverity/errorCount; history management (MAX_HISTORY=256); clearHistory
+- [x] Add `Tests/Workspace/test_phase12_event_bus.cpp` — 50 test cases / 168 assertions:
+  - [x] WorkspaceEventType (2 tests): event type names, priority names
+  - [x] WorkspaceEvent (4 tests): default invalid, make factory, priority queries, empty source invalid
+  - [x] WorkspaceEventBus (14 tests): empty state, subscribe, publish/dispatch, non-matching type, source filter, wildcard, unsubscribe, unknown unsubscribe, invalid publish, multiple subscribers, find by id, countByType, deliveryCount, clear
+  - [x] WorkspaceEventQueue (10 tests): empty state, enqueue, reject invalid, drain, priority sort, empty drain, tick-based drain, tick empty, clearQueue, pending view, interval defaults
+  - [x] WorkspaceNotificationBus (15 tests): severity names, entry validity, markRead, isError/isCritical, empty bus, notify stores history, publishes on bus, convenience helpers, markRead/markAllRead, errorCount, clearHistory, priority escalation, default source
+  - [x] Integration (5 tests): multi-type dispatch, queue accumulate+drain, notification bus events, tick-based mixed priority, full pipeline
+- [x] Wire `NF_Phase12Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- WorkspaceEventBus provides synchronous pub/sub with per-type dispatch and wildcard subscriptions ✓
+- WorkspaceEventQueue accumulates events and drains with priority ordering (Critical first) ✓
+- Tick-based drain enables frame-aligned event delivery ✓
+- WorkspaceNotificationBus layers notification semantics on EventBus with history management ✓
+- Error/Critical notifications auto-escalate to High/Critical bus priority ✓
+- Integration tests verify the full pipeline: bus + queue + notifications ✓
+- 50 test cases pass (168 assertions) ✓
+- Total test suite: 1785 tests passing ✓
+
+---
+
+## Phase 13 – Workspace Preferences and Configuration
+
+**Status: Done**
+
+- [x] Create `WorkspacePreferences.h` — workspace preference infrastructure
+  - [x] PreferenceCategory enum (General/Appearance/Keybindings/Editor/Build/AI/Plugin/Custom) with name helper
+  - [x] PreferenceType enum (String/Bool/Int/Float) with name helper
+  - [x] PreferenceEntry — key/displayName/description/defaultValue/category/type/min/max/hasRange/readOnly; isValid(); validate(); static factories (makeString/makeBool/makeInt/makeFloat)
+  - [x] PreferenceRegistry — registerEntry/unregisterEntry/find/isRegistered/findByCategory/countByCategory/validate; populateDefaults(); loadWorkspaceDefaults(); MAX_ENTRIES=512
+  - [x] PreferenceController — coordinated access binding Registry+SettingsStore+EventBus; set(with validation)/get/getOr/getBool/getInt/getFloat; resetToDefault/resetAll; initialize(); fires System events on change
+  - [x] PreferenceSerializeResult — succeeded/entryCount/errorMessage; ok()/fail() factories
+  - [x] PreferenceSerializer — serializeRegistry/deserializeRegistry to WorkspaceProjectFile "Preferences.Registry" section; roundTrip() helper
+- [x] Add `Tests/Workspace/test_phase13_preferences.cpp` — 42 test cases / 157 assertions:
+  - [x] PreferenceCategory/PreferenceType (2 tests): enum name strings
+  - [x] PreferenceEntry (10 tests): default invalid, makeString/makeBool/makeInt/makeFloat, validate Bool/Int/Float/String, empty always valid
+  - [x] PreferenceRegistry (10 tests): empty state, register+find, duplicate rejection, invalid rejection, unregister, findByCategory, countByCategory, validate delegation, populateDefaults, loadWorkspaceDefaults, clear
+  - [x] PreferenceController (10 tests): set+get, reject unregistered, reject readOnly, validate before set, typed getters, resetToDefault, resetAll, EventBus on set, EventBus on reset, getOr fallback
+  - [x] PreferenceSerializer (7 tests): result factories, serialize writes section, deserialize reads entries, missing section fails, roundTrip preserves entries, roundTrip preserves readOnly
+  - [x] Integration (3 tests): full lifecycle, serialization round-trip, preferences + event bus + notification bus
+- [x] Wire `NF_Phase13Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- PreferenceEntry validates typed values with optional range constraints ✓
+- PreferenceRegistry provides centralized preference registration with category organization ✓
+- PreferenceController coordinates validated access with EventBus change notifications ✓
+- PreferenceSerializer round-trips registry through WorkspaceProjectFile losslessly ✓
+- 13 workspace-default preferences auto-registered by loadWorkspaceDefaults ✓
+- Integration tests: lifecycle, serialization, and multi-system pipeline ✓
+- 42 test cases pass (157 assertions) ✓
+- Total test suite: 1827 tests passing ✓
+
+---
+
+## Phase 14 – Workspace Plugin System
+
+**Status: Done**
+
+- [x] Create `WorkspacePluginSystem.h` — workspace plugin infrastructure
+  - [x] PluginState enum (Unloaded/Discovered/Loaded/Activated/Deactivated/Error) with name helper
+  - [x] PluginCapability enum (ReadSettings/WriteSettings/RegisterTools/RegisterPanels/FileSystem/Network/EventBus/Commands) with name helper
+  - [x] PluginVersion — semver with comparison operators, parse(), toString(), isValid()
+  - [x] PluginDescriptor — id/displayName/author/description/version/dependencies/requiredCapabilities; isValid/dependsOn/requiresCapability
+  - [x] PluginInstance — lifecycle state machine: load/activate/deactivate/unload; activate/deactivate handlers; setError
+  - [x] PluginSandbox — capability-based permissions: grant/revoke/hasCapability; grantRequired(descriptor); revokeAll; countFor
+  - [x] PluginRegistry — registerPlugin/unregisterPlugin/find/isRegistered; loadPlugin/activatePlugin/deactivatePlugin/unloadPlugin; areDependenciesMet (dependency check); recursive cascading deactivation; activeCount/findByState; MAX_PLUGINS=128
+- [x] Add `Tests/Workspace/test_phase14_plugin_system.cpp` — 42 test cases / 127 assertions:
+  - [x] PluginState/PluginCapability (2 tests): enum name strings
+  - [x] PluginVersion (5 tests): make/toString, zero invalid, comparison operators, parse
+  - [x] PluginDescriptor (4 tests): default invalid, valid construction, dependsOn, requiresCapability
+  - [x] PluginInstance (9 tests): initial state, lifecycle (load→activate→deactivate→unload), no activate without load, handler failure→Error, handlers called, unload from active, reactivation, setError
+  - [x] PluginSandbox (8 tests): empty state, grant+check, duplicate rejection, revoke, grantRequired, revokeAll, countFor, clear
+  - [x] PluginRegistry (10 tests): empty state, register+find, duplicate rejection, invalid rejection, load+activate, dependency check, cascade deactivation, unregister active fails, unregister inactive, findByState, areDependenciesMet, clear
+  - [x] Integration (4 tests): full lifecycle with sandbox, dependency chain A→B→C with recursive cascade, plugin handlers, version compatibility
+- [x] Wire `NF_Phase14Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- PluginInstance lifecycle state machine: Discovered→Loaded→Activated→Deactivated→Unloaded ✓
+- Activate/deactivate handlers called at correct lifecycle points ✓
+- PluginSandbox capability-based permissions with grant/revoke/check ✓
+- PluginRegistry dependency checking blocks activation of unmet dependencies ✓
+- Recursive cascading deactivation (A→B→C chain) ✓
+- Integration tests verify full plugin pipeline with sandbox and handlers ✓
+- 42 test cases pass (127 assertions) ✓
+- Total test suite: 1869 tests passing ✓

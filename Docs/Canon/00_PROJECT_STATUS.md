@@ -1,11 +1,11 @@
 # Project Status
 
-Current Phase: **Phase 11 Complete — Command Bus and Action System**
+Current Phase: **Phase 14 Complete — Workspace Plugin System**
 
 ## Build Status
 
 - **Passing**
-- All 20 test suites build and pass
+- All 23 test suites build and pass
 - Tests require online fetch of Catch2 (gated behind `ATLAS_ENABLE_ONLINE_DEPS`)
 
 ## Repo Condition
@@ -16,6 +16,7 @@ Current Phase: **Phase 11 Complete — Command Bus and Action System**
 - Editor surface rationalized (~10 primary tool implementations)
 - Backend strategy formalized (Phase 2 complete)
 - Workspace integration surfaces formally contracted (Phase 7)
+- Workspace-level event bus and notification system operational (Phase 12)
 
 ## Phase Summary
 
@@ -33,6 +34,9 @@ Current Phase: **Phase 11 Complete — Command Bus and Action System**
 | 9 | Asset Pipeline and Content Routing | ✅ Done |
 | 10 | Project Persistence and Serialization | ✅ Done |
 | 11 | Command Bus and Action System | ✅ Done |
+| 12 | Event Bus and Workspace Notifications | ✅ Done |
+| 13 | Workspace Preferences and Configuration | ✅ Done |
+| 14 | Workspace Plugin System | ✅ Done |
 
 ## Active Problems
 
@@ -42,10 +46,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 12: Event Bus and Workspace Notifications**
+**Phase 15: Workspace Diagnostics and Telemetry**
 
-Implement the workspace-level publish/subscribe event infrastructure:
-- WorkspaceEvent — typed event descriptor (eventType, source, payload string, timestamp token)
-- EventBus — subscribe/unsubscribe/publish; per-type subscriber lists; synchronous dispatch; wildcard subscriptions
-- EventQueue — deferred/async event accumulation with tick-based drain; priority ordering
-- WorkspaceNotification — higher-level notification model (info/warning/error severity) layered on EventBus
+Implement workspace-level diagnostics and telemetry infrastructure:
+- DiagnosticEntry — structured diagnostic record (category, severity, source, message, timestamp)
+- DiagnosticCollector — collect and query diagnostics with category/severity filtering
+- TelemetryEvent — typed telemetry event (feature usage, performance, errors)
+- TelemetryCollector — accumulate telemetry events with session-scoped lifecycle
