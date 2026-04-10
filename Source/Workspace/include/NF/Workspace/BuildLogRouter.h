@@ -16,6 +16,7 @@
 #include "NF/Workspace/LoggingRouteV1.h"
 #include "NF/Workspace/AIIntegration.h"
 #include <cstdint>
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -178,7 +179,7 @@ public:
     [[nodiscard]] size_t      errorCount()         const { return m_errorCount; }
     [[nodiscard]] size_t      warningCount()       const { return m_warningCount; }
     [[nodiscard]] size_t      aiRoutedCount()      const { return m_aiRoutedCount; }
-    [[nodiscard]] const std::vector<BuildLogEntry>& entries() const { return m_entries; }
+    [[nodiscard]] const std::deque<BuildLogEntry>& entries() const { return m_entries; }
 
     [[nodiscard]] std::vector<BuildLogEntry> errors() const {
         std::vector<BuildLogEntry> result;
@@ -213,7 +214,7 @@ private:
 
         // Ring buffer
         if (m_entries.size() >= m_config.maxEntries) {
-            m_entries.erase(m_entries.begin());
+            m_entries.pop_front();
         }
         m_entries.push_back(buildEntry);
         ++m_capturedCount;
@@ -238,7 +239,8 @@ private:
     size_t                m_errorCount    = 0;
     size_t                m_warningCount  = 0;
     size_t                m_aiRoutedCount = 0;
-    std::vector<BuildLogEntry> m_entries;
+    // Ring buffer (deque for O(1) front removal)
+    std::deque<BuildLogEntry> m_entries;
 };
 
 } // namespace NF

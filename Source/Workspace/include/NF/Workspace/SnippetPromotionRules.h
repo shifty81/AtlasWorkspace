@@ -99,11 +99,17 @@ struct PromotionLogEntry {
 // ── Content Hash Utility ──────────────────────────────────────────
 // FNV-1a 64-bit hash for snippet body deduplication.
 
+// FNV-1a 64-bit hash for snippet body deduplication.
+// Offset basis: 14695981039346656037 (FNV-1a 64-bit standard value)
+// Prime: 1099511628211 (FNV-1a 64-bit standard value)
+
 inline uint64_t fnv1aHash(const std::string& data) {
-    uint64_t hash = 14695981039346656037ULL;
+    constexpr uint64_t kFnv1aOffsetBasis = 14695981039346656037ULL;
+    constexpr uint64_t kFnv1aPrime       = 1099511628211ULL;
+    uint64_t hash = kFnv1aOffsetBasis;
     for (char c : data) {
         hash ^= static_cast<uint64_t>(static_cast<unsigned char>(c));
-        hash *= 1099511628211ULL;
+        hash *= kFnv1aPrime;
     }
     return hash;
 }
