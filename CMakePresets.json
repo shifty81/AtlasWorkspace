@@ -154,6 +154,20 @@
         "ATLAS_BUILD_TESTS": "OFF",
         "ATLAS_BUILD_WORKSPACE": "ON"
       }
+    },
+    {
+      "name": "ci-release-tests",
+      "displayName": "CI — Release + Tests (Linux/macOS)",
+      "description": "Ninja-based release build with tests enabled (smoke-test release artefacts on CI).",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/Builds/ci-release-tests",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "ATLAS_BUILD_TESTS": "ON",
+        "ATLAS_ENABLE_ONLINE_DEPS": "ON",
+        "ATLAS_BUILD_WORKSPACE": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -211,6 +225,10 @@
     {
       "name": "ci-release",
       "configurePreset": "ci-release"
+    },
+    {
+      "name": "ci-release-tests",
+      "configurePreset": "ci-release-tests"
     }
   ],
   "testPresets": [
@@ -240,6 +258,13 @@
     {
       "name": "ci-debug",
       "configurePreset": "ci-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-release-tests",
+      "configurePreset": "ci-release-tests",
       "output": {
         "outputOnFailure": true
       }

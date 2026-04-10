@@ -162,9 +162,22 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 
 ## Phase 6 – Build, Patch, and Release Pipeline
 
-**Status: Planned**
+**Status: Done**
 
-- [ ] Stabilize build presets and dependency policy
-- [ ] Finalize patch apply/remove workflow
-- [ ] Improve repo audit tooling
-- [ ] Define packaging and release path
+- [x] Stabilize build presets and dependency policy
+  - [x] Add `ci-release-tests` configure/build/test preset (Release + tests for CI smoke-testing)
+  - [x] Add `DependencyPolicy.h` — dependency tier (Required/Optional/Forbidden), acquisition source (Vendored/FetchContent/vcpkg/System), evaluation with online-dep gating, canonical workspace policy
+- [x] Finalize patch apply/remove workflow
+  - [x] Add `PatchApplier.h` — PatchRecord, PatchState machine, dependency-ordered apply/remove, reset-on-failure, file entry inventory
+- [x] Improve repo audit tooling
+  - [x] Add `RepoAuditReport.h` — programmatic audit result: pass/warn/fail/skip checks, category classification, summary counters, CI-consumable failures list
+- [x] Define packaging and release path
+  - [x] Add `ReleaseManifest.h` — SemanticVersion, ReleaseTarget+ReleaseArtifact, ReleaseManifestValidator with gate callables
+- [x] 74 Phase 6 tests pass (187 assertions)
+
+**Success Criteria:**
+- `ci-release-tests` preset enables release+tests on CI without a separate build step ✓
+- DependencyPolicy classifies and evaluates all workspace deps including ATLAS_ENABLE_ONLINE_DEPS gating ✓
+- PatchApplier enforces ordered apply/remove and dependency constraints ✓
+- RepoAuditReport is a typed programmatic audit consumable by CI and the workspace Diagnostics panel ✓
+- ReleaseManifest + validator gates on stable version, target presence, and custom rules ✓
