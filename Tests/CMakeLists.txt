@@ -346,3 +346,14 @@ target_link_libraries(NF_Phase16Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase16Tests)
+
+# Phase 17 — Workspace Search and Indexing tests
+add_executable(NF_Phase17Tests
+    Workspace/test_phase17_search.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase17Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase17Tests)

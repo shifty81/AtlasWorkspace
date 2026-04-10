@@ -573,3 +573,35 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify engine→context→task pipeline end-to-end ✓
 - 62 test cases pass (194 assertions) ✓
 - Total test suite: 1983 tests passing ✓
+
+---
+
+## Phase 17 – Workspace Search and Indexing
+
+**Status: Done**
+
+- [x] Create `WorkspaceSearch.h` — workspace search and indexing infrastructure
+  - [x] SearchScope enum (All/Project/Assets/Tools/Panels/Commands/Settings/Plugins/Scripts/Custom) with name helper
+  - [x] SearchResultType enum (File/Asset/Tool/Panel/Command/Setting/Plugin/Script/Text/Symbol/Custom) with name helper
+  - [x] SearchMatchKind enum (Exact/Prefix/Contains/Fuzzy) with name helper
+  - [x] SearchQuery — typed query: text/scope/caseSensitive/maxResults; type filters (add/has/clear); sourceFilter; equality; isValid
+  - [x] SearchResult — ranked result: id/title/description/source/context/type/matchKind/score/matchStart/matchLen; isValid; sorted by score descending; equality by id+source
+  - [x] SearchIndex — in-memory content index: Entry (id/title/content/description/type); addEntry/removeEntry/updateEntry/findEntry; query with exact/prefix/contains/content matching; case-insensitive by default; type filter; maxResults; sorted results; clear; MAX_ENTRIES=16384
+  - [x] SearchEngine — registerIndex/unregisterIndex/isRegistered/findIndex; cross-index search with scope filter and source filter; maxResults enforcement; totalSearches/totalResults/totalEntries stats; allIndices; clear; MAX_INDICES=64
+- [x] Add `Tests/Workspace/test_phase17_search.cpp` — 51 test cases / 164 assertions:
+  - [x] Enum name strings (3 tests): scope, resultType, matchKind
+  - [x] SearchQuery (7 tests): default invalid, valid construction, case sensitivity, maxResults, type filters with duplicate rejection, source filter, equality
+  - [x] SearchResult (4 tests): default invalid, valid construction, sorting by score, equality by id+source
+  - [x] SearchIndex (17 tests): default state, unnamed invalid, addEntry/findEntry, duplicate rejection, invalid rejection, removeEntry, updateEntry, entries(), exact match, prefix match, title contains, content match, case insensitive, case sensitive, no match, type filter, invalid query, maxResults, sorted results, clear
+  - [x] SearchEngine (12 tests): empty state, register/find, duplicate rejection, invalid rejection, unregister, cross-index search, scope filter, source filter, invalid query, maxResults across indices, totalEntries, allIndices, clear
+  - [x] Integration (4 tests): multi-index ranking, add-after-register, scope-filtered mixed indices, statistics accumulation
+- [x] Wire `NF_Phase17Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- SearchQuery provides typed queries with scope/type/source filters ✓
+- SearchResult ranks matches with Exact>Prefix>Contains>Content scoring ✓
+- SearchIndex provides in-memory content indexing with case-insensitive search ✓
+- SearchEngine dispatches cross-index queries with scope and source filtering ✓
+- Integration tests verify multi-index ranking and scoped search pipelines ✓
+- 51 test cases pass (164 assertions) ✓
+- Total test suite: 2034 tests passing ✓

@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase 16 Complete — Workspace Scripting and Automation**
+Current Phase: **Phase 17 Complete — Workspace Search and Indexing**
 
 ## Build Status
 
@@ -39,6 +39,7 @@ Current Phase: **Phase 16 Complete — Workspace Scripting and Automation**
 | 14 | Workspace Plugin System | ✅ Done |
 | 15 | Workspace Diagnostics and Telemetry | ✅ Done |
 | 16 | Workspace Scripting and Automation | ✅ Done |
+| 17 | Workspace Search and Indexing | ✅ Done |
 
 ## Active Problems
 
@@ -48,10 +49,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 17: Workspace Search and Indexing**
+**Phase 18: Workspace Undo/Redo Stack**
 
-Implement workspace-level search and content indexing infrastructure:
-- SearchQuery — typed search query with filters and scope
-- SearchResult — ranked result with match context
-- SearchIndex — in-memory content index with add/remove/query
-- SearchEngine — register indices and execute cross-index queries
+Implement workspace-level undo/redo with transactional grouping:
+- UndoAction — reversible action with do/undo handlers
+- UndoTransaction — grouped action sequence for atomic undo
+- UndoStack — linear undo/redo with transaction support
+- UndoManager — workspace-scoped undo management with observers
