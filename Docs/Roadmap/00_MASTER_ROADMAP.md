@@ -635,3 +635,95 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify multi-step undo, atomic transactions, multi-stack isolation, and observer logging ✓
 - 45 test cases pass (189 assertions) ✓
 - Total test suite: 2079 tests passing ✓
+
+---
+
+## Phase 19 – Workspace Session Management
+
+**Status: Done**
+
+- [x] Create `WorkspaceSession.h` — workspace session lifecycle infrastructure
+  - [x] SessionState enum (Idle/Starting/Running/Saving/Closing/Closed) with `sessionStateName()` helper
+  - [x] RecentItem — path/label/type/timestamp; `isValid()` (path non-empty); equality by path
+  - [x] SessionRecord — id/name/state/startTime/endTime; `addTool`/`hasTool`; `duration()` (endTime-startTime or 0); equality by id
+  - [x] SessionHistory — `addItem` with front-dedup by path (MAX_ITEMS=64); `removeItem`/`findItem`; `addRecord`/`findRecord` (MAX_RECORDS=32); `clear()`
+  - [x] SessionManager — `start`/`stop`/`save` lifecycle; `currentRecord`/`isRunning`; `addRecentItem`/`recentItems`/`clearRecent`; `history()`; observer callbacks (addObserver/removeObserver/clearObservers, MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase19_session.cpp` — 40 test cases / 101 assertions:
+  - [x] Enum name strings (1 test): all SessionState values
+  - [x] RecentItem (3 tests): default invalid, valid construction, equality by path
+  - [x] SessionRecord (6 tests): default invalid, valid construction, addTool/hasTool, duration, equality, state field
+  - [x] SessionHistory (10 tests): empty state, addItem/findItem, dedup moves to front, invalid reject, removeItem, addRecord/findRecord, invalid record reject, MAX_ITEMS enforcement, clear
+  - [x] SessionManager (15 tests): initial state, start, start-while-running fails, stop, stop-while-idle fails, save-while-running, save-while-idle fails, isRunning, currentRecord name, recentItems, clearRecent, history after stop, observer on start, observer on stop, removeObserver, clearObservers
+  - [x] Integration (5 tests): full lifecycle, multiple sessions, recent item dedup, observer all states, name preserved in record
+- [x] Wire `NF_Phase19Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- SessionState provides lifecycle classification with name helpers ✓
+- RecentItem provides path-keyed items with front-dedup ✓
+- SessionRecord tracks tools and duration with id-based equality ✓
+- SessionHistory manages capped items and records ✓
+- SessionManager provides start/stop/save lifecycle with observer notifications ✓
+- Integration tests verify full lifecycle, multi-session history, and observer tracking ✓
+- 40 test cases pass (101 assertions) ✓
+- Total test suite: 2119 tests passing ✓
+
+---
+
+## Phase 20 – Workspace Clipboard System
+
+**Status: Done**
+
+- [x] Create `WorkspaceClipboard.h` — workspace clipboard infrastructure
+  - [x] ClipboardFormat enum (None/Text/RichText/Path/EntityId/JsonBlob/Binary/Custom) with `clipboardFormatName()` helper
+  - [x] ClipboardEntry — format/data/timestamp; `isValid()` (format != None); `isEmpty()` (data empty); equality (format+data)
+  - [x] ClipboardBuffer — newest-first ring (push_front); `push`/`peek`/`peekAt`/`pop`/`count`/`capacity`/`clear`; capacity capped at MAX_SLOTS=32
+  - [x] ClipboardChannel — named buffer wrapper: `push`/`peek`/`pop`/`count`/`clear`; `isValid()` (name non-empty)
+  - [x] ClipboardManager — `registerChannel`/`unregisterChannel`/`isRegistered`/`findChannel` (MAX_CHANNELS=16); `push`/`peek`/`pop`; typed helpers `copyText`/`copyPath`/`copyEntity`/`copyJson`; `allChannels`/`clear`; observer callbacks on push (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase20_clipboard.cpp` — 44 test cases / 132 assertions:
+  - [x] Enum name strings (1 test): all ClipboardFormat values
+  - [x] ClipboardEntry (4 tests): default invalid, valid text, isEmpty, equality
+  - [x] ClipboardBuffer (10 tests): empty state, push/peek, invalid reject, pop, peekAt, count, capacity enforcement, clear, push after clear, newest-first order
+  - [x] ClipboardChannel (5 tests): default invalid, valid construction, push/peek, pop, count
+  - [x] ClipboardManager (16 tests): empty state, registerChannel, duplicate reject, empty name reject, unregisterChannel, isRegistered, findChannel, push/peek, pop, copyText, copyPath, copyEntity, copyJson, allChannels, clear, push-unknown fails
+  - [x] Integration (8 tests): multi-channel isolation, lifecycle, observer notification, removeObserver, copyJson round-trip, capacity drop, multi-format, clearObservers
+- [x] Wire `NF_Phase20Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ClipboardFormat provides typed format classification with name helpers ✓
+- ClipboardBuffer provides newest-first ring with capacity enforcement ✓
+- ClipboardChannel provides named buffer wrappers ✓
+- ClipboardManager provides multi-channel clipboard with typed copy helpers and observers ✓
+- Integration tests verify channel isolation, capacity behavior, and observer pipelines ✓
+- 44 test cases pass (132 assertions) ✓
+- Total test suite: 2163 tests passing ✓
+
+---
+
+## Phase 21 – Workspace Focus and Context Tracking
+
+**Status: Done**
+
+- [x] Create `WorkspaceFocus.h` — workspace focus and context tracking infrastructure
+  - [x] FocusLayer enum (Background/Base/Overlay/Modal/Popup) with `focusLayerName()` helper
+  - [x] FocusTarget — id/displayName/panelId/toolId/layer; `isValid()` (id non-empty); equality by id
+  - [x] FocusRecord — target/timestamp/gained; `isValid()` (target.isValid())
+  - [x] FocusStack — `push`/`pop`/`current`/`depth`/`hasTarget`/`clear` (MAX_DEPTH=64); chronological history (MAX_HISTORY=256) with gain/lose records on push/pop; `clearHistory()`
+  - [x] FocusManager — `registerTarget`/`unregisterTarget`/`isRegistered`/`findTarget` (MAX_TARGETS=256); `requestFocus`/`releaseFocus`/`currentFocus`/`canFocus`; `allTargets`/`stack`/`clear`; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase21_focus.cpp` — 47 test cases / 120 assertions:
+  - [x] Enum name strings (1 test): all FocusLayer values
+  - [x] FocusTarget (4 tests): default invalid, valid all fields, equality by id, layer field
+  - [x] FocusRecord (3 tests): default invalid, valid gained, valid lost
+  - [x] FocusStack (12 tests): empty state, push/current, invalid reject, pop, depth, hasTarget, multiple layers, pop restores previous, clear, history on push, history on pop, clearHistory, MAX_DEPTH enforcement
+  - [x] FocusManager (18 tests): empty state, registerTarget, duplicate reject, invalid reject, unregisterTarget, isRegistered, findTarget, requestFocus, requestFocus-unknown fails, releaseFocus, releaseFocus-non-current fails, currentFocus, canFocus, allTargets, clear, observer on request, observer on release, removeObserver
+  - [x] Integration (8 tests): multi-target sequence, request+release lifecycle, observer chain, modal isolation, allTargets after unregister, canFocus after request, history accumulates, clearObservers
+- [x] Wire `NF_Phase21Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- FocusLayer provides layered classification with name helpers ✓
+- FocusTarget provides id-based equality with layer fields ✓
+- FocusRecord captures timestamped gain/lose events ✓
+- FocusStack provides push/pop management with chronological history ✓
+- FocusManager provides workspace-scoped focus lifecycle with observer notifications ✓
+- Integration tests verify multi-target sequences, modal isolation, and observer tracking ✓
+- 47 test cases pass (120 assertions) ✓
+- Total test suite: 2210 tests passing ✓

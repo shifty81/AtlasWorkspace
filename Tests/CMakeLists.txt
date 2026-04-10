@@ -368,3 +368,36 @@ target_link_libraries(NF_Phase18Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase18Tests)
+
+# Phase 19 — Workspace Session Management tests
+add_executable(NF_Phase19Tests
+    Workspace/test_phase19_session.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase19Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase19Tests)
+
+# Phase 20 — Workspace Clipboard System tests
+add_executable(NF_Phase20Tests
+    Workspace/test_phase20_clipboard.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase20Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase20Tests)
+
+# Phase 21 — Workspace Focus and Context Tracking tests
+add_executable(NF_Phase21Tests
+    Workspace/test_phase21_focus.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase21Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase21Tests)
