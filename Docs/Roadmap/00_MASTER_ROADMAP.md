@@ -100,8 +100,13 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - [x] Implement BuildTool as NF::IHostedTool
 - [x] Implement AtlasAITool as NF::IHostedTool
 - [x] Wire all primary tools into WorkspaceShell at bootstrap
+- [x] Remove one-off tools from active registry
+  - [x] Archive 29 project-specific game editors to Legacy/
+  - [x] Group 143 one-off editors into tool sub-directories (Scene/, Asset/, Material/, Animation/, Data/, Logic/, Build/, AI/, Infra/, ProjectSystems/)
+  - [x] Create Source/Workspace/ module (NF::Workspace) as the OS-like host layer
+  - [x] Decouple WorkspaceShell from hardcoded tool includes (factory-based registration)
+  - [x] Create CoreToolRoster.h for primary tool registration
 - [ ] Extract shared panels (Outliner, Inspector, ContentBrowser) from standalone editors
-- [ ] Remove one-off tools from active registry
 
 **Success Criteria:**
 - Primary tool roster (~10 tools) all implemented as real NF::IHostedTool
@@ -109,6 +114,7 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Shared panels owned by workspace core, not duplicated per tool
 - NovaForge gameplay panels hosted through adapter
 - No new one-off standalone editor headers added to active build
+- Workspace shell is tool-agnostic (no hardcoded tool includes)
 
 ---
 

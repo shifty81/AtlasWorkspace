@@ -61,6 +61,9 @@ These are reusable, owned by workspace core, not duplicated per tool:
 
 - No new one-off standalone editors without justification
 - Panels are shared once, reused everywhere
-- Services are centralized
+- Services are centralized in NF::Workspace
 - Project-specific authoring surfaces are hosted through adapters, not workspace core
 - Everything beyond the primary roster must be classified as panel, service, plugin, or archive
+- One-off editors belong in tool sub-directories (Scene/, Asset/, etc.) not the root include dir
+- WorkspaceShell is tool-agnostic — tools register via CoreToolRoster, not hardcoded in the shell
+- New tool-specific sub-panels go in the parent tool's sub-directory (e.g., Scene/TerrainEditor.h)

@@ -9,6 +9,9 @@ Atlas Workspace is a **generic development host**, not a game.
 - `AtlasWorkspace.exe` is the primary executable
 - Workspace is a platform for editors, tools, build systems, and project orchestration
 - No game-specific logic in workspace core
+- `Source/Workspace/` (NF::Workspace) is the OS-like host layer — owns shell, registries, services
+- `Source/Editor/` (NF::Editor) contains only primary tool implementations and sub-panels
+- WorkspaceShell is tool-agnostic; tools register via factory/CoreToolRoster, not hardcoded includes
 
 ## UI
 
