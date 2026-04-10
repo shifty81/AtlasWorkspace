@@ -605,3 +605,33 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify multi-index ranking and scoped search pipelines ✓
 - 51 test cases pass (164 assertions) ✓
 - Total test suite: 2034 tests passing ✓
+
+---
+
+## Phase 18 – Workspace Undo/Redo Stack
+
+**Status: Done**
+
+- [x] Create `WorkspaceUndoRedo.h` — workspace undo/redo infrastructure
+  - [x] UndoActionType enum (Generic/Property/Create/Delete/Move/Transform/Reparent/Command/Batch/Custom) with name helper
+  - [x] UndoAction — reversible action: label/type/doHandler/undoHandler/targetId; execute/undo; isValid; equality
+  - [x] UndoTransaction — grouped action sequence: label/addAction/actions/actionCount; execute (with rollback on failure); undo (reverse order); MAX_ACTIONS=256
+  - [x] UndoStack — linear undo/redo: push/pushTransaction; undo/redo; canUndo/canRedo; nextUndoLabel/nextRedoLabel; undoLabels/redoLabels; beginTransaction/addToTransaction/commitTransaction/discardTransaction; depth/undoDepth/redoDepth; isDirty/markClean; maxDepth with trim; statistics (totalPushes/Undos/Redos); clear; DEFAULT_MAX_DEPTH=128
+  - [x] UndoManager — workspace-scoped: registerStack/unregisterStack/setActiveStack/findStack; push/undo/redo/canUndo/canRedo on active stack; observer callbacks (addObserver/removeObserver/clearObservers); stackNames; clear; MAX_STACKS=64; MAX_OBSERVERS=32
+- [x] Add `Tests/Workspace/test_phase18_undo_redo.cpp` — 45 test cases / 189 assertions:
+  - [x] Enum name strings (1 test): undoActionType
+  - [x] UndoAction (5 tests): default invalid, valid construction, execute/undo, without handler fails, targetId, equality
+  - [x] UndoTransaction (6 tests): default state, valid construction, addAction, reject invalid, execute all, undo reverse order, execute rollback on failure
+  - [x] UndoStack (15 tests): empty state, push/undo, redo, push clears redo, reject invalid, labels, maxDepth trim, dirty/markClean, transaction grouping, transaction atomic undo, reject double begin, discard transaction, commit empty fails, statistics, clear, undoDepth/redoDepth
+  - [x] UndoManager (10 tests): empty state, register/find, reject duplicate, reject empty name, unregister, set active, push/undo/redo, stackNames, observers, clear, push without stack fails
+  - [x] Integration (4 tests): multi-step property undo, transaction atomic undo with manager, multi-stack manager, observer notifications across operations
+- [x] Wire `NF_Phase18Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- UndoAction provides reversible do/undo handlers with type classification ✓
+- UndoTransaction groups actions for atomic execute/undo with rollback on failure ✓
+- UndoStack provides linear undo/redo with transaction grouping and dirty tracking ✓
+- UndoManager provides workspace-scoped multi-stack undo with observer notifications ✓
+- Integration tests verify multi-step undo, atomic transactions, multi-stack isolation, and observer logging ✓
+- 45 test cases pass (189 assertions) ✓
+- Total test suite: 2079 tests passing ✓

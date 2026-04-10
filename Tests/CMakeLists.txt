@@ -357,3 +357,14 @@ target_link_libraries(NF_Phase17Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase17Tests)
+
+# Phase 18 — Workspace Undo/Redo Stack tests
+add_executable(NF_Phase18Tests
+    Workspace/test_phase18_undo_redo.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase18Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase18Tests)
