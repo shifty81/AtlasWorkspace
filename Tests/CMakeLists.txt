@@ -247,3 +247,14 @@ target_link_libraries(NF_Phase7Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase7Tests)
+
+# Phase 8 — Runtime Wiring tests
+add_executable(NF_Phase8Tests
+    Workspace/test_phase8_runtime_wiring.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase8Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase8Tests)

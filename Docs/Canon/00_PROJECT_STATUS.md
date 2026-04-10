@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase 7 Complete — Workspace Integration Surfaces**
+Current Phase: **Phase 8 Complete — Runtime Wiring and First Real Tool Loop**
 
 ## Build Status
 
@@ -29,6 +29,7 @@ Current Phase: **Phase 7 Complete — Workspace Integration Surfaces**
 | 5 | Hosted Project Support | ✅ Done |
 | 6 | Build, Patch, and Release Pipeline | ✅ Done |
 | 7 | Workspace Integration Surfaces | ✅ Done |
+| 8 | Runtime Wiring and First Real Tool Loop | ✅ Done |
 
 ## Active Problems
 
@@ -38,10 +39,10 @@ None critical. Minor open items:
 
 ## Next Milestone
 
-**Phase 8: Runtime Wiring and First Real Tool Loop**
+**Phase 9: Asset Pipeline and Content Routing**
 
-Wire the workspace shell, backends, and tools into an actual running executable loop:
-- WorkspaceShell bootstrap → real window → real render loop
-- GDI → draw list → AtlasUI panel host pipeline
-- Tool activation → viewport slot allocation → first render
-- Notification center visible in running shell
+Formalize the asset import, transform, and content routing pipeline:
+- AssetCatalog — asset descriptor, type tags, import state, metadata
+- AssetTransformer — import steps, transform chain, output format, error reporting
+- ContentRouter — file type → tool routing rules, drag-drop integration
+- AssetWatcher — file system change detection, debounce, callback routing

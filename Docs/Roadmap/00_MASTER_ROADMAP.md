@@ -220,3 +220,38 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - TypographySystem defines all 13 text roles with enforcement rules ✓
 - All previously untested workspace integration surfaces now have test coverage ✓
 - 79 test cases pass (269 assertions) ✓
+
+---
+
+## Phase 8 – Runtime Wiring and First Real Tool Loop
+
+**Status: Done**
+
+- [x] Create `WorkspaceBootstrap.h` — typed workspace startup configuration and bootstrap sequence
+  - [x] WorkspaceStartupMode (Hosted/Headless/Preview) with name helper
+  - [x] WorkspaceWindowConfig — width/height/title/fullscreen/resizable, isValid(), aspectRatio()
+  - [x] WorkspaceBackendChoice (Auto/D3D11/OpenGL/GDI/Null) with name helper
+  - [x] WorkspaceBootstrapConfig — mode + window + backend + toolFactories + startupMessages
+  - [x] WorkspaceBootstrapError + WorkspaceBootstrapResult — typed result with errorName()
+  - [x] WorkspaceBootstrap — stateless runner: validates config, checks shell phase, registers factories, initializes shell, posts startup notifications
+- [x] Create `WorkspaceFrameController.h` — frame pacing, dt smoothing, budget tracking
+  - [x] FrameBudget — totalMs/updateMs/renderMs with isValid()
+  - [x] FrameResult — smoothed dt, rawDt, wasSkipped, frameNumber
+  - [x] FrameStatistics — totalFrames, fps, avgDtMs, min/max, lastUpdate/Render ms, skippedFrames, budgetUtilization()
+  - [x] WorkspaceFrameController — setTargetFPS/setMaxDeltaTime/setEMAAlpha/setBudget, beginFrame/markUpdateDone/markRenderDone/endFrame, shouldSleep/sleepMs, resetStats
+- [x] Add `Tests/Workspace/test_phase8_runtime_wiring.cpp` — 78 test cases / 251 assertions covering:
+  - [x] WorkspaceBootstrap (15 tests) — mode/backend/error names, window config validity, headless success, invalid config, already-initialized, factory invocation, startup messages, runCount
+  - [x] WorkspaceFrameController (17 tests) — defaults, setTargetFPS, ignore invalid fps, maxDt, EMA alpha, beginFrame frame numbers, dt clamping, zero dt, EMA smoothing, endFrame stats, FPS tracking, over-budget detection, wasSkipped, shouldSleep/sleepMs, resetStats, FrameBudget, budgetUtilization
+  - [x] WorkspaceAppRegistry (9 tests) — appName, descriptor validity, displayLabel, register/find, duplicate rejection, invalid rejection, unregister, findByName, projectScopedApps filtering
+  - [x] WorkspaceLaunchContract (9 tests) — launch/status mode names, context validity, toArgs, optional-args omission, result helpers, NullLaunchService success/AppNotFound/InvalidContext/shutdown
+  - [x] ConsoleCommandBus (10 tests) — scope/argType/execResult names, command accessors, register+execute, duplicate rejection, NotFound, PermissionDenied, unregister, countByScope/hidden/enabled
+  - [x] SelectionService (8 tests) — empty state, select/deselect, toggleSelect, multi-select, clearSelection, selectExclusive, version tracking, primary fallback
+  - [x] EditorEventBus (10 tests) — priority names, event helpers, default state, subscribe+flush, wildcard, priority filter, suspend/resume, clearQueue, cancel subscription, non-matching topic
+- [x] Wire `NF_Phase8Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- WorkspaceBootstrap provides a single testable entry point for workspace initialization ✓
+- WorkspaceFrameController decouples frame pacing from the OS message loop ✓
+- WorkspaceLaunchContract, AppRegistry, ConsoleCommandBus, SelectionService, EditorEventBus all have direct test coverage ✓
+- 78 test cases pass (251 assertions) ✓
+- Total test suite: 1521 tests passing ✓
