@@ -1075,3 +1075,91 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - collapsePane restores leaf state and preserves first-child tab group ✓
 - 46 test cases pass (82 assertions) ✓
 - Total test suite: ~2688 tests passing ✓
+
+---
+
+## Phase 34 – Workspace Frame Controller
+
+**Status: Done**
+
+- [x] Use `WorkspaceFrameController.h` — frame pacing, delta-time smoothing, and budget tracking
+  - [x] FrameBudget — totalMs/updateMs/renderMs; `isValid()` (all positive, sum within 150% total)
+  - [x] FrameResult — dt (smoothed) + rawDt (clamped) + wasSkipped + frameNumber
+  - [x] FrameStatistics — totalFrames/fps/avgDtMs/minDtMs/maxDtMs/lastUpdateMs/lastRenderMs/skippedFrames; `reset()`; `budgetUtilization()`
+  - [x] WorkspaceFrameController — setTargetFPS/setMaxDeltaTime/setEMAAlpha/setBudget; beginFrame (clamp+EMA); markUpdateDone/markRenderDone/endFrame; shouldSleep/sleepMs; resetStats
+- [x] Add `Tests/Workspace/test_phase34_frame_controller.cpp` — 31 test cases / 55 assertions:
+  - [x] FrameBudget (3 tests): valid default, invalid zero total, invalid zero update
+  - [x] FrameResult (1 test): default zeroed state
+  - [x] FrameStatistics (4 tests): default state, reset, budgetUtilization zero budget, budgetUtilization ratio
+  - [x] WorkspaceFrameController (20 tests): default 60 FPS, default maxDtSec, setTargetFPS updates budget, setTargetFPS ignores non-positive, setMaxDeltaTime, setEMAAlpha valid, setEMAAlpha invalid, setBudget valid, setBudget invalid, beginFrame increments frameNumber, clamps negative dt, clamps dt above maxDtSec, first frame seeds EMA, markUpdateDone+markRenderDone, endFrame increments totalFrames, skippedFrames over budget, wasSkipped next frame, shouldSleep, sleepMs, resetStats
+  - [x] Integration (3 tests): 10-frame loop accumulates stats, budget overrun detected, EMA converges
+- [x] Wire `NF_Phase34Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- FrameBudget validates positive component constraints ✓
+- beginFrame clamps delta-time and applies EMA smoothing ✓
+- endFrame detects budget overrun and increments skippedFrames ✓
+- wasSkipped propagated to the next frame's FrameResult ✓
+- shouldSleep/sleepMs provide frame pacing helpers ✓
+- 31 test cases pass (55 assertions) ✓
+- Total test suite: ~2719 tests passing ✓
+
+---
+
+## Phase 35 – Workspace Project File
+
+**Status: Done**
+
+- [x] Use `WorkspaceProjectFile.h` — canonical .atlasproject file schema
+  - [x] ProjectFileVersion — major.minor.patch; `toString()`; `isCompatible()` (same major, file minor ≤ reader minor); `parse()`; `current()`; equality operators
+  - [x] ProjectFileSection — named key-value store (MAX_ENTRIES=256); `set`/`get`/`getOr`/`has`/`remove`/`clear`/`count`/`empty`/`entries()`
+  - [x] WorkspaceProjectFile — projectId/projectName/contentRoot/version setters; `isValid()` (non-empty id+name, major>0); `section()` create-on-demand; `findSection`/`hasSection`/`removeSection`/`sectionCount`; `serialize()`/`parse()` round-trip
+- [x] Add `Tests/Workspace/test_phase35_project_file.cpp` — 38 test cases / 77 assertions:
+  - [x] ProjectFileVersion (10 tests): default 1.0.0, toString, isCompatible same version, isCompatible minor older, incompatible minor newer, incompatible major, parse valid, parse invalid, current returns 1.0.0, equality
+  - [x] ProjectFileSection (11 tests): default empty, set+get, set overwrites, get nullptr missing, getOr default, getOr existing, has, remove existing, remove missing, clear, count/empty
+  - [x] WorkspaceProjectFile (10 tests): default invalid, valid with id+name, invalid without id, invalid without name, setContentRoot, section create on demand, section returns existing, findSection nullptr, removeSection, removeSection unknown
+  - [x] Serialization (5 tests): serialize produces magic header, serialize+parse round-trip, parse with sections, parse fails no magic, parse fails empty
+  - [x] Integration (3 tests): full round-trip, version compatibility, multiple sections independent
+- [x] Wire `NF_Phase35Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ProjectFileVersion enforces same-major / file-minor-≤-reader-minor compatibility rule ✓
+- ProjectFileSection MAX_ENTRIES=256 enforced; duplicate key overwrites ✓
+- serialize/parse round-trip is lossless for identity fields and all named sections ✓
+- parse rejects missing magic header and empty input ✓
+- 38 test cases pass (77 assertions) ✓
+- Total test suite: ~2757 tests passing ✓
+
+---
+
+## Phase 36 – AI Assistant Panel and AI Panel Session
+
+**Status: Done**
+
+- [x] Use `AIAssistantPanel.h` — AtlasAI assistant chat infrastructure
+  - [x] ChatRole enum (User/Assistant/System) with `chatRoleName()` helper
+  - [x] ChatMessage — id + role + content + timestamp + pending; `isUser()`/`isAssistant()`/`isSystem()`
+  - [x] ChatSession — addUserMessage/addAssistantMessage/addSystemMessage/addMessage; `lastMessage()`/`messageCount()`/`empty()`/`id()`/`clear()`
+- [x] Use `AIPanelSession.h` — AI panel session with context lifecycle
+  - [x] AISessionContextType enum (None/File/Selection/Error/Notification/Diff/Log) with `aiSessionContextTypeName()` helper
+  - [x] AISessionContext — type + label + content + pinned; `isValid()` (type≠None and content non-empty)
+  - [x] AIPanelSession — `addContext`/`removeContext`/`clearUnpinnedContexts`/`findContext`/`contextCount`; `submitUserTurn`/`receiveAssistantResponse`/`turnCount`/`messageCount`/`isEmpty`; `setTitle`/`title`; `reset`
+- [x] Add `Tests/Workspace/test_phase36_ai_panel.cpp` — 34 test cases / 80 assertions:
+  - [x] ChatRole (1 test): all 3 name helpers
+  - [x] ChatMessage (4 tests): default User role, isAssistant, isSystem, pending flag
+  - [x] ChatSession (9 tests): default empty, addUserMessage, addAssistantMessage, addSystemMessage, lastMessage, lastMessage null, id preserved, clear, unique message ids
+  - [x] AISessionContextType (1 test): all 7 values
+  - [x] AISessionContext (4 tests): default invalid, valid, invalid no content, pinned defaults false
+  - [x] AIPanelSession (12 tests): default empty, sessionId, submitUserTurn, receiveAssistantResponse, addContext valid, addContext invalid, removeContext, removeContext unknown, findContext, clearUnpinnedContexts, setTitle/title, reset
+  - [x] Integration (3 tests): multi-turn conversation, pinned context survives clearUnpinned, reset and restart
+- [x] Wire `NF_Phase36Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ChatRole name helpers cover all 3 roles ✓
+- ChatSession assigns unique auto-generated ids to each message ✓
+- AISessionContext.isValid() rejects None type and empty content ✓
+- AIPanelSession.turnCount() increments only on submitUserTurn, not receiveAssistantResponse ✓
+- clearUnpinnedContexts removes only non-pinned contexts ✓
+- Integration: multi-turn conversation, reset+restart, pinned context persistence ✓
+- 34 test cases pass (80 assertions) ✓
+- Total test suite: ~2791 tests passing ✓
