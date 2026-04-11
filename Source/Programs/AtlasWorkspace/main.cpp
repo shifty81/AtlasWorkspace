@@ -19,8 +19,11 @@
 #include "NF/Workspace/WorkspaceRenderer.h"
 #include "NF/Workspace/WorkspaceAppRegistry.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
+#include "NF/Workspace/IGameProjectAdapter.h"
 #if defined(_WIN32)
 #  include <windows.h>
+#  include <shlobj.h>     // SHBrowseForFolderW / SHGetPathFromIDListW
+#  include <commdlg.h>    // GetOpenFileNameW
 #  include "NF/Input/Win32InputAdapter.h"
 #  include "NF/UI/GDIBackend.h"
 #endif
@@ -29,6 +32,168 @@
 
 // ── Global state for Win32 WndProc ───────────────────────────────
 #if defined(_WIN32)
+
+// ── LocalProjectAdapter ───────────────────────────────────────────
+// Minimal IGameProjectAdapter backed by a filesystem directory or .atlas file.
+// Used when the user opens or creates a project from the workspace welcome screen.
+// The adapter has no content-specific logic — it simply records the project path
+// and lets the shell host the registered tools and panels.
+
+class LocalProjectAdapter final : public NF::IGameProjectAdapter {
+public:
+    LocalProjectAdapter(std::string id, std::string displayName, std::string path)
+        : m_id(std::move(id))
+        , m_displayName(std::move(displayName))
+        , m_path(std::move(path)) {}
+
+    std::string projectId()          const override { return m_id;          }
+    std::string projectDisplayName() const override { return m_displayName; }
+
+    bool initialize() override { return true; }
+    void shutdown()   override {}
+
+    std::vector<NF::GameplaySystemPanelDescriptor> panelDescriptors() const override {
+        return {};
+    }
+    std::vector<std::string> contentRoots() const override { return {m_path}; }
+
+private:
+    std::string m_id;
+    std::string m_displayName;
+    std::string m_path;
+};
+
+// ── String conversion helpers ─────────────────────────────────────
+
+static std::string wideToUtf8(const wchar_t* ws) {
+    if (!ws || !*ws) return {};
+    int len = WideCharToMultiByte(CP_UTF8, 0, ws, -1, nullptr, 0, nullptr, nullptr);
+    if (len <= 0) return {};
+    std::string s(static_cast<size_t>(len), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, ws, -1, s.data(), len, nullptr, nullptr);
+    // WideCharToMultiByte with -1 includes the null terminator in the count.
+    if (!s.empty() && s.back() == '\0') s.pop_back();
+    return s;
+}
+
+static std::wstring utf8ToWide(const std::string& u8) {
+    if (u8.empty()) return {};
+    int len = MultiByteToWideChar(CP_UTF8, 0, u8.c_str(), -1, nullptr, 0);
+    if (len <= 0) return {};
+    std::wstring ws(static_cast<size_t>(len), L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, u8.c_str(), -1, ws.data(), len);
+    if (!ws.empty() && ws.back() == L'\0') ws.pop_back();
+    return ws;
+}
+
+// ── Win32 project dialogs ─────────────────────────────────────────
+// Both helpers open a modal dialog and, on success, load a LocalProjectAdapter
+// into the shell.  They must be called from OUTSIDE WM_PAINT (the main loop)
+// so that the nested COM/common-dialog message pump does not corrupt paint state.
+
+static void doNewProject(NF::WorkspaceShell& shell, HWND hwnd) {
+    BROWSEINFOW bi{};
+    bi.hwndOwner  = hwnd;
+    bi.lpszTitle  = L"Select a folder for the new project";
+    bi.ulFlags    = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+    PIDLIST_ABSOLUTE pidl = SHBrowseForFolderW(&bi);
+    if (!pidl) return; // user cancelled
+
+    wchar_t path[MAX_PATH] = {};
+    if (!SHGetPathFromIDListW(pidl, path)) {
+        CoTaskMemFree(pidl);
+        MessageBoxW(hwnd,
+            L"Could not resolve the selected folder path.",
+            L"New Project", MB_OK | MB_ICONERROR);
+        return;
+    }
+    CoTaskMemFree(pidl);
+
+    // Derive project name from the chosen folder's last path component.
+    std::wstring wpath(path);
+    auto sep = wpath.find_last_of(L"\\/");
+    std::wstring wname = (sep != std::wstring::npos) ? wpath.substr(sep + 1) : wpath;
+
+    std::string name    = wideToUtf8(wname.c_str());
+    std::string pathStr = wideToUtf8(path);
+
+    auto adapter = std::make_unique<LocalProjectAdapter>(
+        "local." + name, name, pathStr);
+
+    if (!shell.loadProject(std::move(adapter))) {
+        MessageBoxW(hwnd,
+            L"The workspace could not load the selected folder as a project.",
+            L"New Project", MB_OK | MB_ICONERROR);
+    } else {
+        NF_LOG_INFO("AtlasWorkspace", "New project loaded: " + name + " @ " + pathStr);
+    }
+}
+
+static void doOpenProject(NF::WorkspaceShell& shell, HWND hwnd) {
+    wchar_t buf[MAX_PATH] = {};
+    OPENFILENAMEW ofn{};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner   = hwnd;
+    // Filter: show .atlas files primarily, but allow all files as a fallback.
+    ofn.lpstrFilter = L"Atlas Project (*.atlas)\0*.atlas\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFile   = buf;
+    ofn.nMaxFile    = MAX_PATH;
+    ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+    ofn.lpstrTitle  = L"Open Atlas Project";
+
+    if (!GetOpenFileNameW(&ofn)) return; // user cancelled or error
+
+    std::wstring wpath(buf);
+    // Use the file stem (no extension) as the display name.
+    auto sep = wpath.find_last_of(L"\\/");
+    std::wstring wname = (sep != std::wstring::npos) ? wpath.substr(sep + 1) : wpath;
+    auto dot = wname.rfind(L'.');
+    if (dot != std::wstring::npos) wname = wname.substr(0, dot);
+
+    std::string name    = wideToUtf8(wname.c_str());
+    std::string pathStr = wideToUtf8(buf);
+
+    auto adapter = std::make_unique<LocalProjectAdapter>(
+        "local." + name, name, pathStr);
+
+    if (!shell.loadProject(std::move(adapter))) {
+        MessageBoxW(hwnd,
+            L"The workspace could not load the selected file as a project.",
+            L"Open Project", MB_OK | MB_ICONERROR);
+    } else {
+        NF_LOG_INFO("AtlasWorkspace", "Project opened: " + name + " @ " + pathStr);
+    }
+}
+
+// ── Handle deferred workspace actions ────────────────────────────
+// Called from the main loop after PeekMessage dispatch so that modal dialogs
+// open outside WM_PAINT and do not create unsafe nested message loops.
+
+static void handlePendingWorkspaceActions(NF::WorkspaceRenderer& renderer,
+                                          NF::WorkspaceShell& shell, HWND hwnd)
+{
+    // Show any launch or runtime error dialog first (non-blocking, informational).
+    NF::WorkspacePendingError err = renderer.takePendingError();
+    if (!err.empty()) {
+        std::wstring wtitle = utf8ToWide(err.title);
+        std::wstring wmsg   = utf8ToWide(err.message);
+        MessageBoxW(hwnd, wmsg.c_str(), wtitle.c_str(), MB_OK | MB_ICONWARNING);
+    }
+
+    // Then handle any queued project action.
+    NF::WorkspaceAction action = renderer.takePendingAction();
+    switch (action) {
+        case NF::WorkspaceAction::NewProject:
+            doNewProject(shell, hwnd);
+            break;
+        case NF::WorkspaceAction::OpenProject:
+            doOpenProject(shell, hwnd);
+            break;
+        default:
+            break;
+    }
+}
+
 static NF::WorkspaceShell*    g_shell       = nullptr;
 static NF::WorkspaceRenderer* g_renderer    = nullptr;
 static NF::UIRenderer*        g_ui          = nullptr;
@@ -176,6 +341,12 @@ int main(int argc, char* argv[]) {
     NF_LOG_INFO("AtlasWorkspace", "=== Atlas Workspace ===");
     NF_LOG_INFO("AtlasWorkspace", std::string("Version: ") + NF::NF_VERSION_STRING);
 
+#if defined(_WIN32)
+    // COM is required by SHBrowseForFolderW (folder picker) and CoTaskMemFree.
+    // COINIT_APARTMENTTHREADED matches the Win32 message-loop threading model.
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+#endif
+
     // ── Workspace shell ───────────────────────────────────────────
     NF::WorkspaceShell shell;
 
@@ -284,6 +455,12 @@ int main(int argc, char* argv[]) {
             DispatchMessageW(&msg);
         }
         if (!running) break;
+
+        // Handle any UI actions or errors that were queued during WM_PAINT.
+        // These are processed here — outside WM_PAINT — so that modal dialogs
+        // (SHBrowseForFolderW, GetOpenFileNameW, MessageBoxW) can open safely
+        // without creating a nested message loop inside the paint callback.
+        handlePendingWorkspaceActions(*g_renderer, *g_shell, hwnd);
 #else
         running = false; // headless: single frame then exit
 #endif
@@ -323,6 +500,9 @@ int main(int argc, char* argv[]) {
     input.shutdown();
     shell.shutdown();
     ui.shutdown();
+#if defined(_WIN32)
+    CoUninitialize();
+#endif
     NF::coreShutdown();
     return 0;
 }
