@@ -43,8 +43,10 @@
 #include "NF/UI/UIWidgets.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
+#include <array>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace NF {
 
@@ -54,8 +56,9 @@ namespace NF {
 
 enum class WorkspaceAction : uint8_t {
     None,
-    NewProject,   // open folder-browser dialog, create and load a new project
-    OpenProject,  // open file-open dialog for .atlas files
+    NewProject,     // open folder-browser dialog, create and load a new project
+    OpenProject,    // open file-open dialog for .atlas files
+    Exit,           // request application exit
 };
 
 // ── WorkspacePendingError ─────────────────────────────────────────
@@ -70,7 +73,7 @@ struct WorkspacePendingError {
 
 class WorkspaceRenderer {
 public:
-    WorkspaceRenderer() { initTheme(); }
+    WorkspaceRenderer() { initTheme(); initMenus(); }
 
     // ── Layout constants (pixels) ─────────────────────────────────
     static constexpr float kTitleH   = 28.f;
@@ -108,6 +111,7 @@ public:
         renderSidebar(ui, height, shell, mouse, launchSvc);
         renderMainArea(ui, width, height, shell, mouse);
         renderStatusBar(ui, width, height, shell);
+        renderDropdownOverlay(ui, mouse, shell);  // drawn on top of all other chrome
         ui.endFrame();
     }
 
@@ -130,6 +134,15 @@ public:
     }
 
 private:
+    // ── Dropdown menu item ────────────────────────────────────────
+    struct DropItem {
+        std::string    label;                          // empty string = separator
+        WorkspaceAction action  = WorkspaceAction::None;
+        std::string    command;                        // command bus key (fallback)
+        bool           enabled  = true;
+    };
+    struct DropMenu { std::vector<DropItem> items; };
+
     // ── UITheme matching workspace dark palette ────────────────────
     void initTheme() {
         m_wsTheme.hoverHighlight    = 0x3D3D3DFF;  // subtle card hover tint
@@ -142,6 +155,41 @@ private:
         m_wsTheme.buttonPressed     = kAccentBlue;
         m_wsTheme.buttonText        = kTextPrimary;
         m_wsTheme.itemSpacing       = 0.f;
+    }
+
+    void initMenus() {
+        // File menu
+        m_dropMenus[0].items = {
+            {"New Project",  WorkspaceAction::NewProject,  "", true},
+            {"Open Project", WorkspaceAction::OpenProject, "", true},
+            {"", WorkspaceAction::None, "", false},  // separator
+            {"Exit",         WorkspaceAction::Exit,        "", true},
+        };
+        // Project menu
+        m_dropMenus[1].items = {
+            {"Close Project",    WorkspaceAction::None, "workspace.project.close",    false},
+            {"", WorkspaceAction::None, "", false},  // separator
+            {"Project Settings", WorkspaceAction::None, "workspace.project.settings", false},
+        };
+        // Tools menu
+        m_dropMenus[2].items = {
+            {"Preferences",     WorkspaceAction::None, "workspace.preferences",      false},
+            {"Command Palette", WorkspaceAction::None, "workspace.command_palette",   false},
+            {"", WorkspaceAction::None, "", false},  // separator
+            {"Diagnostics",     WorkspaceAction::None, "workspace.diagnostics",       false},
+        };
+        // View menu
+        m_dropMenus[3].items = {
+            {"Content Browser", WorkspaceAction::None, "workspace.view.content_browser", false},
+            {"Inspector",       WorkspaceAction::None, "workspace.view.inspector",        false},
+            {"Outliner",        WorkspaceAction::None, "workspace.view.outliner",         false},
+            {"Console",         WorkspaceAction::None, "workspace.view.console",          false},
+        };
+        // Help menu
+        m_dropMenus[4].items = {
+            {"Documentation", WorkspaceAction::None, "workspace.help.docs",  false},
+            {"About",         WorkspaceAction::None, "workspace.help.about", false},
+        };
     }
 
     // ── Background ────────────────────────────────────────────────
@@ -161,12 +209,6 @@ private:
         ui.drawRect({0.f, y, 3.f, kToolbarH}, kAccentBlue);
 
         static const char* kMenuItems[] = {"File", "Project", "Tools", "View", "Help"};
-        // Corresponding command names used in the command bus
-        static const char* kMenuCmds[]  = {
-            "workspace.menu.file",   "workspace.menu.project",
-            "workspace.menu.tools",  "workspace.menu.view",
-            "workspace.menu.help"
-        };
 
         // Begin widget pass for this frame's toolbar hit regions
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
@@ -177,19 +219,23 @@ private:
             float iw = static_cast<float>(std::strlen(item)) * 8.f + 16.f;
             Rect btnR{mx, y + 4.f, iw, 20.f};
 
-            // Draw button background — check hover manually so the tint is
-            // applied BEFORE the text, preventing the highlight from covering it.
-            bool hovered = btnR.contains(mouse.x, mouse.y);
-            ui.drawRect(btnR, hovered ? m_wsTheme.buttonHover : kButtonBg);
-            ui.drawText(mx + 6.f, y + 7.f, item, kTextPrimary);
+            // Determine visual state: open > hovered > normal.
+            // Non-hovered items use the toolbar surface color so they blend
+            // in; hovered items lift to kButtonBg; the open item uses the
+            // accent color to show which menu is active.
+            bool menuOpen = (m_openMenuIdx == static_cast<int>(i));
+            bool hovered  = btnR.contains(mouse.x, mouse.y);
+            uint32_t btnBg = menuOpen ? kAccentBlue
+                           : (hovered  ? kButtonBg : kSurface);
+            ui.drawRect(btnR, btnBg);
+            ui.drawText(mx + 6.f, y + 7.f, item,
+                        menuOpen ? 0xFFFFFFFF : kTextPrimary);
 
-            // Click detection only (hover highlight already drawn above).
+            // Click: toggle the corresponding dropdown.
             if (m_ctx.hitRegion(btnR, false)) {
-                NF_LOG_INFO("WorkspaceUI",
-                    std::string("Menu clicked: ") + item
-                    + "  [cmd=" + kMenuCmds[i] + "]");
-                // Enqueue via command bus so any registered handlers fire
-                (void)shell.commandBus().execute(kMenuCmds[i]);
+                NF_LOG_INFO("WorkspaceUI", std::string("Menu clicked: ") + item);
+                m_openMenuIdx = (m_openMenuIdx == static_cast<int>(i))
+                                ? -1 : static_cast<int>(i);
             }
 
             mx += iw + 4.f;
@@ -427,6 +473,82 @@ private:
         }
     }
 
+    // ── Dropdown overlay ──────────────────────────────────────────
+    // Rendered after all other chrome so the open dropdown floats on top.
+    // Also handles close-on-click-outside and item selection.
+    void renderDropdownOverlay(UIRenderer& ui, const UIMouseState& mouse,
+                               WorkspaceShell& shell)
+    {
+        if (m_openMenuIdx < 0 || m_openMenuIdx >= static_cast<int>(m_dropMenus.size()))
+            return;
+
+        const DropMenu& menu = m_dropMenus[m_openMenuIdx];
+
+        // Compute X origin by summing widths of preceding menu labels.
+        static const char* kMenuItems[] = {"File", "Project", "Tools", "View", "Help"};
+        float dx = 10.f;
+        for (int j = 0; j < m_openMenuIdx; ++j) {
+            float jw = static_cast<float>(std::strlen(kMenuItems[j])) * 8.f + 16.f;
+            dx += jw + 4.f;
+        }
+        float dy = kToolbarH;  // dropdown opens just below the toolbar
+
+        // Compute dropdown dimensions
+        float dw = 180.f;
+        for (auto& it : menu.items) {
+            if (!it.label.empty()) {
+                float iw = static_cast<float>(it.label.size()) * 8.f + 24.f;
+                if (iw > dw) dw = iw;
+            }
+        }
+        float dh = 6.f;
+        for (auto& it : menu.items)
+            dh += it.label.empty() ? 9.f : 22.f;
+
+        // Draw background and border
+        ui.drawRect({dx, dy, dw, dh}, kSurface);
+        ui.drawRectOutline({dx, dy, dw, dh}, kBorder, 1.f);
+
+        // Draw items and handle clicks
+        float iy = dy + 4.f;
+        bool itemConsumedClick = false;
+        for (auto& it : menu.items) {
+            if (it.label.empty()) {
+                // Separator line
+                ui.drawRect({dx + 8.f, iy + 3.f, dw - 16.f, 1.f}, kBorder);
+                iy += 9.f;
+            } else {
+                Rect itemR{dx + 2.f, iy, dw - 4.f, 20.f};
+                bool iHover = itemR.contains(mouse.x, mouse.y);
+                if (iHover && it.enabled)
+                    ui.drawRect(itemR, kButtonBg);
+
+                uint32_t textCol = it.enabled ? kTextPrimary : kTextMuted;
+                ui.drawText(dx + 10.f, iy + 3.f, it.label, textCol);
+
+                if (iHover && it.enabled && mouse.leftPressed) {
+                    itemConsumedClick = true;
+                    if (it.action != WorkspaceAction::None) {
+                        m_pendingAction = it.action;
+                    } else if (!it.command.empty()) {
+                        (void)shell.commandBus().execute(it.command);
+                    }
+                    m_openMenuIdx = -1;
+                }
+                iy += 22.f;
+            }
+        }
+
+        // Close the dropdown when the user clicks outside it (and outside the toolbar).
+        if (!itemConsumedClick && mouse.leftPressed) {
+            bool inDropdown = (mouse.x >= dx && mouse.x < dx + dw &&
+                               mouse.y >= dy && mouse.y < dy + dh);
+            bool inToolbar  = (mouse.y >= 0.f && mouse.y < kToolbarH);
+            if (!inDropdown && !inToolbar)
+                m_openMenuIdx = -1;
+        }
+    }
+
     // ── Status bar ────────────────────────────────────────────────
     void renderStatusBar(UIRenderer& ui, float width, float height,
                          const WorkspaceShell& shell)
@@ -460,6 +582,10 @@ private:
     // Only one action can be pending at a time (last write wins within a frame).
     WorkspaceAction      m_pendingAction = WorkspaceAction::None;
     WorkspacePendingError m_pendingError;
+
+    // Dropdown menu data — one entry per menu label (File/Project/Tools/View/Help).
+    std::array<DropMenu, 5> m_dropMenus;
+    int m_openMenuIdx = -1;  // index of the currently open dropdown, -1 = none
 
     // Placeholder project path used for project-scoped apps until the
     // full project management workflow is implemented.

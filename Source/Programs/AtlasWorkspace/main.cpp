@@ -28,6 +28,7 @@
 #  include "NF/UI/GDIBackend.h"
 #endif
 #include <chrono>
+#include <filesystem>
 #include <string>
 
 // ── Global state for Win32 WndProc ───────────────────────────────
@@ -61,6 +62,43 @@ private:
     std::string m_id;
     std::string m_displayName;
     std::string m_path;
+};
+
+// ── NovaForgeWorkspaceAdapter ─────────────────────────────────────
+// IGameProjectAdapter for the NovaForge game project that lives in the
+// repo tree under the NovaForge/ subdirectory.  It exposes the project's
+// content roots so the workspace can browse and reference NovaForge assets.
+
+class NovaForgeWorkspaceAdapter final : public NF::IGameProjectAdapter {
+public:
+    explicit NovaForgeWorkspaceAdapter(std::string projectRoot)
+        : m_root(std::move(projectRoot)) {}
+
+    std::string projectId()          const override { return "novaforge"; }
+    std::string projectDisplayName() const override { return "NovaForge"; }
+
+    bool initialize() override { return true; }
+    void shutdown()   override {}
+
+    std::vector<NF::GameplaySystemPanelDescriptor> panelDescriptors() const override {
+        return {};
+    }
+
+    std::vector<std::string> contentRoots() const override {
+        return { m_root + "/Content", m_root + "/Data" };
+    }
+
+    std::vector<std::string> customCommands() const override {
+        return {
+            "novaforge.build_game",
+            "novaforge.build_server",
+            "novaforge.launch_editor",
+            "novaforge.validate_assets",
+        };
+    }
+
+private:
+    std::string m_root;
 };
 
 // ── String conversion helpers ─────────────────────────────────────
@@ -119,8 +157,14 @@ static void doNewProject(NF::WorkspaceShell& shell, HWND hwnd) {
     std::string name    = wideToUtf8(wname.c_str());
     std::string pathStr = wideToUtf8(path);
 
-    auto adapter = std::make_unique<LocalProjectAdapter>(
-        "local." + name, name, pathStr);
+    // If the selected folder is a NovaForge project root, use the specialised
+    // adapter so its content roots and commands are registered correctly.
+    std::unique_ptr<NF::IGameProjectAdapter> adapter;
+    if (std::filesystem::exists(std::filesystem::path(pathStr) / "novaforge.project.json")) {
+        adapter = std::make_unique<NovaForgeWorkspaceAdapter>(pathStr);
+    } else {
+        adapter = std::make_unique<LocalProjectAdapter>("local." + name, name, pathStr);
+    }
 
     if (!shell.loadProject(std::move(adapter))) {
         MessageBoxW(hwnd,
@@ -155,8 +199,21 @@ static void doOpenProject(NF::WorkspaceShell& shell, HWND hwnd) {
     std::string name    = wideToUtf8(wname.c_str());
     std::string pathStr = wideToUtf8(buf);
 
-    auto adapter = std::make_unique<LocalProjectAdapter>(
-        "local." + name, name, pathStr);
+    // Check whether the chosen .atlas file is the NovaForge project descriptor.
+    // If so, use the specialised adapter so its content roots and commands are
+    // registered correctly.  For any other project file, fall back to the
+    // generic LocalProjectAdapter.
+    std::filesystem::path atlaspath(pathStr);
+    std::filesystem::path projectDir = atlaspath.parent_path();
+    bool isNovaForge = (name == "NovaForge") &&
+                       std::filesystem::exists(projectDir / "novaforge.project.json");
+
+    std::unique_ptr<NF::IGameProjectAdapter> adapter;
+    if (isNovaForge) {
+        adapter = std::make_unique<NovaForgeWorkspaceAdapter>(projectDir.string());
+    } else {
+        adapter = std::make_unique<LocalProjectAdapter>("local." + name, name, pathStr);
+    }
 
     if (!shell.loadProject(std::move(adapter))) {
         MessageBoxW(hwnd,
@@ -190,6 +247,9 @@ static void handlePendingWorkspaceActions(NF::WorkspaceRenderer& renderer,
             break;
         case NF::WorkspaceAction::OpenProject:
             doOpenProject(shell, hwnd);
+            break;
+        case NF::WorkspaceAction::Exit:
+            DestroyWindow(hwnd);
             break;
         default:
             break;
