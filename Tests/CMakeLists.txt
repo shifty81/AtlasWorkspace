@@ -500,3 +500,36 @@ target_link_libraries(NF_Phase30Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase30Tests)
+
+# Phase 31 — Workspace Theme System tests
+add_executable(NF_Phase31Tests
+    Workspace/test_phase31_theme.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase31Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase31Tests)
+
+# Phase 32 — Workspace Tour / Onboarding System tests
+add_executable(NF_Phase32Tests
+    Workspace/test_phase32_tour.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase32Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase32Tests)
+
+# Phase 33 — Workspace Split View / Tab Groups tests
+add_executable(NF_Phase33Tests
+    Workspace/test_phase33_split_view.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase33Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase33Tests)

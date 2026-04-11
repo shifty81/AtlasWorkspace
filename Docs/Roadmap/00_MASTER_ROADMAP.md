@@ -984,3 +984,94 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - WorkspaceFilterIndex returns filtered item lists without mutation ✓
 - 32 test cases pass (78 assertions) ✓
 - Total test suite: ~2569 tests passing ✓
+
+---
+
+## Phase 31 – Workspace Theme System
+
+**Status: Done**
+
+- [x] Create `WorkspaceTheme.h` — workspace-wide theme management
+  - [x] ThemeSlot enum (14 semantic color roles: Background/Surface/Border/Accent/AccentHover/AccentActive/TextPrimary/TextSecondary/TextDisabled/IconPrimary/IconSecondary/SelectionHighlight/ErrorColor/WarningColor) with `themeSlotName()` helper
+  - [x] ThemeColorMap — slot-indexed RRGGBBAA color table; set/get/isDefined/reset/resetAll/definedCount/allDefined
+  - [x] ThemeDescriptor — id + displayName + author + colorMap + isBuiltIn; isValid()
+  - [x] ThemeViolation + ThemeEnforcementReport — typed violation list; passed flag + violationCount
+  - [x] ThemeEnforcer — validates descriptor: checks all slots defined, invalid descriptor reports violation
+  - [x] ThemeRegistry — named theme store (MAX_THEMES=64); registerTheme/unregisterTheme/find/contains/applyTheme/activeThemeId/activeTheme/allIds/clear; observer callbacks (MAX_OBSERVERS=16); cannot unregister active theme
+- [x] Add `Tests/Workspace/test_phase31_theme.cpp` — 36 test cases / 92 assertions:
+  - [x] ThemeSlot (1 test): all 14 values + kThemeSlotCount
+  - [x] ThemeColorMap (7 tests): default, set+get, isDefined false for unset, reset single, resetAll, allDefined, definedCount
+  - [x] ThemeDescriptor (5 tests): default invalid, valid, invalid without id, invalid without displayName, isBuiltIn flag
+  - [x] ThemeEnforcer (4 tests): pass fully-defined, missing slots, invalid descriptor, violation carries slot info
+  - [x] ThemeRegistry (16 tests): empty, register, duplicate fails, invalid fails, find, find null, apply, apply unknown, unregister, cannot unregister active, unregister unknown, allIds, observer on apply, observer on switch, clearObservers, clear
+  - [x] Integration (3 tests): full pipeline, invalid rejected by enforcer, multiple observers
+- [x] Wire `NF_Phase31Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ThemeSlot provides 14 semantic color roles with name helpers ✓
+- ThemeColorMap tracks defined state per slot independently ✓
+- ThemeEnforcer detects any undefined slot as a violation ✓
+- ThemeRegistry prevents active-theme removal and fires observers on apply ✓
+- 36 test cases pass (92 assertions) ✓
+- Total test suite: ~2607 tests passing ✓
+
+---
+
+## Phase 32 – Workspace Tour / Onboarding System
+
+**Status: Done**
+
+- [x] Create `WorkspaceTour.h` — guided onboarding tour
+  - [x] TourStepKind enum (Highlight/Tooltip/Modal/Action/Pause) with `tourStepKindName()` helper
+  - [x] TourState enum (Idle/Running/Paused/Completed/Cancelled) with `tourStateName()` helper
+  - [x] TourStep — id + kind + targetId + title + body + actionLabel; isValid()
+  - [x] TourSequence — ordered step list (MAX_STEPS=128); id + name; addStep/stepAt/stepCount; isValid()
+  - [x] TourProgress — sequenceId + stepIndex + totalSteps; isActive(); fraction()
+  - [x] TourController — load/start/next/prev/pause/resume/cancel/complete/reset; currentStep(); observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase32_tour.cpp` — 43 test cases / 78 assertions:
+  - [x] TourStepKind (1 test): all 5 values
+  - [x] TourState (1 test): all 5 values
+  - [x] TourStep (5 tests): default invalid, valid, invalid without id, invalid without title, stores kind
+  - [x] TourSequence (6 tests): default invalid, invalid with no steps, valid, addStep invalid, stepAt, stepAt out-of-range
+  - [x] TourProgress (4 tests): default inactive, isActive, fraction, isActive false past-end
+  - [x] TourController (20 tests): default Idle, load valid, load invalid, start Running, start no sequence, start already running, next advances, next last completes, next not Running, prev goes back, prev fails at first, pause+resume, pause not Running, resume not Paused, cancel from Running, cancel from Paused, cancel from Idle, currentStep, currentStep null Idle, reset
+  - [x] Integration (3 tests): full walk-through, pause mid-tour, progress fraction increases
+- [x] Wire `NF_Phase32Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- TourStepKind and TourState provide typed enums with name helpers ✓
+- TourSequence enforces non-empty valid steps ✓
+- TourController enforces state machine transitions (cannot start if running, cannot pause if idle, etc.) ✓
+- TourProgress.fraction() increases linearly through the sequence ✓
+- 43 test cases pass (78 assertions) ✓
+- Total test suite: ~2647 tests passing ✓
+
+---
+
+## Phase 33 – Workspace Split View / Tab Groups
+
+**Status: Done**
+
+- [x] Create `WorkspaceSplitView.h` — split-view layout with panes and tab groups
+  - [x] SplitOrientation enum (None/Horizontal/Vertical) with `splitOrientationName()` helper
+  - [x] TabEntry — id + label + closeable; isValid(); equality by id
+  - [x] TabGroup — ordered tab list (MAX_TABS=64); groupId; addTab/removeTab/setActiveTab/hasTab/tabCount/empty; active tab fallback on remove
+  - [x] SplitPane — id + orientation + tabGroup + splitRatio + first/second children; isLeaf/isBranch/isValid()
+  - [x] SplitViewController — root pane tree; containsPane/findPane/setActivePane; addTab/removeTab/setActiveTab; splitPane (leaf→branch with two children)/collapsePane (branch→leaf keeping first child); observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase33_split_view.cpp` — 46 test cases / 82 assertions:
+  - [x] SplitOrientation (1 test): all 3 values
+  - [x] TabEntry (5 tests): default invalid, valid, invalid without id, invalid without label, equality by id
+  - [x] TabGroup (11 tests): empty state, isValid, addTab sets active, duplicate fails, invalid fails, removeTab+active fallback, removeTab unknown, setActiveTab, setActiveTab unknown, hasTab, empty after all removed
+  - [x] SplitPane (4 tests): default leaf, invalid without id, valid, branch when orientation set
+  - [x] SplitViewController (20 tests): init root leaf, containsPane, setActivePane, setActivePane unknown, addTab, duplicate fails, unknown pane fails, removeTab, removeTab unknown, setActiveTab, splitPane horizontal, splitPane vertical, None fails, duplicate secondId fails, splitPane on branch fails, tabs preserved in first child, collapsePane, collapsePane on leaf fails, observer on addTab, observer on splitPane, clearObservers
+  - [x] Integration (4 tests): split + add tabs both panes, switch active pane, collapse keeps first-child tabs, multiple observers
+- [x] Wire `NF_Phase33Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- SplitOrientation provides 3 layout modes with name helpers ✓
+- TabGroup maintains stable active-tab selection with fallback on remove ✓
+- SplitPane cleanly models leaf/branch duality ✓
+- SplitViewController enforces split constraints (no duplicate IDs, no splitting branches, None orientation rejected) ✓
+- collapsePane restores leaf state and preserves first-child tab group ✓
+- 46 test cases pass (82 assertions) ✓
+- Total test suite: ~2688 tests passing ✓
