@@ -206,8 +206,10 @@ private:
                     //       once project management is fully wired.
                     WorkspaceLaunchContext ctx;
                     ctx.workspaceRoot = ".";
-                    ctx.projectPath   = desc.isProjectScoped ? "stub.atlas" : ".";
-                    ctx.sessionId     = "workspace-session-" + desc.name;
+                    ctx.projectPath   = desc.isProjectScoped ? kStubProjectPath : ".";
+                    // Use counter suffix to ensure unique session IDs per launch
+                    ctx.sessionId     = "workspace-session-" + desc.name
+                                        + "-" + std::to_string(++m_launchCounter);
                     ctx.mode          = WorkspaceLaunchMode::Hosted;
                     auto result = launchSvc->launchApp(desc, ctx);
                     if (result.succeeded()) {
@@ -392,6 +394,16 @@ private:
     // ── Per-instance state ────────────────────────────────────────
     UIContext m_ctx;      // maintains scroll state across frames
     UITheme   m_wsTheme;  // workspace-palette theme for UIContext
+
+    // Monotonically increasing counter used to build unique session IDs.
+    // Each sidebar launch increments this so repeated launches of the same
+    // app produce distinct session identifiers.
+    uint32_t m_launchCounter = 0;
+
+    // Placeholder project path used for project-scoped apps until the
+    // full project management workflow is implemented.
+    // TODO: replace with shell.projectAdapter()->projectPath() once wired.
+    static constexpr const char* kStubProjectPath = "stub.atlas";
 };
 
 } // namespace NF
