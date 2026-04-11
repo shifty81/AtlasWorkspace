@@ -70,7 +70,8 @@ static std::string wideToUtf8(const wchar_t* ws) {
     int len = WideCharToMultiByte(CP_UTF8, 0, ws, -1, nullptr, 0, nullptr, nullptr);
     if (len <= 0) return {};
     std::string s(static_cast<size_t>(len), '\0');
-    WideCharToMultiByte(CP_UTF8, 0, ws, -1, s.data(), len, nullptr, nullptr);
+    int written = WideCharToMultiByte(CP_UTF8, 0, ws, -1, s.data(), len, nullptr, nullptr);
+    if (written <= 0) return {};
     // WideCharToMultiByte with -1 includes the null terminator in the count.
     if (!s.empty() && s.back() == '\0') s.pop_back();
     return s;
@@ -81,7 +82,8 @@ static std::wstring utf8ToWide(const std::string& u8) {
     int len = MultiByteToWideChar(CP_UTF8, 0, u8.c_str(), -1, nullptr, 0);
     if (len <= 0) return {};
     std::wstring ws(static_cast<size_t>(len), L'\0');
-    MultiByteToWideChar(CP_UTF8, 0, u8.c_str(), -1, ws.data(), len);
+    int written = MultiByteToWideChar(CP_UTF8, 0, u8.c_str(), -1, ws.data(), len);
+    if (written <= 0) return {};
     if (!ws.empty() && ws.back() == L'\0') ws.pop_back();
     return ws;
 }
