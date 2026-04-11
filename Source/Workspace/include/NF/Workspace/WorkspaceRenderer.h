@@ -77,18 +77,6 @@ public:
         ui.endFrame();
     }
 
-    // ── Backward-compatible overload (no mouse / no launch) ───────
-    // Provided for headless / test callers that do not supply input.
-    void render(UIRenderer& ui, float width, float height,
-                const WorkspaceShell& shell)
-    {
-        UIMouseState noMouse{};
-        // WorkspaceShell& is needed for actions, but const& callers will never
-        // trigger actions (mouse is zeroed), so the cast is safe here.
-        render(ui, width, height,
-               const_cast<WorkspaceShell&>(shell), noMouse, nullptr);
-    }
-
 private:
     // ── UITheme matching workspace dark palette ────────────────────
     void initTheme() {

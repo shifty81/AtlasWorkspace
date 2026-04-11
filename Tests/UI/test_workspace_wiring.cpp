@@ -804,8 +804,9 @@ TEST_CASE("WorkspaceRenderer renders with no mouse input without crashing", "[Wo
     REQUIRE_FALSE(result.failed());
 
     NF::WorkspaceRenderer renderer;
-    // Backward-compatible (const) overload — no mouse, no launch service
-    REQUIRE_NOTHROW(renderer.render(r, 1280.f, 800.f, shell));
+    // No mouse, no launch service — renders visuals only
+    NF::UIMouseState noMouse{};
+    REQUIRE_NOTHROW(renderer.render(r, 1280.f, 800.f, shell, noMouse, nullptr));
 
     r.shutdown();
     shell.shutdown();

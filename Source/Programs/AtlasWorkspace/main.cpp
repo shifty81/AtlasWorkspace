@@ -203,7 +203,6 @@ int main(int argc, char* argv[]) {
     g_launchSvc   = &nullLaunchSvc;
 
     NF::Win32InputAdapter inputAdapter(input);
-    inputAdapter.setWindowHandle(nullptr); // updated below after window creation
     g_inputAdapter = &inputAdapter;
 
     WNDCLASSEXW wc{};
