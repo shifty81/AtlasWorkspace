@@ -11,12 +11,14 @@
 #include "NF/Core/Core.h"
 #include "NF/UI/UI.h"
 #include "NF/UI/UIBackend.h"
+#include "NF/UI/UIWidgets.h"
 #include "NF/Input/Input.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include "NF/Workspace/WorkspaceBootstrap.h"
 #include "NF/Workspace/WorkspaceFrameController.h"
 #include "NF/Workspace/WorkspaceRenderer.h"
 #include "NF/Workspace/WorkspaceAppRegistry.h"
+#include "NF/Workspace/WorkspaceLaunchContract.h"
 #if defined(_WIN32)
 #  include "NF/Input/Win32InputAdapter.h"
 #  include "NF/UI/GDIBackend.h"
@@ -32,7 +34,13 @@ static NF::WorkspaceRenderer* g_renderer    = nullptr;
 static NF::UIRenderer*        g_ui          = nullptr;
 static NF::Win32InputAdapter* g_inputAdapter = nullptr;
 static NF::GDIBackend*        g_gdiBackend  = nullptr;
+static NF::InputSystem*       g_inputSystem = nullptr;
+static NF::WorkspaceLaunchService* g_launchSvc = nullptr;
 static int g_clientW = 1280, g_clientH = 800;
+
+// Per-frame left-button state for edge detection (leftPressed / leftReleased).
+// Updated each WM_PAINT so transitions fire for exactly one rendered frame.
+static bool g_prevLeftDown = false;
 
 static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
                                           WPARAM wParam, LPARAM lParam) {
@@ -43,13 +51,25 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-        if (g_shell && g_renderer && g_ui && g_gdiBackend) {
+        if (g_shell && g_renderer && g_ui && g_gdiBackend && g_inputSystem) {
+            // Build UIMouseState from InputSystem — includes edge-transition flags.
+            const auto& is = g_inputSystem->state();
+            bool currLeft = g_inputSystem->isKeyDown(NF::KeyCode::Mouse1);
+            NF::UIMouseState mouse;
+            mouse.x           = is.mouse.x;
+            mouse.y           = is.mouse.y;
+            mouse.scrollDelta = is.mouse.scrollDelta;
+            mouse.leftDown    = currLeft;
+            mouse.leftPressed  = !g_prevLeftDown && currLeft;
+            mouse.leftReleased =  g_prevLeftDown && !currLeft;
+            g_prevLeftDown = currLeft;
+
             g_gdiBackend->setTargetDC(hdc);
             g_gdiBackend->beginFrame(g_clientW, g_clientH);
             g_renderer->render(*g_ui,
                                static_cast<float>(g_clientW),
                                static_cast<float>(g_clientH),
-                               *g_shell);
+                               *g_shell, mouse, g_launchSvc);
             g_gdiBackend->endFrame();
         }
         EndPaint(hwnd, &ps);
@@ -60,6 +80,12 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
         g_clientH = HIWORD(lParam);
         InvalidateRect(hwnd, nullptr, FALSE);
         return 0;
+    // Trigger repaints on mouse activity so hover states update immediately.
+    case WM_MOUSEMOVE:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+        InvalidateRect(hwnd, nullptr, FALSE);
+        break;
     case WM_CLOSE:
         DestroyWindow(hwnd);
         return 0;
@@ -165,12 +191,19 @@ int main(int argc, char* argv[]) {
     gdiBackend.init(1280, 800);
     ui.setBackend(&gdiBackend);
 
+    // NullLaunchService: records launches without spawning processes.
+    // Replace with a platform LaunchService once process-spawning is implemented.
+    NF::NullLaunchService nullLaunchSvc;
+
     g_shell       = &shell;
     g_renderer    = &wsRenderer;
     g_ui          = &ui;
     g_gdiBackend  = &gdiBackend;
+    g_inputSystem = &input;
+    g_launchSvc   = &nullLaunchSvc;
 
     NF::Win32InputAdapter inputAdapter(input);
+    inputAdapter.setWindowHandle(nullptr); // updated below after window creation
     g_inputAdapter = &inputAdapter;
 
     WNDCLASSEXW wc{};
@@ -193,6 +226,7 @@ int main(int argc, char* argv[]) {
         nullptr, nullptr, wc.hInstance, nullptr);
 
     gdiBackend.setWindowHandle(hwnd);
+    inputAdapter.setWindowHandle(hwnd);  // enable mouse capture on click
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
     NF_LOG_INFO("AtlasWorkspace", "Workspace window created (1280x800)");
@@ -247,6 +281,8 @@ int main(int argc, char* argv[]) {
     g_renderer    = nullptr;
     g_ui          = nullptr;
     g_inputAdapter = nullptr;
+    g_inputSystem  = nullptr;
+    g_launchSvc    = nullptr;
     g_gdiBackend  = nullptr;
 #endif
 

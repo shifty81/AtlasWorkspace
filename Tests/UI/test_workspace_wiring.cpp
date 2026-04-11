@@ -777,3 +777,115 @@ TEST_CASE("BasicPaintContext captures all command types", "[Workspace][PaintCont
 
     REQUIRE(ctx.drawList().size() == 5u);
 }
+
+// ── WorkspaceRenderer interaction wiring ─────────────────────────
+// Tests that validate mouse input → UIContext hit regions → launch service
+// path introduced for Option B clickable workspace chrome.
+
+#include "NF/UI/UIWidgets.h"
+#include "NF/Workspace/WorkspaceRenderer.h"
+#include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/WorkspaceLaunchContract.h"
+#include "NF/Workspace/WorkspaceBootstrap.h"
+
+TEST_CASE("WorkspaceRenderer renders with no mouse input without crashing", "[Workspace][Renderer]") {
+    NF::UIRenderer r;
+    r.init();
+
+    NF::NullBackend nb;
+    nb.init(1280, 800);
+    r.setBackend(&nb);
+
+    NF::WorkspaceShell shell;
+    NF::WorkspaceBootstrap bootstrap;
+    NF::WorkspaceBootstrapConfig cfg;
+    cfg.launchMode = NF::WorkspaceStartupMode::Hosted;
+    auto result = bootstrap.run(cfg, shell);
+    REQUIRE_FALSE(result.failed());
+
+    NF::WorkspaceRenderer renderer;
+    // Backward-compatible (const) overload — no mouse, no launch service
+    REQUIRE_NOTHROW(renderer.render(r, 1280.f, 800.f, shell));
+
+    r.shutdown();
+    shell.shutdown();
+}
+
+TEST_CASE("WorkspaceRenderer renders with UIMouseState and NullLaunchService", "[Workspace][Renderer]") {
+    NF::UIRenderer r;
+    r.init();
+
+    NF::NullBackend nb;
+    nb.init(1280, 800);
+    r.setBackend(&nb);
+
+    NF::WorkspaceShell shell;
+    NF::WorkspaceBootstrap bootstrap;
+    NF::WorkspaceBootstrapConfig cfg;
+    cfg.launchMode = NF::WorkspaceStartupMode::Hosted;
+    bootstrap.run(cfg, shell);
+
+    // Register a test app
+    NF::WorkspaceAppDescriptor desc;
+    desc.id              = NF::WorkspaceAppId::TileEditor;
+    desc.name            = "Test App";
+    desc.executablePath  = "TestApp.exe";
+    desc.isProjectScoped = false;
+    desc.allowDirectLaunch = true;
+    shell.appRegistry().registerApp(desc);
+
+    NF::NullLaunchService launchSvc;
+    NF::UIMouseState mouse{};
+    mouse.x = 100.f;
+    mouse.y = 100.f;
+
+    NF::WorkspaceRenderer renderer;
+    // Should not crash with mouse state and launch service provided
+    REQUIRE_NOTHROW(renderer.render(r, 1280.f, 800.f, shell, mouse, &launchSvc));
+
+    r.shutdown();
+    shell.shutdown();
+}
+
+TEST_CASE("NullLaunchService records sidebar app launch via WorkspaceRenderer click", "[Workspace][Renderer][Interaction]") {
+    NF::UIRenderer r;
+    r.init();
+
+    NF::NullBackend nb;
+    nb.init(1280, 800);
+    r.setBackend(&nb);
+
+    NF::WorkspaceShell shell;
+    NF::WorkspaceBootstrap bootstrap;
+    NF::WorkspaceBootstrapConfig cfg;
+    cfg.launchMode = NF::WorkspaceStartupMode::Hosted;
+    bootstrap.run(cfg, shell);
+
+    // Register a non-project-scoped app (simpler launch path)
+    NF::WorkspaceAppDescriptor desc;
+    desc.id              = NF::WorkspaceAppId::TileEditor;
+    desc.name            = "Tile Editor";
+    desc.executablePath  = "TileEditor.exe";
+    desc.isProjectScoped = false;
+    desc.allowDirectLaunch = true;
+    shell.appRegistry().registerApp(desc);
+
+    NF::NullLaunchService launchSvc;
+
+    // Simulate a click on the first sidebar card.
+    // Sidebar cards start at y = kContentY + 30 = 28 + 28 + 30 = 86
+    // x range: 4 to 4 + (224 - 8) = 220, so center at x=112, y=86+19=105
+    NF::UIMouseState mouse{};
+    mouse.x            = 112.f;   // inside first sidebar card
+    mouse.y            = 105.f;   // y = kContentY(56) + 30 + 19 = 105
+    mouse.leftReleased = true;    // simulate a click release
+
+    NF::WorkspaceRenderer renderer;
+    renderer.render(r, 1280.f, 800.f, shell, mouse, &launchSvc);
+
+    // The NullLaunchService should have recorded the launch
+    REQUIRE(launchSvc.isRunning(NF::WorkspaceAppId::TileEditor));
+
+    r.shutdown();
+    shell.shutdown();
+}

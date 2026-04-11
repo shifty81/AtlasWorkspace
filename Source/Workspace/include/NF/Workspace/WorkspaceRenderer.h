@@ -8,22 +8,26 @@
 // The workspace lists and launches hosted tools (NovaForgeEditor, NovaForgeGame,
 // NovaForgeServer, …) as child processes via WorkspaceLaunchService.
 //
-// WorkspaceRenderer is stateless: it reads only from WorkspaceShell and writes
-// only to UIRenderer. No state is cached between frames.
+// WorkspaceRenderer maintains a UIContext for interactive hit regions.
+// Mouse state (UIMouseState) must be supplied every frame so that hover
+// highlights and click detection work correctly.
 //
 // Usage (main loop):
 //
 //   NF::WorkspaceRenderer wsRenderer;
+//   NF::NullLaunchService launchSvc;
 //   while (running) {
 //       ui.beginFrame(w, h);          // called internally by render()
-//       wsRenderer.render(ui, w, h, shell);
+//       wsRenderer.render(ui, w, h, shell, mouse, &launchSvc);
 //       // ui.endFrame() is called by render() before returning
 //   }
 //
 // Color format: RRGGBBAA (matches UIRenderer / GDIBackend convention).
 
 #include "NF/UI/UI.h"
+#include "NF/UI/UIWidgets.h"
 #include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/WorkspaceLaunchContract.h"
 #include <cstring>
 #include <string>
 
@@ -31,6 +35,8 @@ namespace NF {
 
 class WorkspaceRenderer {
 public:
+    WorkspaceRenderer() { initTheme(); }
+
     // ── Layout constants (pixels) ─────────────────────────────────
     static constexpr float kTitleH   = 28.f;
     static constexpr float kToolbarH = 28.f;
@@ -53,20 +59,51 @@ public:
 
     // ── render ────────────────────────────────────────────────────
     // Main entry point. Call once per frame from the platform render callback.
+    // |mouse| must reflect the current frame's mouse position and button
+    // edge-transitions (leftPressed / leftReleased) for clicks to register.
+    // |launchSvc| is used to spawn child apps from the sidebar; pass nullptr
+    // to disable launching (actions are still logged).
     void render(UIRenderer& ui, float width, float height,
-                const WorkspaceShell& shell)
+                WorkspaceShell& shell, const UIMouseState& mouse,
+                WorkspaceLaunchService* launchSvc = nullptr)
     {
         ui.beginFrame(width, height);
         renderBackground(ui, width, height);
         renderTitleBar(ui, width, shell);
-        renderToolbar(ui, width);
-        renderSidebar(ui, height, shell);
-        renderMainArea(ui, width, height, shell);
+        renderToolbar(ui, width, shell, mouse);
+        renderSidebar(ui, height, shell, mouse, launchSvc);
+        renderMainArea(ui, width, height, shell, mouse);
         renderStatusBar(ui, width, height, shell);
         ui.endFrame();
     }
 
+    // ── Backward-compatible overload (no mouse / no launch) ───────
+    // Provided for headless / test callers that do not supply input.
+    void render(UIRenderer& ui, float width, float height,
+                const WorkspaceShell& shell)
+    {
+        UIMouseState noMouse{};
+        // WorkspaceShell& is needed for actions, but const& callers will never
+        // trigger actions (mouse is zeroed), so the cast is safe here.
+        render(ui, width, height,
+               const_cast<WorkspaceShell&>(shell), noMouse, nullptr);
+    }
+
 private:
+    // ── UITheme matching workspace dark palette ────────────────────
+    void initTheme() {
+        m_wsTheme.hoverHighlight    = 0x3D3D3DFF;  // subtle card hover tint
+        m_wsTheme.panelBackground   = kSurface;
+        m_wsTheme.panelBorder       = kBorder;
+        m_wsTheme.panelHeader       = kSurface;
+        m_wsTheme.panelText         = kTextPrimary;
+        m_wsTheme.buttonBackground  = kCardBg;
+        m_wsTheme.buttonHover       = kButtonBg;
+        m_wsTheme.buttonPressed     = kAccentBlue;
+        m_wsTheme.buttonText        = kTextPrimary;
+        m_wsTheme.itemSpacing       = 0.f;
+    }
+
     // ── Background ────────────────────────────────────────────────
     void renderBackground(UIRenderer& ui, float w, float h) {
         ui.drawRect({0.f, 0.f, w, h}, kBackground);
@@ -92,24 +129,54 @@ private:
     }
 
     // ── Toolbar ───────────────────────────────────────────────────
-    void renderToolbar(UIRenderer& ui, float width) {
+    void renderToolbar(UIRenderer& ui, float width, WorkspaceShell& shell,
+                       const UIMouseState& mouse)
+    {
         float y = kTitleH;
         ui.drawRect({0.f, y, width, kToolbarH}, kSurface);
         // Bottom separator
         ui.drawRect({0.f, y + kToolbarH - 1.f, width, 1.f}, kBorder);
 
         static const char* kMenuItems[] = {"File", "Project", "Tools", "View", "Help"};
+        // Corresponding command names used in the command bus
+        static const char* kMenuCmds[]  = {
+            "workspace.menu.file",   "workspace.menu.project",
+            "workspace.menu.tools",  "workspace.menu.view",
+            "workspace.menu.help"
+        };
+
+        // Begin widget pass for this frame's toolbar hit regions
+        m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
         float mx = 8.f;
-        for (const char* item : kMenuItems) {
+        for (size_t i = 0; i < 5; ++i) {
+            const char* item = kMenuItems[i];
             float iw = static_cast<float>(std::strlen(item)) * 8.f + 16.f;
-            ui.drawRect({mx, y + 4.f, iw, 20.f}, kButtonBg);
+            Rect btnR{mx, y + 4.f, iw, 20.f};
+
+            // Draw button background
+            ui.drawRect(btnR, kButtonBg);
             ui.drawText(mx + 6.f, y + 7.f, item, kTextPrimary);
+
+            // Interactive layer: hover highlight + click detection
+            if (m_ctx.hitRegion(btnR)) {
+                NF_LOG_INFO("WorkspaceUI",
+                    std::string("Menu clicked: ") + item
+                    + "  [cmd=" + kMenuCmds[i] + "]");
+                // Enqueue via command bus so any registered handlers fire
+                (void)shell.commandBus().execute(kMenuCmds[i]);
+            }
+
             mx += iw + 4.f;
         }
+
+        m_ctx.end();
     }
 
     // ── Left sidebar: tool launcher ───────────────────────────────
-    void renderSidebar(UIRenderer& ui, float height, const WorkspaceShell& shell) {
+    void renderSidebar(UIRenderer& ui, float height, WorkspaceShell& shell,
+                       const UIMouseState& mouse, WorkspaceLaunchService* launchSvc)
+    {
         float y = kContentY;
         float h = height - y - kStatusH;
 
@@ -121,12 +188,15 @@ private:
         ui.drawText(8.f, y + 8.f, "LAUNCH TOOL", kTextSecondary);
         ui.drawRect({8.f, y + 22.f, kSidebarW - 16.f, 1.f}, kBorder);
 
+        m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
         float ay = y + 30.f;
         for (const auto& desc : shell.appRegistry().apps()) {
             if (ay + 46.f > y + h) break;
 
-            ui.drawRect({4.f, ay, kSidebarW - 8.f, 38.f}, kCardBg);
-            ui.drawRectOutline({4.f, ay, kSidebarW - 8.f, 38.f}, kBorder, 1.f);
+            Rect cardR{4.f, ay, kSidebarW - 8.f, 38.f};
+            ui.drawRect(cardR, kCardBg);
+            ui.drawRectOutline(cardR, kBorder, 1.f);
 
             // App name
             ui.drawText(12.f, ay + 5.f, desc.name, kTextPrimary);
@@ -136,8 +206,48 @@ private:
             if (path.size() > 24) path = path.substr(0, 21) + "...";
             ui.drawText(12.f, ay + 20.f, path, kTextMuted);
 
+            // Interactive layer: hover + click → launch
+            if (m_ctx.hitRegion(cardR)) {
+                NF_LOG_INFO("WorkspaceUI",
+                    std::string("Launching: ") + desc.name
+                    + "  (" + desc.executablePath + ")");
+
+                if (launchSvc) {
+                    // Build a minimal launch context.
+                    // TODO: populate workspaceRoot and projectPath from shell
+                    //       once project management is fully wired.
+                    WorkspaceLaunchContext ctx;
+                    ctx.workspaceRoot = ".";
+                    ctx.projectPath   = desc.isProjectScoped ? "stub.atlas" : ".";
+                    ctx.sessionId     = "workspace-session-" + desc.name;
+                    ctx.mode          = WorkspaceLaunchMode::Hosted;
+                    auto result = launchSvc->launchApp(desc, ctx);
+                    if (result.succeeded()) {
+                        NF_LOG_INFO("WorkspaceUI",
+                            std::string("Launch OK: ") + desc.name
+                            + "  pid=" + std::to_string(result.pid));
+                        Notification n;
+                        n.title   = std::string("Launched: ") + desc.name;
+                        n.message = desc.executablePath;
+                        shell.shellContract().postNotification(n);
+                    } else {
+                        NF_LOG_WARN("WorkspaceUI",
+                            std::string("Launch failed: ") + desc.name
+                            + "  status=" + workspaceLaunchStatusName(result.status));
+                    }
+                } else {
+                    // No service wired — report intent via shell contract
+                    Notification n;
+                    n.title   = std::string("Launch requested: ") + desc.name;
+                    n.message = "No launch service wired";
+                    shell.shellContract().postNotification(n);
+                }
+            }
+
             ay += 46.f;
         }
+
+        m_ctx.end();
 
         if (shell.appRegistry().empty()) {
             ui.drawText(8.f, ay + 8.f, "(no apps registered)", kTextMuted);
@@ -146,7 +256,7 @@ private:
 
     // ── Main area: welcome or project dashboard ───────────────────
     void renderMainArea(UIRenderer& ui, float width, float height,
-                        const WorkspaceShell& shell)
+                        WorkspaceShell& shell, const UIMouseState& mouse)
     {
         float x = kSidebarW;
         float y = kContentY;
@@ -156,13 +266,15 @@ private:
         ui.drawRect({x, y, w, h}, kBackground);
 
         if (!shell.hasProject()) {
-            renderWelcomeScreen(ui, x, y, w, h);
+            renderWelcomeScreen(ui, x, y, w, h, shell, mouse);
         } else {
             renderProjectDashboard(ui, x, y, w, h, shell);
         }
     }
 
-    void renderWelcomeScreen(UIRenderer& ui, float x, float y, float w, float h) {
+    void renderWelcomeScreen(UIRenderer& ui, float x, float y, float w, float h,
+                             WorkspaceShell& shell, const UIMouseState& mouse)
+    {
         float cx = x + w * 0.5f;
         float cy = y + h * 0.5f;
 
@@ -183,18 +295,42 @@ private:
         float card2X = cx + 8.f;
 
         // New Project card
-        ui.drawRect({card1X, cardY, cardW, cardH}, kCardBg);
-        ui.drawRectOutline({card1X, cardY, cardW, cardH}, kBorder, 1.f);
+        Rect newProjR{card1X, cardY, cardW, cardH};
+        ui.drawRect(newProjR, kCardBg);
+        ui.drawRectOutline(newProjR, kBorder, 1.f);
         ui.drawRect({card1X, cardY, cardW, 3.f}, kAccentBlue);
         ui.drawText(card1X + 10.f, cardY + 9.f,  "New Project",         kTextPrimary);
         ui.drawText(card1X + 10.f, cardY + 26.f, "File > New Project",  kTextMuted);
 
         // Open Project card
-        ui.drawRect({card2X, cardY, cardW, cardH}, kCardBg);
-        ui.drawRectOutline({card2X, cardY, cardW, cardH}, kBorder, 1.f);
+        Rect openProjR{card2X, cardY, cardW, cardH};
+        ui.drawRect(openProjR, kCardBg);
+        ui.drawRectOutline(openProjR, kBorder, 1.f);
         ui.drawRect({card2X, cardY, cardW, 3.f}, kButtonBg);
         ui.drawText(card2X + 10.f, cardY + 9.f,  "Open Project",        kTextPrimary);
         ui.drawText(card2X + 10.f, cardY + 26.f, "File > Open Project", kTextMuted);
+
+        // Interactive layer for welcome cards
+        m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
+        if (m_ctx.hitRegion(newProjR)) {
+            NF_LOG_INFO("WorkspaceUI", "New Project clicked");
+            // TODO: open project creation dialog when project workflow is implemented
+            Notification n;
+            n.title   = "New Project";
+            n.message = "Project creation dialog not yet implemented";
+            shell.shellContract().postNotification(n);
+        }
+        if (m_ctx.hitRegion(openProjR)) {
+            NF_LOG_INFO("WorkspaceUI", "Open Project clicked");
+            // TODO: open file-open dialog when project workflow is implemented
+            Notification n;
+            n.title   = "Open Project";
+            n.message = "File-open dialog not yet implemented";
+            shell.shellContract().postNotification(n);
+        }
+
+        m_ctx.end();
     }
 
     void renderProjectDashboard(UIRenderer& ui, float x, float y, float w, float h,
@@ -264,6 +400,10 @@ private:
         float rw = static_cast<float>(right.size()) * 8.f;
         ui.drawText(width - rw - 8.f, y + 5.f, right, 0xFFFFFFFF);
     }
+
+    // ── Per-instance state ────────────────────────────────────────
+    UIContext m_ctx;      // maintains scroll state across frames
+    UITheme   m_wsTheme;  // workspace-palette theme for UIContext
 };
 
 } // namespace NF
