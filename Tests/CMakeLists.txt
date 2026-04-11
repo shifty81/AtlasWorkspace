@@ -401,3 +401,36 @@ target_link_libraries(NF_Phase21Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase21Tests)
+
+# Phase 22 — Workspace Drag and Drop System tests
+add_executable(NF_Phase22Tests
+    Workspace/test_phase22_drag_drop.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase22Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase22Tests)
+
+# Phase 23 — Workspace Hotkey Manager tests
+add_executable(NF_Phase23Tests
+    Workspace/test_phase23_hotkeys.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase23Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase23Tests)
+
+# Phase 24 — Workspace Tooltip and Help System tests
+add_executable(NF_Phase24Tests
+    Workspace/test_phase24_tooltip.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase24Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase24Tests)

@@ -727,3 +727,95 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify multi-target sequences, modal isolation, and observer tracking ✓
 - 47 test cases pass (120 assertions) ✓
 - Total test suite: 2210 tests passing ✓
+
+---
+
+## Phase 22 – Workspace Drag and Drop System
+
+**Status: Done**
+
+- [x] Create `WorkspaceDragDrop.h` — workspace drag-and-drop coordination
+  - [x] DragPayloadType enum (None/Text/Path/Asset/Entity/Json/Custom) with `dragPayloadTypeName()` helper
+  - [x] DragPayload — type + content string; `isValid()`; equality
+  - [x] DragSessionState enum (Idle/Active/Hovering/Dropped/Cancelled) with `dragSessionStateName()` helper
+  - [x] DragSession — lifecycle state machine: `begin()`/`setHovering()`/`drop()`/`cancel()`/`reset()`; `isActive()`/`isCompleted()`; payload/sourceZoneId/hoverZoneId accessors
+  - [x] DropZone — id/label + accepted-type bitmask; `accepts(DragPayloadType)`; `tryAccept(DragSession&)`; `lastAccepted()`/`acceptCount()`/`clear()`
+  - [x] DragDropManager — `registerZone`/`unregisterZone`/`findZone`/`allZoneIds` (MAX_ZONES=64); `beginDrag`/`cancelDrag`/`commitDrop`; `hasActiveSession`/`activeSession`/`dropCount`; observer callbacks (MAX_OBSERVERS=16); `clear`
+- [x] Add `Tests/Workspace/test_phase22_drag_drop.cpp` — 44 test cases:
+  - [x] DragPayloadType enum (1 test): all 7 values
+  - [x] DragPayload (5 tests): default invalid, valid text, None+content invalid, valid type+empty invalid, equality
+  - [x] DragSessionState enum (1 test): all 5 values
+  - [x] DragSession (10 tests): default Idle, begin→Active, begin fails invalid payload, begin fails if active, setHovering, drop from Active, drop from Hovering, cancel from Active, cancel from Dropped fails, reset
+  - [x] DropZone (7 tests): default invalid, valid construction, accepts mask, tryAccept matching, tryAccept rejects incompatible, tryAccept rejects inactive, clear
+  - [x] DragDropManager (13 tests): empty state, registerZone, duplicate reject, invalid reject, unregisterZone, unregister unknown fails, beginDrag, beginDrag fails active, cancelDrag, cancelDrag no session fails, commitDrop, commitDrop unknown zone, commitDrop incompatible type, observer on begin, observer on cancel, removeObserver, clear
+  - [x] Integration (6 tests): full pipeline, multiple zones type isolation, cancel no dropCount, sequential drags, allZoneIds, clearObservers
+- [x] Wire `NF_Phase22Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- DragPayloadType provides typed format classification with name helpers ✓
+- DragSession provides Idle→Active→Hovering→Dropped/Cancelled state machine ✓
+- DropZone provides bitmask-based type filtering with tryAccept ✓
+- DragDropManager orchestrates sessions with zone registry and observers ✓
+- Integration tests verify pipeline, type isolation, and sequential drags ✓
+- 44 test cases pass ✓
+- Total test suite: ~2254 tests passing ✓
+
+---
+
+## Phase 23 – Workspace Hotkey Manager
+
+**Status: Done**
+
+- [x] Create `WorkspaceHotkeys.h` — workspace keyboard shortcut management
+  - [x] ModifierFlags bitmask enum (None/Ctrl/Alt/Shift/Meta) with `|`/`&` operators, `hasModifier()`, `modifierFlagsString()`
+  - [x] HotkeyChord — modifiers + key string; `toString()`; `isValid()`; equality
+  - [x] HotkeyBinding — id + chord + commandId + scopeId + enabled; `isValid()`; equality by id
+  - [x] HotkeyConflict — bindingIdA + bindingIdB + chord + scopeId; `isValid()`
+  - [x] HotkeyManager — `registerBinding`/`unregisterBinding`/`isRegistered`/`findById` (MAX_BINDINGS=512); `findByChord` (scope-exact then global fallback); `findByCommand`; `detectConflicts`; `enableBinding`/`disableBinding`; `activate` (dispatches observers); `allBindingIds`/`bindingCount`/`clear`; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase23_hotkeys.cpp` — 40 test cases:
+  - [x] ModifierFlags (5 tests): None string, Ctrl string, Ctrl+Shift string, hasModifier, all four bits
+  - [x] HotkeyChord (6 tests): default invalid, valid key-only, toString with modifiers, toString Ctrl+Shift+Z, equality
+  - [x] HotkeyBinding (5 tests): default invalid, valid construction, invalid without id, invalid without commandId, equality by id
+  - [x] HotkeyConflict (2 tests): default invalid, valid construction
+  - [x] HotkeyManager (18 tests): empty state, register, duplicate reject, invalid reject, unregister, unregister unknown, findById, findByChord global, findByChord scope-exact, findByChord global fallback, findByCommand, detectConflicts, no conflict different scopes, enable/disable, activate observer, activate unknown fails, removeObserver, allBindingIds, clear
+  - [x] Integration (6 tests): full dispatch pipeline, scope isolation, multi-conflict detection, disabled not activated, clearObservers, multiple observers
+- [x] Wire `NF_Phase23Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ModifierFlags provides composable bitmask with string helpers ✓
+- HotkeyChord provides chord identity with toString and equality ✓
+- HotkeyBinding maps chord to command with scope and enabled state ✓
+- HotkeyManager provides scoped lookup with global fallback and conflict detection ✓
+- Integration tests verify dispatch, scope isolation, and observer pipelines ✓
+- 40 test cases pass ✓
+- Total test suite: ~2294 tests passing ✓
+
+---
+
+## Phase 24 – Workspace Tooltip and Help System
+
+**Status: Done**
+
+- [x] Create `WorkspaceTooltip.h` — workspace tooltip lifecycle and content management
+  - [x] TooltipTrigger enum (Hover/Focus/Manual) with `tooltipTriggerName()` helper
+  - [x] TooltipPosition enum (Auto/Top/Bottom/Left/Right) with `tooltipPositionName()` helper
+  - [x] TooltipEntry — id + title + body + targetElementId + trigger + position + enabled; `isValid()` (id + body non-empty); equality by id
+  - [x] TooltipState — entryId + visible + showTimestamp; `isValid()` (entryId non-empty)
+  - [x] TooltipManager — `registerTooltip`/`unregisterTooltip`/`isRegistered`/`findTooltip` (MAX_TOOLTIPS=256); `show`/`hide`/`hideAll`; `isVisible`/`currentVisible`; `enableTooltip`/`disableTooltip`; `allTooltipIds`/`tooltipCount`/`clear`; observer callbacks on show/hide (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase24_tooltip.cpp` — 43 test cases:
+  - [x] TooltipTrigger enum (1 test): all 3 values
+  - [x] TooltipPosition enum (1 test): all 5 values
+  - [x] TooltipEntry (5 tests): default invalid, valid all fields, invalid without id, invalid without body, equality by id
+  - [x] TooltipState (2 tests): default invalid, valid with entryId
+  - [x] TooltipManager (26 tests): empty state, register, duplicate reject, invalid reject, unregister, unregister unknown, findTooltip, show, show unknown fails, show disabled fails, hide, hide non-visible fails, show second hides first, hideAll, enable/disable, disable hides visible, unregister hides visible, observer on show, observer on hide, removeObserver, allTooltipIds, clear
+  - [x] Integration (8 tests): full pipeline, multiple one-at-a-time, observer for auto-replaced tooltip, hideAll fires observer, disabled re-enable, clearObservers, showTimestamp increments
+- [x] Wire `NF_Phase24Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- TooltipTrigger and TooltipPosition provide typed enum classification with name helpers ✓
+- TooltipEntry provides content metadata with id-based equality ✓
+- TooltipState tracks current visibility with monotonic timestamp ✓
+- TooltipManager enforces single-visible constraint with enable/disable and observer notifications ✓
+- Integration tests verify pipeline, auto-hide, observer sequencing, and timestamp ordering ✓
+- 43 test cases pass ✓
+- Total test suite: ~2337 tests passing ✓
