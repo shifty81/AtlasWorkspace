@@ -1075,3 +1075,184 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - collapsePane restores leaf state and preserves first-child tab group ✓
 - 46 test cases pass (82 assertions) ✓
 - Total test suite: ~2688 tests passing ✓
+
+---
+
+## Phase 34 – Workspace Frame Controller
+
+**Status: Done**
+
+- [x] Use `WorkspaceFrameController.h` — frame pacing, delta-time smoothing, and budget tracking
+  - [x] FrameBudget — totalMs/updateMs/renderMs; `isValid()` (all positive, sum within 150% total)
+  - [x] FrameResult — dt (smoothed) + rawDt (clamped) + wasSkipped + frameNumber
+  - [x] FrameStatistics — totalFrames/fps/avgDtMs/minDtMs/maxDtMs/lastUpdateMs/lastRenderMs/skippedFrames; `reset()`; `budgetUtilization()`
+  - [x] WorkspaceFrameController — setTargetFPS/setMaxDeltaTime/setEMAAlpha/setBudget; beginFrame (clamp+EMA); markUpdateDone/markRenderDone/endFrame; shouldSleep/sleepMs; resetStats
+- [x] Add `Tests/Workspace/test_phase34_frame_controller.cpp` — 31 test cases / 55 assertions:
+  - [x] FrameBudget (3 tests): valid default, invalid zero total, invalid zero update
+  - [x] FrameResult (1 test): default zeroed state
+  - [x] FrameStatistics (4 tests): default state, reset, budgetUtilization zero budget, budgetUtilization ratio
+  - [x] WorkspaceFrameController (20 tests): default 60 FPS, default maxDtSec, setTargetFPS updates budget, setTargetFPS ignores non-positive, setMaxDeltaTime, setEMAAlpha valid, setEMAAlpha invalid, setBudget valid, setBudget invalid, beginFrame increments frameNumber, clamps negative dt, clamps dt above maxDtSec, first frame seeds EMA, markUpdateDone+markRenderDone, endFrame increments totalFrames, skippedFrames over budget, wasSkipped next frame, shouldSleep, sleepMs, resetStats
+  - [x] Integration (3 tests): 10-frame loop accumulates stats, budget overrun detected, EMA converges
+- [x] Wire `NF_Phase34Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- FrameBudget validates positive component constraints ✓
+- beginFrame clamps delta-time and applies EMA smoothing ✓
+- endFrame detects budget overrun and increments skippedFrames ✓
+- wasSkipped propagated to the next frame's FrameResult ✓
+- shouldSleep/sleepMs provide frame pacing helpers ✓
+- 31 test cases pass (55 assertions) ✓
+- Total test suite: ~2719 tests passing ✓
+
+---
+
+## Phase 35 – Workspace Project File
+
+**Status: Done**
+
+- [x] Use `WorkspaceProjectFile.h` — canonical .atlasproject file schema
+  - [x] ProjectFileVersion — major.minor.patch; `toString()`; `isCompatible()` (same major, file minor ≤ reader minor); `parse()`; `current()`; equality operators
+  - [x] ProjectFileSection — named key-value store (MAX_ENTRIES=256); `set`/`get`/`getOr`/`has`/`remove`/`clear`/`count`/`empty`/`entries()`
+  - [x] WorkspaceProjectFile — projectId/projectName/contentRoot/version setters; `isValid()` (non-empty id+name, major>0); `section()` create-on-demand; `findSection`/`hasSection`/`removeSection`/`sectionCount`; `serialize()`/`parse()` round-trip
+- [x] Add `Tests/Workspace/test_phase35_project_file.cpp` — 38 test cases / 77 assertions:
+  - [x] ProjectFileVersion (10 tests): default 1.0.0, toString, isCompatible same version, isCompatible minor older, incompatible minor newer, incompatible major, parse valid, parse invalid, current returns 1.0.0, equality
+  - [x] ProjectFileSection (11 tests): default empty, set+get, set overwrites, get nullptr missing, getOr default, getOr existing, has, remove existing, remove missing, clear, count/empty
+  - [x] WorkspaceProjectFile (10 tests): default invalid, valid with id+name, invalid without id, invalid without name, setContentRoot, section create on demand, section returns existing, findSection nullptr, removeSection, removeSection unknown
+  - [x] Serialization (5 tests): serialize produces magic header, serialize+parse round-trip, parse with sections, parse fails no magic, parse fails empty
+  - [x] Integration (3 tests): full round-trip, version compatibility, multiple sections independent
+- [x] Wire `NF_Phase35Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ProjectFileVersion enforces same-major / file-minor-≤-reader-minor compatibility rule ✓
+- ProjectFileSection MAX_ENTRIES=256 enforced; duplicate key overwrites ✓
+- serialize/parse round-trip is lossless for identity fields and all named sections ✓
+- parse rejects missing magic header and empty input ✓
+- 38 test cases pass (77 assertions) ✓
+- Total test suite: ~2757 tests passing ✓
+
+---
+
+## Phase 36 – AI Assistant Panel and AI Panel Session
+
+**Status: Done**
+
+- [x] Use `AIAssistantPanel.h` — AtlasAI assistant chat infrastructure
+  - [x] ChatRole enum (User/Assistant/System) with `chatRoleName()` helper
+  - [x] ChatMessage — id + role + content + timestamp + pending; `isUser()`/`isAssistant()`/`isSystem()`
+  - [x] ChatSession — addUserMessage/addAssistantMessage/addSystemMessage/addMessage; `lastMessage()`/`messageCount()`/`empty()`/`id()`/`clear()`
+- [x] Use `AIPanelSession.h` — AI panel session with context lifecycle
+  - [x] AISessionContextType enum (None/File/Selection/Error/Notification/Diff/Log) with `aiSessionContextTypeName()` helper
+  - [x] AISessionContext — type + label + content + pinned; `isValid()` (type≠None and content non-empty)
+  - [x] AIPanelSession — `addContext`/`removeContext`/`clearUnpinnedContexts`/`findContext`/`contextCount`; `submitUserTurn`/`receiveAssistantResponse`/`turnCount`/`messageCount`/`isEmpty`; `setTitle`/`title`; `reset`
+- [x] Add `Tests/Workspace/test_phase36_ai_panel.cpp` — 34 test cases / 80 assertions:
+  - [x] ChatRole (1 test): all 3 name helpers
+  - [x] ChatMessage (4 tests): default User role, isAssistant, isSystem, pending flag
+  - [x] ChatSession (9 tests): default empty, addUserMessage, addAssistantMessage, addSystemMessage, lastMessage, lastMessage null, id preserved, clear, unique message ids
+  - [x] AISessionContextType (1 test): all 7 values
+  - [x] AISessionContext (4 tests): default invalid, valid, invalid no content, pinned defaults false
+  - [x] AIPanelSession (12 tests): default empty, sessionId, submitUserTurn, receiveAssistantResponse, addContext valid, addContext invalid, removeContext, removeContext unknown, findContext, clearUnpinnedContexts, setTitle/title, reset
+  - [x] Integration (3 tests): multi-turn conversation, pinned context survives clearUnpinned, reset and restart
+- [x] Wire `NF_Phase36Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ChatRole name helpers cover all 3 roles ✓
+- ChatSession assigns unique auto-generated ids to each message ✓
+- AISessionContext.isValid() rejects None type and empty content ✓
+- AIPanelSession.turnCount() increments only on submitUserTurn, not receiveAssistantResponse ✓
+- clearUnpinnedContexts removes only non-pinned contexts ✓
+- Integration: multi-turn conversation, reset+restart, pinned context persistence ✓
+- 34 test cases pass (80 assertions) ✓
+- Total test suite: ~2791 tests passing ✓
+
+---
+
+## Phase 37 – Console Command Bus
+
+**Status: Done**
+
+- [x] Use `ConsoleCommandBus.h` — console command palette backend
+  - [x] ConsoleCmdScope enum (Global/Editor/Game/Server/Client/Plugin) with `consoleCmdScopeName()` helper
+  - [x] ConsoleCmdArgType enum (None/Bool/Int/Float/String/Enum) with `consoleCmdArgTypeName()` helper
+  - [x] ConsoleCmdExecResult enum (Ok/NotFound/InvalidArgs/PermissionDenied/Error) with `consoleCmdExecResultName()` helper
+  - [x] ConsoleCommand — name + scope + argType + description + enabled + hidden; setters/getters
+  - [x] ConsoleCommandBus — MAX_COMMANDS=1024; `registerCommand`/`unregisterCommand`/`findCommand`; `execute()` → ConsoleCmdExecResult; `lastExec()`; `countByScope`/`hiddenCount`/`enabledCount`
+- [x] Add `Tests/Workspace/test_phase37_console_command_bus.cpp` — 24 test cases / 55 assertions:
+  - [x] ConsoleCmdScope (1 test): all 6 values
+  - [x] ConsoleCmdArgType (1 test): all 6 values
+  - [x] ConsoleCmdExecResult (1 test): all 5 values
+  - [x] ConsoleCommand (5 tests): stores name/scope/argType, default enabled+visible, setDescription, setEnabled false, setHidden true
+  - [x] ConsoleCommandBus (13 tests): default empty, registerCommand, duplicate fails, unregisterCommand, unregister unknown, findCommand nullptr, findCommand found, execute Ok, execute NotFound, execute PermissionDenied, countByScope, hiddenCount, enabledCount
+  - [x] Integration (3 tests): multi-scope palette, execute+lastExec tracking, disable+re-enable via findCommand
+- [x] Wire `NF_Phase37Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ConsoleCmdScope/ArgType/ExecResult provide typed enums with name helpers ✓
+- ConsoleCommand defaults to enabled and visible ✓
+- ConsoleCommandBus.execute() returns PermissionDenied for disabled commands, NotFound for unknown ✓
+- countByScope/hiddenCount/enabledCount correctly filter command lists ✓
+- 24 test cases pass (55 assertions) ✓
+- Total test suite: ~2815 tests passing ✓
+
+---
+
+## Phase 38 – Dock Tree Serializer
+
+**Status: Done**
+
+- [x] Use `DockTreeSerializer.h` — text-format dock layout persistence
+  - [x] DockSplitOrientation enum (Horizontal/Vertical) with `dockSplitOrientationName()` helper
+  - [x] DockNodeKind enum (Split/TabStack) with `dockNodeKindName()` helper
+  - [x] DockTreeNode — id + kind + orientation + splitRatio + firstChild + secondChild + panelIds + activeTab; `isValid()`/`isSplit()`/`isTabStack()`; `addPanel`/`removePanel`
+  - [x] DockTree — `addNode`/`removeNode`/`findNode`/`findNodeMut`/`setRootId`/`rootId`/`nodeCount`/`nodes`/`clear`; first added node auto-sets rootId
+  - [x] DockTreeSerializer — `serialize(DockTree)` → text; `deserialize(text, DockTree&)` → bool; wire format: `root:<id>`, `node:<id>|split|…`, `node:<id>|tabs|…`
+- [x] Add `Tests/Workspace/test_phase38_dock_tree_serializer.cpp` — 31 test cases / 78 assertions:
+  - [x] DockSplitOrientation (1 test): both values
+  - [x] DockNodeKind (1 test): both values
+  - [x] DockTreeNode (7 tests): invalid default, valid with id, default TabStack, isSplit, addPanel, removePanel, removePanel unknown
+  - [x] DockTree (11 tests): default empty, addNode valid, addNode sets rootId, addNode invalid, addNode duplicate, removeNode, removeNode unknown, findNode nullptr, findNode found, findNodeMut mutates, setRootId, clear
+  - [x] DockTreeSerializer (8 tests): serialize root line, serialize TabStack, serialize Split, deserialize empty fails, deserialize no-root fails, round-trip TabStack, round-trip Split
+  - [x] Integration (3 tests): full layout round-trip, empty tree serializes but fails deserialize, mutate+re-serialize
+- [x] Wire `NF_Phase38Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- DockTreeNode cleanly models Split and TabStack node duality ✓
+- DockTree auto-assigns rootId to the first inserted node ✓
+- DockTreeSerializer round-trip is lossless for panel ids, active tab, split ratio, children ✓
+- deserialize rejects empty input and input without a root: line ✓
+- 31 test cases pass (78 assertions) ✓
+- Total test suite: ~2846 tests passing ✓
+
+---
+
+## Phase 39 – Content Router and Drop Target Handler
+
+**Status: Done**
+
+- [x] Use `ContentRouter.h` — file-type to tool routing rules
+  - [x] ContentRouterPolicy enum (Reject/UseDefault/Prompt) with `contentRouterPolicyName()` helper
+  - [x] RouteResult — matched + toolId + ruleName + needsPrompt; `succeeded()`
+  - [x] RoutingRule — name + toolId + typeTag + sourceFilter + filterBySource + priority + enabled; `isValid()`; `matches(tag, source)` with wildcard support (Unknown = any type)
+  - [x] ContentRouter — MAX_RULES=128; `addRule`/`removeRule`/`enableRule`/`hasRule`/`ruleCount`; `route(tag)`/`route(AssetDescriptor)`/`route(IntakeItem)`; policy handling; `routeCount`/`missCount`/`clearRules`; rules sorted descending by priority
+- [x] Use `DropTargetHandler.h` — file drag-and-drop surface
+  - [x] DropState enum (Idle/DragOver/DragLeave/Dropped/Rejected) with `dropStateName()` helper
+  - [x] DropEffect enum (None/Copy/Move/Link) with `dropEffectName()` helper
+  - [x] DropTargetHandler — `onDragEnter`/`onDragOver`/`onDragLeave`/`onDrop`/`reset`; `setDefaultEffect`/`setAcceptUnknown`; `bindPipeline`; enter/leave/drop count tracking; `isDragActive()`; `lastDroppedPaths()`/`hoveredPaths()`
+- [x] Add `Tests/Workspace/test_phase39_content_router.cpp` — 42 test cases / 95 assertions:
+  - [x] ContentRouterPolicy (1 test): all 3 values
+  - [x] RouteResult (1 test): default not matched
+  - [x] RoutingRule (7 tests): invalid no name, invalid no toolId, valid, matches type, wildcard, disabled never matches, source filter
+  - [x] ContentRouter (16 tests): default Reject policy, addRule, addRule invalid, addRule duplicate, removeRule, removeRule unknown, hasRule, enableRule, route matched, route Reject policy, route UseDefault, route Prompt, route priority ordering, routeCount, missCount, clearRules
+  - [x] DropState (1 test): all 5 values
+  - [x] DropEffect (1 test): all 4 values
+  - [x] DropTargetHandler (12 tests): default Idle, default Copy effect, onDragEnter known ext, onDragEnter rejects unknown, acceptUnknown flag, onDragOver not-rejected, onDragOver rejected, onDragLeave, onDrop without pipeline, lastDroppedPaths, reset, setDefaultEffect
+  - [x] Integration (3 tests): multi-type routing pipeline, disable+fallback-to-default, enter→hover→drop sequence
+- [x] Wire `NF_Phase39Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- RoutingRule.matches() respects enabled flag, type wildcard, and optional source filter ✓
+- ContentRouter sorts rules by priority descending so higher-priority rules win ✓
+- ContentRouterPolicy (Reject/UseDefault/Prompt) handled distinctly in route() ✓
+- DropTargetHandler rejects unknown extensions by default; acceptUnknown flag overrides ✓
+- State machine: Idle→DragOver→Dropped (or Rejected) transitions correct ✓
+- 42 test cases pass (95 assertions) ✓
+- Total test suite: ~2888 tests passing ✓

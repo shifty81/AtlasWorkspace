@@ -533,3 +533,72 @@ target_link_libraries(NF_Phase33Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase33Tests)
+
+# Phase 34 — Workspace Frame Controller tests
+add_executable(NF_Phase34Tests
+    Workspace/test_phase34_frame_controller.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase34Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase34Tests)
+
+# Phase 35 — Workspace Project File tests
+add_executable(NF_Phase35Tests
+    Workspace/test_phase35_project_file.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase35Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase35Tests)
+
+# Phase 36 — AI Assistant Panel and AI Panel Session tests
+add_executable(NF_Phase36Tests
+    Workspace/test_phase36_ai_panel.cpp
+    catch_main.cpp
+)
+target_include_directories(NF_Phase36Tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/Source/Editor/src
+)
+target_link_libraries(NF_Phase36Tests PRIVATE
+    NF::Workspace NF::Pipeline NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase36Tests)
+
+# Phase 37 — Console Command Bus tests
+add_executable(NF_Phase37Tests
+    Workspace/test_phase37_console_command_bus.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase37Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase37Tests)
+
+# Phase 38 — Dock Tree Serializer tests
+add_executable(NF_Phase38Tests
+    Workspace/test_phase38_dock_tree_serializer.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase38Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase38Tests)
+
+# Phase 39 — Content Router and Drop Target Handler tests
+add_executable(NF_Phase39Tests
+    Workspace/test_phase39_content_router.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase39Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase39Tests)
