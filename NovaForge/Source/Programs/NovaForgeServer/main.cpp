@@ -62,9 +62,29 @@ int main(int argc, char* argv[]) {
         if (arg == "--headless" || arg == "--hosted") {
             // Both mean headless server; no-op.
         } else if (arg.substr(0, 7) == "--port=") {
-            listenPort = static_cast<uint16_t>(std::stoul(std::string(arg.substr(7))));
+            try {
+                unsigned long val = std::stoul(std::string(arg.substr(7)));
+                if (val < 1 || val > 65535) {
+                    std::fprintf(stderr, "[WARN] --port value %lu out of range (1-65535); using default %u\n",
+                                 val, listenPort);
+                } else {
+                    listenPort = static_cast<uint16_t>(val);
+                }
+            } catch (const std::exception&) {
+                std::fprintf(stderr, "[WARN] invalid --port value; using default %u\n", listenPort);
+            }
         } else if (arg.substr(0, 13) == "--maxplayers=") {
-            maxPlayers = static_cast<uint32_t>(std::stoul(std::string(arg.substr(13))));
+            try {
+                unsigned long val = std::stoul(std::string(arg.substr(13)));
+                if (val < 1 || val > 1000) {
+                    std::fprintf(stderr, "[WARN] --maxplayers value %lu out of range (1-1000); using default %u\n",
+                                 val, maxPlayers);
+                } else {
+                    maxPlayers = static_cast<uint32_t>(val);
+                }
+            } catch (const std::exception&) {
+                std::fprintf(stderr, "[WARN] invalid --maxplayers value; using default %u\n", maxPlayers);
+            }
         } else if (arg.substr(0, 6) == "--map=") {
             mapName = std::string(arg.substr(6));
         } else if (arg.substr(0, 10) == "--project=") {

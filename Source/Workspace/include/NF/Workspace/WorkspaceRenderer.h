@@ -319,9 +319,9 @@ private:
                             const auto* adapter = shell.projectAdapter();
                             auto roots = adapter->contentRoots();
                             ctx.projectPath = roots.empty() ? "." : roots[0];
-                            auto sep = ctx.projectPath.find_last_of("/\\");
-                            ctx.workspaceRoot = (sep != std::string::npos)
-                                                ? ctx.projectPath.substr(0, sep) : ".";
+                            auto lastSepPos = ctx.projectPath.find_last_of("/\\");
+                            ctx.workspaceRoot = (lastSepPos != std::string::npos)
+                                                ? ctx.projectPath.substr(0, lastSepPos) : ".";
                         } else {
                             ctx.workspaceRoot = ".";
                             ctx.projectPath   = desc.isProjectScoped
