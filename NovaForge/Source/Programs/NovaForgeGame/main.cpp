@@ -1,4 +1,10 @@
 // NovaForge Game — Standalone game client
+// Accepts launch arguments from AtlasWorkspace via WorkspaceLaunchContract:
+//   --hosted              (launched by Workspace; default)
+//   --headless            (no window; CI / server-side testing)
+//   --project=<path>      (project directory or .atlas file path)
+//   --workspace-root=<path>
+//   --session-id=<id>
 // Uses the unified UIRenderer pipeline for HUD rendering.
 #include "NF/Core/Core.h"
 #include "NF/Game/Game.h"
@@ -7,6 +13,8 @@
 #include "NF/UI/UIBackend.h"
 #include "NF/UI/UIWidgets.h"
 #include "NF/Input/Input.h"
+#include <string>
+#include <string_view>
 #ifdef _WIN32
 #  include "NF/Input/Win32InputAdapter.h"
 #  include "NF/UI/GDIBackend.h"
@@ -100,15 +108,46 @@ static LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #endif
 
 int main(int argc, char* argv[]) {
-    (void)argc; (void)argv;
+    // ── CLI argument parsing ──────────────────────────────────────
+    bool        headless      = false;
+    std::string projectPath;
+    std::string workspaceRoot;
+    std::string sessionId;
+
+    for (int i = 1; i < argc; ++i) {
+        std::string_view arg(argv[i]);
+        if (arg == "--headless") {
+            headless = true;
+        } else if (arg == "--hosted") {
+            // default mode; no-op
+        } else if (arg.substr(0, 10) == "--project=") {
+            projectPath = std::string(arg.substr(10));
+        } else if (arg.substr(0, 17) == "--workspace-root=") {
+            workspaceRoot = std::string(arg.substr(17));
+        } else if (arg.substr(0, 13) == "--session-id=") {
+            sessionId = std::string(arg.substr(13));
+        }
+        // Unknown args are silently ignored to allow forward-compat.
+    }
+
     NF::coreInit();
     NF_LOG_INFO("Main","=== NovaForge Game ===");
     NF_LOG_INFO("Main", std::string("Version: ") + NF::NF_VERSION_STRING);
+    if (!projectPath.empty())
+        NF_LOG_INFO("Main", "Project: " + projectPath);
+    if (!sessionId.empty())
+        NF_LOG_INFO("Main", "Session: " + sessionId);
+    if (headless)
+        NF_LOG_INFO("Main", "Mode: headless");
 
     NF::Renderer renderer;
     if (!renderer.init(1920, 1080)) {
         NF_LOG_ERROR("Main","Failed to initialize renderer"); return 1;
     }
+
+    // ── Game session ──────────────────────────────────────────────
+    NF::GameSession gameSession;
+    gameSession.init(42);
 
     NF::UIRenderer uiRenderer;
     uiRenderer.init();
@@ -136,22 +175,27 @@ int main(int argc, char* argv[]) {
     NF::Win32InputAdapter adapter(input);
     g_adapter = &adapter;
 
-    WNDCLASSEXW wc{};
-    wc.cbSize=sizeof(wc); wc.style=CS_HREDRAW|CS_VREDRAW;
-    wc.lpfnWndProc=GameWndProc; wc.hInstance=GetModuleHandleW(nullptr);
-    wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);
-    wc.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
-    wc.lpszClassName=L"NovaForgeGameWnd";
-    RegisterClassExW(&wc);
-    RECT wr{0,0,1280,720}; AdjustWindowRect(&wr,WS_OVERLAPPEDWINDOW,FALSE);
-    std::wstring gameTitle = std::wstring(L"NovaForge  v") + std::wstring(NF::NF_VERSION_STRING, NF::NF_VERSION_STRING + strlen(NF::NF_VERSION_STRING));
-    HWND hwnd=CreateWindowExW(0,L"NovaForgeGameWnd",gameTitle.c_str(),
-        WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,
-        wr.right-wr.left,wr.bottom-wr.top,nullptr,nullptr,wc.hInstance,nullptr);
+    HWND hwnd = nullptr;
+    if (!headless) {
+        WNDCLASSEXW wc{};
+        wc.cbSize=sizeof(wc); wc.style=CS_HREDRAW|CS_VREDRAW;
+        wc.lpfnWndProc=GameWndProc; wc.hInstance=GetModuleHandleW(nullptr);
+        wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);
+        wc.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
+        wc.lpszClassName=L"NovaForgeGameWnd";
+        RegisterClassExW(&wc);
+        RECT wr{0,0,1280,720}; AdjustWindowRect(&wr,WS_OVERLAPPEDWINDOW,FALSE);
+        std::wstring gameTitle = std::wstring(L"NovaForge  v") + std::wstring(NF::NF_VERSION_STRING, NF::NF_VERSION_STRING + strlen(NF::NF_VERSION_STRING));
+        hwnd=CreateWindowExW(0,L"NovaForgeGameWnd",gameTitle.c_str(),
+            WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,
+            wr.right-wr.left,wr.bottom-wr.top,nullptr,nullptr,wc.hInstance,nullptr);
 
-    gdiBackend.setWindowHandle(hwnd);
-    ShowWindow(hwnd,SW_SHOW); UpdateWindow(hwnd);
-    NF_LOG_INFO("Main","Game window created");
+        gdiBackend.setWindowHandle(hwnd);
+        ShowWindow(hwnd,SW_SHOW); UpdateWindow(hwnd);
+        NF_LOG_INFO("Main","Game window created");
+    } else {
+        NF_LOG_INFO("Main","Headless mode — no window created");
+    }
 #endif
 
     NF_LOG_INFO("Main","Game ready — entering main loop");
@@ -159,19 +203,36 @@ int main(int argc, char* argv[]) {
     bool running=true;
     while(running){
 #ifdef _WIN32
-        MSG msg{};
-        while(PeekMessageW(&msg,nullptr,0,0,PM_REMOVE)){
-            if(msg.message==WM_QUIT){running=false;break;}
-            TranslateMessage(&msg); DispatchMessageW(&msg);
+        if (headless) {
+            // Headless mode: tick game logic for a few frames then exit.
+            // In a real session the workspace would control lifetime via IPC.
+            auto now=std::chrono::high_resolution_clock::now();
+            float dt=std::chrono::duration<float>(now-last).count();
+            last=now; if(dt>0.1f)dt=0.1f;
+            gameSession.tick(dt);
+            Sleep(16);
+            running=false; // single-frame headless run
+        } else {
+            MSG msg{};
+            while(PeekMessageW(&msg,nullptr,0,0,PM_REMOVE)){
+                if(msg.message==WM_QUIT){running=false;break;}
+                TranslateMessage(&msg); DispatchMessageW(&msg);
+            }
+            if(!running) break;
+            auto now=std::chrono::high_resolution_clock::now();
+            float dt=std::chrono::duration<float>(now-last).count();
+            last=now; if(dt>0.1f)dt=0.1f;
+            gameSession.tick(dt);
+            input.update();
+            InvalidateRect(hwnd,nullptr,FALSE);
+            Sleep(16);
         }
-        if(!running) break;
+#else
+        // Non-Windows headless path
         auto now=std::chrono::high_resolution_clock::now();
         float dt=std::chrono::duration<float>(now-last).count();
         last=now; if(dt>0.1f)dt=0.1f;
-        input.update();
-        InvalidateRect(hwnd,nullptr,FALSE);
-        Sleep(16);
-#else
+        gameSession.tick(dt);
         running=false;
 #endif
     }
