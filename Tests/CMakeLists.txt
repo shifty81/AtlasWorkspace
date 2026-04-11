@@ -668,3 +668,14 @@ target_link_libraries(NF_Phase45Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase45Tests)
+
+# Phase 46 — SelectionSystem tests
+add_executable(NF_Phase46Tests
+    Workspace/test_phase46_selection_system.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase46Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase46Tests)

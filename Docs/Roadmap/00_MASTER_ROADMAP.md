@@ -1431,3 +1431,34 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - UndoRedoSystem.undo() pops from top of undo stack, pushes to redo stack ✓
 - 29 test cases pass (88 assertions) ✓
 - Total test suite: ~3065 tests passing ✓
+
+---
+
+## Phase 46 – SelectionSystem
+
+**Status: Done**
+
+- [x] Use `SelectionSystem.h` — multi-context workspace selection with named sets and history
+  - [x] SelectionContextType enum (None/Scene/Asset/UI/Console/Code) with `selectionContextTypeName()` helper
+  - [x] SelectionRecord — id/label/context; isValid(); equality operators (by id)
+  - [x] SelectionSet — named container; add/remove/contains/find; clear; count/isEmpty/version/items; countByContext
+  - [x] SelectionHistory — MAX_HISTORY=32; push (truncates forward on new entry, evicts oldest at cap); back/forward; canBack/canForward; current; hasHistory/depth; clear
+  - [x] SelectionSystem — MAX_SETS=16; createSet/removeSet/findSet; setActiveContext/setActiveSet/activeSet; select/deselect/clearActive/isSelected/activeCount; history(); clearAll()
+- [x] Add `Tests/Workspace/test_phase46_selection_system.cpp` — 32 test cases / 87 assertions:
+  - [x] SelectionContextType (1 test): all 6 values
+  - [x] SelectionRecord (3 tests): default invalid, isValid when id set, equality by id
+  - [x] SelectionSet (9 tests): default empty, add valid, add invalid rejected, add duplicate rejected, remove existing, remove unknown, contains+find, clear bumps version, items, countByContext
+  - [x] SelectionHistory (8 tests): default no history, push one entry, back+forward, back at beginning false, forward at end false, push truncates forward, clear, MAX_HISTORY cap
+  - [x] SelectionSystem (11 tests): default empty, createSet, createSet duplicate, createSet empty name, removeSet, removeSet unknown, removeSet clears activeSetName, setActiveSet, setActiveSet unknown, setActiveContext, select, select no active set, deselect, clearActive, MAX_SETS enforced, clearAll
+  - [x] Integration (3 tests): multi-context selection (context stamped on record), history navigation after select/deselect, countByContext across contexts
+- [x] Wire `NF_Phase46Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- SelectionRecord.isValid() false when id == INVALID_ENTITY ✓
+- SelectionSet.add() rejects invalid records and duplicates (by id) ✓
+- SelectionSet.countByContext() counts only records with matching context ✓
+- SelectionHistory.push() truncates forward history; evicts oldest when at MAX_HISTORY ✓
+- SelectionSystem.select() stamps activeContext onto the record before adding ✓
+- SelectionSystem.removeSet() clears activeSetName if active set is removed ✓
+- 32 test cases pass (87 assertions) ✓
+- Total test suite: ~3097 tests passing ✓
