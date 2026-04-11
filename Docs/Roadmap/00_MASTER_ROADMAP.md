@@ -1462,3 +1462,31 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - SelectionSystem.removeSet() clears activeSetName if active set is removed ✓
 - 32 test cases pass (87 assertions) ✓
 - Total test suite: ~3097 tests passing ✓
+
+---
+
+## Phase 47 – ProjectManager
+
+**Status: Done**
+
+- [x] Use `ProjectManager.h` — session-level project lifecycle coordinator
+  - [x] ProjectManagerState enum (Idle/Opening/Open/Saving/Closing/Error) with `projectManagerStateName()` helper
+  - [x] RecentProjectEntry — path/displayName/lastOpenedMs; isValid()
+  - [x] ProjectManagerConfig — maxRecentProjects=10; autoSaveIntervalSec=300; autoSaveEnabled=true
+  - [x] ProjectManager — newProject/openProject (reject if already open or empty path); save (clears dirty, increments saveCount); closeProject (Idle/Error → resets); setError/clearError; markDirty/markClean; tickAutoSave(dt) accumulates and fires callback+save when interval reached; recent list (dedup, front-insert, cap at maxRecentProjects, removeRecent, clearRecent); setConfig; setAutoSaveCallback
+- [x] Add `Tests/Workspace/test_phase47_project_manager.cpp` — 36 test cases / 107 assertions:
+  - [x] ProjectManagerState (1 test): all 6 values
+  - [x] RecentProjectEntry (2 tests): default invalid, isValid when path set
+  - [x] ProjectManagerConfig (1 test): defaults
+  - [x] ProjectManager (28 tests): default Idle, newProject, empty path rejected, rejected when open, openProject, markDirty, markDirty no-op when not open, save, save fails when not open, closeProject from Open, closeProject fails when Idle, setError, clearError, clearError no-op, closeProject from Error, tickAutoSave no-op not open, no-op not dirty, no-op disabled, triggers after interval, accumulator reset, callback invoked; recent: pushes on open, multiple in order, dedup bumps to front, cap enforced, clearRecent, removeRecent, removeRecent unknown; setConfig
+  - [x] Integration (3 tests): full open/dirty/save/close cycle, auto-save fires multiple times, error then reopen
+- [x] Wire `NF_Phase47Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ProjectManager.newProject() rejected if already Open ✓
+- ProjectManager.save() only succeeds from Open state ✓
+- ProjectManager.closeProject() allowed from both Open and Error states ✓
+- tickAutoSave() accumulates dt; triggers auto-save and resets accumulator when interval exceeded ✓
+- Recent list is front-inserted, deduplicates by path, capped at maxRecentProjects ✓
+- 36 test cases pass (107 assertions) ✓
+- Total test suite: ~3133 tests passing ✓

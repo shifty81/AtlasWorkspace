@@ -679,3 +679,14 @@ target_link_libraries(NF_Phase46Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase46Tests)
+
+# Phase 47 — ProjectManager tests
+add_executable(NF_Phase47Tests
+    Workspace/test_phase47_project_manager.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase47Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase47Tests)
