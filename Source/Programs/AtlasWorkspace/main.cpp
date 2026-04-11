@@ -1,16 +1,22 @@
 // AtlasWorkspace — primary executable entrypoint
 //
-// AtlasWorkspace.exe is the only top-level user entrypoint.
-// All child tools (NovaForgeEditor, NovaForgeGame, NovaForgeServer, …)
-// are launched exclusively through WorkspaceLaunchService.
+// AtlasWorkspace.exe is the outer workspace shell — NOT a game editor.
+// It hosts and launches child tools (NovaForgeEditor, NovaForgeGame,
+// NovaForgeServer, …) via WorkspaceLaunchService.
 //
-// Rule: no child process may be launched outside this service.
+// Render pipeline:
+//   WorkspaceShell (state) → WorkspaceRenderer → UIRenderer → GDIBackend → Win32 window
+//
+// Rule: no child process may be launched outside WorkspaceLaunchService.
 #include "NF/Core/Core.h"
-#include "NF/Editor/Editor.h"
-#include "NF/Editor/WorkspaceAppRegistry.h"
-#include "NF/Editor/WorkspaceLaunchContract.h"
-#include "NF/Input/Input.h"
+#include "NF/UI/UI.h"
 #include "NF/UI/UIBackend.h"
+#include "NF/Input/Input.h"
+#include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/WorkspaceBootstrap.h"
+#include "NF/Workspace/WorkspaceFrameController.h"
+#include "NF/Workspace/WorkspaceRenderer.h"
+#include "NF/Workspace/WorkspaceAppRegistry.h"
 #if defined(_WIN32)
 #  include "NF/Input/Win32InputAdapter.h"
 #  include "NF/UI/GDIBackend.h"
@@ -19,51 +25,13 @@
 #include <chrono>
 #include <string>
 
-// ── Workspace app registry bootstrap ────────────────────────────
-// Registers all known child apps that this workspace owns.
-// Executable paths are relative to the workspace binary location.
-
-static NF::WorkspaceAppRegistry buildDefaultRegistry() {
-    NF::WorkspaceAppRegistry reg;
-
-    {
-        NF::WorkspaceAppDescriptor d;
-        d.id             = NF::WorkspaceAppId::NovaForgeEditor;
-        d.name           = "NovaForgeEditor";
-        d.executablePath = "NovaForgeEditor.exe";
-        d.isProjectScoped = true;
-        d.allowDirectLaunch = false;
-        d.defaultArgs    = { "--hosted" };
-        reg.registerApp(std::move(d));
-    }
-    {
-        NF::WorkspaceAppDescriptor d;
-        d.id             = NF::WorkspaceAppId::NovaForgeGame;
-        d.name           = "NovaForgeGame";
-        d.executablePath = "NovaForgeGame.exe";
-        d.isProjectScoped = true;
-        d.allowDirectLaunch = false;
-        d.defaultArgs    = { "--hosted" };
-        reg.registerApp(std::move(d));
-    }
-    {
-        NF::WorkspaceAppDescriptor d;
-        d.id             = NF::WorkspaceAppId::NovaForgeServer;
-        d.name           = "NovaForgeServer";
-        d.executablePath = "NovaForgeServer.exe";
-        d.isProjectScoped = true;
-        d.allowDirectLaunch = false;
-        d.defaultArgs    = { "--headless" };
-        reg.registerApp(std::move(d));
-    }
-    return reg;
-}
-
-// ── Win32 window procedure ───────────────────────────────────────
+// ── Global state for Win32 WndProc ───────────────────────────────
 #if defined(_WIN32)
-static NF::EditorApp*          g_editor      = nullptr;
-static NF::Win32InputAdapter*  g_inputAdapter = nullptr;
-static NF::GDIBackend*         g_gdiBackend  = nullptr;
+static NF::WorkspaceShell*    g_shell       = nullptr;
+static NF::WorkspaceRenderer* g_renderer    = nullptr;
+static NF::UIRenderer*        g_ui          = nullptr;
+static NF::Win32InputAdapter* g_inputAdapter = nullptr;
+static NF::GDIBackend*        g_gdiBackend  = nullptr;
 static int g_clientW = 1280, g_clientH = 800;
 
 static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
@@ -75,11 +43,13 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-        if (g_editor && g_gdiBackend) {
+        if (g_shell && g_renderer && g_ui && g_gdiBackend) {
             g_gdiBackend->setTargetDC(hdc);
             g_gdiBackend->beginFrame(g_clientW, g_clientH);
-            g_editor->renderAll(static_cast<float>(g_clientW),
-                                static_cast<float>(g_clientH));
+            g_renderer->render(*g_ui,
+                               static_cast<float>(g_clientW),
+                               static_cast<float>(g_clientH),
+                               *g_shell);
             g_gdiBackend->endFrame();
         }
         EndPaint(hwnd, &ps);
@@ -101,6 +71,42 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
 }
 #endif // _WIN32
 
+// ── Register child apps ───────────────────────────────────────────
+// Registers all known child tool executables into the shell's app registry.
+// Executable paths are relative to the workspace binary directory.
+static void registerApps(NF::WorkspaceAppRegistry& registry) {
+    {
+        NF::WorkspaceAppDescriptor d;
+        d.id              = NF::WorkspaceAppId::NovaForgeEditor;
+        d.name            = "NovaForge Editor";
+        d.executablePath  = "NovaForgeEditor.exe";
+        d.isProjectScoped = true;
+        d.allowDirectLaunch = false;
+        d.defaultArgs     = { "--hosted" };
+        registry.registerApp(std::move(d));
+    }
+    {
+        NF::WorkspaceAppDescriptor d;
+        d.id              = NF::WorkspaceAppId::NovaForgeGame;
+        d.name            = "NovaForge Game";
+        d.executablePath  = "NovaForgeGame.exe";
+        d.isProjectScoped = true;
+        d.allowDirectLaunch = false;
+        d.defaultArgs     = { "--hosted" };
+        registry.registerApp(std::move(d));
+    }
+    {
+        NF::WorkspaceAppDescriptor d;
+        d.id              = NF::WorkspaceAppId::NovaForgeServer;
+        d.name            = "NovaForge Server";
+        d.executablePath  = "NovaForgeServer.exe";
+        d.isProjectScoped = true;
+        d.allowDirectLaunch = false;
+        d.defaultArgs     = { "--headless" };
+        registry.registerApp(std::move(d));
+    }
+}
+
 // ── main ─────────────────────────────────────────────────────────
 
 int main(int argc, char* argv[]) {
@@ -108,36 +114,61 @@ int main(int argc, char* argv[]) {
 
     NF::coreInit();
     NF_LOG_INFO("AtlasWorkspace", "=== Atlas Workspace ===");
-    NF_LOG_INFO("AtlasWorkspace",
-        std::string("Version: ") + NF::NF_VERSION_STRING);
+    NF_LOG_INFO("AtlasWorkspace", std::string("Version: ") + NF::NF_VERSION_STRING);
 
-    // Build the default app registry — all child processes go through this.
-    NF::WorkspaceAppRegistry registry = buildDefaultRegistry();
+    // ── Workspace shell ───────────────────────────────────────────
+    NF::WorkspaceShell shell;
+
+    // Register child apps before bootstrap (bootstrap only calls initialize()).
+    registerApps(shell.appRegistry());
     NF_LOG_INFO("AtlasWorkspace",
-        std::string("App registry: ") + std::to_string(registry.count())
+        std::string("App registry: ") + std::to_string(shell.appRegistry().count())
         + " registered apps");
 
-    // Workspace owns the EditorApp (the shared tool surface).
-    NF::EditorApp editor;
-    std::string execPath = (argc > 0) ? argv[0] : ".";
-    if (!editor.init(1280, 800, execPath)) {
-        NF_LOG_ERROR("AtlasWorkspace", "Failed to initialize workspace editor surface");
+    // Bootstrap the shell (validates config, invokes tool factories, initializes).
+    NF::WorkspaceBootstrapConfig bootCfg;
+    bootCfg.launchMode      = NF::WorkspaceStartupMode::Hosted;
+    bootCfg.startupMessages = { "Workspace initialized." };
+    // windowConfig defaults to {1280, 800, "Atlas Workspace"} — no override needed
+
+    NF::WorkspaceBootstrap bootstrap;
+    auto bootResult = bootstrap.run(bootCfg, shell);
+    if (bootResult.failed()) {
+        NF_LOG_ERROR("AtlasWorkspace",
+            std::string("Bootstrap failed: ") + bootResult.errorName()
+            + " — " + bootResult.errorDetail);
         NF::coreShutdown();
         return 1;
     }
+    NF_LOG_INFO("AtlasWorkspace",
+        std::string("Bootstrap complete. Tools: ")
+        + std::to_string(bootResult.toolsRegistered));
 
+    // ── UI renderer ───────────────────────────────────────────────
+    NF::UIRenderer ui;
+    ui.init();
+
+    // ── Input ─────────────────────────────────────────────────────
     NF::InputSystem input;
     input.init();
 
+    // ── Frame controller ──────────────────────────────────────────
+    NF::WorkspaceFrameController frameCtrl;
+    frameCtrl.setTargetFPS(60.f);
+
 #if defined(_WIN32)
-    // Backend initialization — currently using GDI fallback backend.
-    // TODO: Replace with UIBackendSelector when D3D11 backend is ready.
-    // See Docs/Canon/04_UI_BACKEND_STRATEGY.md for target direction.
+    NF::WorkspaceRenderer wsRenderer;
+
+    // GDI fallback backend — the active Windows render path.
+    // See Docs/Canon/04_UI_BACKEND_STRATEGY.md for the D3D11 target direction.
     NF::GDIBackend gdiBackend;
     gdiBackend.init(1280, 800);
-    editor.uiRenderer().setBackend(&gdiBackend);
+    ui.setBackend(&gdiBackend);
+
+    g_shell       = &shell;
+    g_renderer    = &wsRenderer;
+    g_ui          = &ui;
     g_gdiBackend  = &gdiBackend;
-    g_editor      = &editor;
 
     NF::Win32InputAdapter inputAdapter(input);
     g_inputAdapter = &inputAdapter;
@@ -168,13 +199,14 @@ int main(int argc, char* argv[]) {
 #else
     NF::NullBackend nullBackend;
     nullBackend.init(1280, 800);
-    editor.uiRenderer().setBackend(&nullBackend);
+    ui.setBackend(&nullBackend);
 #endif
 
     NF_LOG_INFO("AtlasWorkspace", "Workspace ready — entering main loop");
 
     auto lastTime = std::chrono::high_resolution_clock::now();
     bool running  = true;
+
     while (running) {
 #if defined(_WIN32)
         MSG msg{};
@@ -185,30 +217,42 @@ int main(int argc, char* argv[]) {
         }
         if (!running) break;
 #else
-        running = false;   // headless: single frame then exit
+        running = false; // headless: single frame then exit
 #endif
-        auto now = std::chrono::high_resolution_clock::now();
-        float dt = std::chrono::duration<float>(now - lastTime).count();
+        auto now  = std::chrono::high_resolution_clock::now();
+        float rawDt = std::chrono::duration<float>(now - lastTime).count();
         lastTime = now;
-        if (dt > 0.1f) dt = 0.1f;
+
+        auto fr = frameCtrl.beginFrame(rawDt);
 
         input.update();
-        editor.update(dt, input);
+        shell.update(fr.dt);
+        frameCtrl.markUpdateDone();
 
 #if defined(_WIN32)
         InvalidateRect(hwnd, nullptr, FALSE);
-        Sleep(16);
+
+        // Sleep to pace to ~60 FPS (render happens in WM_PAINT).
+        float sleepMs = frameCtrl.sleepMs(rawDt * 1000.f);
+        if (sleepMs > 1.f)
+            Sleep(static_cast<DWORD>(sleepMs));
 #endif
+        frameCtrl.markRenderDone();
+        frameCtrl.endFrame();
     }
 
 #if defined(_WIN32)
     gdiBackend.shutdown();
-    g_editor       = nullptr;
+    g_shell       = nullptr;
+    g_renderer    = nullptr;
+    g_ui          = nullptr;
     g_inputAdapter = nullptr;
-    g_gdiBackend   = nullptr;
+    g_gdiBackend  = nullptr;
 #endif
+
     input.shutdown();
-    editor.shutdown();
+    shell.shutdown();
+    ui.shutdown();
     NF::coreShutdown();
     return 0;
 }
