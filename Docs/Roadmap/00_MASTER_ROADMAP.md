@@ -727,3 +727,260 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify multi-target sequences, modal isolation, and observer tracking ✓
 - 47 test cases pass (120 assertions) ✓
 - Total test suite: 2210 tests passing ✓
+
+---
+
+## Phase 22 – Workspace Drag and Drop System
+
+**Status: Done**
+
+- [x] Create `WorkspaceDragDrop.h` — workspace drag-and-drop coordination
+  - [x] DragPayloadType enum (None/Text/Path/Asset/Entity/Json/Custom) with `dragPayloadTypeName()` helper
+  - [x] DragPayload — type + content string; `isValid()`; equality
+  - [x] DragSessionState enum (Idle/Active/Hovering/Dropped/Cancelled) with `dragSessionStateName()` helper
+  - [x] DragSession — lifecycle state machine: `begin()`/`setHovering()`/`drop()`/`cancel()`/`reset()`; `isActive()`/`isCompleted()`; payload/sourceZoneId/hoverZoneId accessors
+  - [x] DropZone — id/label + accepted-type bitmask; `accepts(DragPayloadType)`; `tryAccept(DragSession&)`; `lastAccepted()`/`acceptCount()`/`clear()`
+  - [x] DragDropManager — `registerZone`/`unregisterZone`/`findZone`/`allZoneIds` (MAX_ZONES=64); `beginDrag`/`cancelDrag`/`commitDrop`; `hasActiveSession`/`activeSession`/`dropCount`; observer callbacks (MAX_OBSERVERS=16); `clear`
+- [x] Add `Tests/Workspace/test_phase22_drag_drop.cpp` — 44 test cases:
+  - [x] DragPayloadType enum (1 test): all 7 values
+  - [x] DragPayload (5 tests): default invalid, valid text, None+content invalid, valid type+empty invalid, equality
+  - [x] DragSessionState enum (1 test): all 5 values
+  - [x] DragSession (10 tests): default Idle, begin→Active, begin fails invalid payload, begin fails if active, setHovering, drop from Active, drop from Hovering, cancel from Active, cancel from Dropped fails, reset
+  - [x] DropZone (7 tests): default invalid, valid construction, accepts mask, tryAccept matching, tryAccept rejects incompatible, tryAccept rejects inactive, clear
+  - [x] DragDropManager (13 tests): empty state, registerZone, duplicate reject, invalid reject, unregisterZone, unregister unknown fails, beginDrag, beginDrag fails active, cancelDrag, cancelDrag no session fails, commitDrop, commitDrop unknown zone, commitDrop incompatible type, observer on begin, observer on cancel, removeObserver, clear
+  - [x] Integration (6 tests): full pipeline, multiple zones type isolation, cancel no dropCount, sequential drags, allZoneIds, clearObservers
+- [x] Wire `NF_Phase22Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- DragPayloadType provides typed format classification with name helpers ✓
+- DragSession provides Idle→Active→Hovering→Dropped/Cancelled state machine ✓
+- DropZone provides bitmask-based type filtering with tryAccept ✓
+- DragDropManager orchestrates sessions with zone registry and observers ✓
+- Integration tests verify pipeline, type isolation, and sequential drags ✓
+- 44 test cases pass ✓
+- Total test suite: ~2254 tests passing ✓
+
+---
+
+## Phase 23 – Workspace Hotkey Manager
+
+**Status: Done**
+
+- [x] Create `WorkspaceHotkeys.h` — workspace keyboard shortcut management
+  - [x] ModifierFlags bitmask enum (None/Ctrl/Alt/Shift/Meta) with `|`/`&` operators, `hasModifier()`, `modifierFlagsString()`
+  - [x] HotkeyChord — modifiers + key string; `toString()`; `isValid()`; equality
+  - [x] HotkeyBinding — id + chord + commandId + scopeId + enabled; `isValid()`; equality by id
+  - [x] HotkeyConflict — bindingIdA + bindingIdB + chord + scopeId; `isValid()`
+  - [x] HotkeyManager — `registerBinding`/`unregisterBinding`/`isRegistered`/`findById` (MAX_BINDINGS=512); `findByChord` (scope-exact then global fallback); `findByCommand`; `detectConflicts`; `enableBinding`/`disableBinding`; `activate` (dispatches observers); `allBindingIds`/`bindingCount`/`clear`; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase23_hotkeys.cpp` — 40 test cases:
+  - [x] ModifierFlags (5 tests): None string, Ctrl string, Ctrl+Shift string, hasModifier, all four bits
+  - [x] HotkeyChord (6 tests): default invalid, valid key-only, toString with modifiers, toString Ctrl+Shift+Z, equality
+  - [x] HotkeyBinding (5 tests): default invalid, valid construction, invalid without id, invalid without commandId, equality by id
+  - [x] HotkeyConflict (2 tests): default invalid, valid construction
+  - [x] HotkeyManager (18 tests): empty state, register, duplicate reject, invalid reject, unregister, unregister unknown, findById, findByChord global, findByChord scope-exact, findByChord global fallback, findByCommand, detectConflicts, no conflict different scopes, enable/disable, activate observer, activate unknown fails, removeObserver, allBindingIds, clear
+  - [x] Integration (6 tests): full dispatch pipeline, scope isolation, multi-conflict detection, disabled not activated, clearObservers, multiple observers
+- [x] Wire `NF_Phase23Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ModifierFlags provides composable bitmask with string helpers ✓
+- HotkeyChord provides chord identity with toString and equality ✓
+- HotkeyBinding maps chord to command with scope and enabled state ✓
+- HotkeyManager provides scoped lookup with global fallback and conflict detection ✓
+- Integration tests verify dispatch, scope isolation, and observer pipelines ✓
+- 40 test cases pass ✓
+- Total test suite: ~2294 tests passing ✓
+
+---
+
+## Phase 24 – Workspace Tooltip and Help System
+
+**Status: Done**
+
+- [x] Create `WorkspaceTooltip.h` — workspace tooltip lifecycle and content management
+  - [x] TooltipTrigger enum (Hover/Focus/Manual) with `tooltipTriggerName()` helper
+  - [x] TooltipPosition enum (Auto/Top/Bottom/Left/Right) with `tooltipPositionName()` helper
+  - [x] TooltipEntry — id + title + body + targetElementId + trigger + position + enabled; `isValid()` (id + body non-empty); equality by id
+  - [x] TooltipState — entryId + visible + showTimestamp; `isValid()` (entryId non-empty)
+  - [x] TooltipManager — `registerTooltip`/`unregisterTooltip`/`isRegistered`/`findTooltip` (MAX_TOOLTIPS=256); `show`/`hide`/`hideAll`; `isVisible`/`currentVisible`; `enableTooltip`/`disableTooltip`; `allTooltipIds`/`tooltipCount`/`clear`; observer callbacks on show/hide (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase24_tooltip.cpp` — 43 test cases:
+  - [x] TooltipTrigger enum (1 test): all 3 values
+  - [x] TooltipPosition enum (1 test): all 5 values
+  - [x] TooltipEntry (5 tests): default invalid, valid all fields, invalid without id, invalid without body, equality by id
+  - [x] TooltipState (2 tests): default invalid, valid with entryId
+  - [x] TooltipManager (26 tests): empty state, register, duplicate reject, invalid reject, unregister, unregister unknown, findTooltip, show, show unknown fails, show disabled fails, hide, hide non-visible fails, show second hides first, hideAll, enable/disable, disable hides visible, unregister hides visible, observer on show, observer on hide, removeObserver, allTooltipIds, clear
+  - [x] Integration (8 tests): full pipeline, multiple one-at-a-time, observer for auto-replaced tooltip, hideAll fires observer, disabled re-enable, clearObservers, showTimestamp increments
+- [x] Wire `NF_Phase24Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- TooltipTrigger and TooltipPosition provide typed enum classification with name helpers ✓
+- TooltipEntry provides content metadata with id-based equality ✓
+- TooltipState tracks current visibility with monotonic timestamp ✓
+- TooltipManager enforces single-visible constraint with enable/disable and observer notifications ✓
+- Integration tests verify pipeline, auto-hide, observer sequencing, and timestamp ordering ✓
+- 43 test cases pass ✓
+- Total test suite: ~2337 tests passing ✓
+
+---
+
+## Phase 25 – Workspace Status Bar System
+
+**Status: Done**
+
+- [x] Create `WorkspaceStatusBar.h` — workspace status bar item management
+  - [x] StatusBarSide enum (Left/Center/Right) with `statusBarSideName()` helper
+  - [x] StatusBarItem — id + label + tooltip + icon + priority + enabled; `isValid()`; equality by id
+  - [x] StatusBarSection — ordered priority-sorted collection (MAX_ITEMS=64); `add`/`remove`/`update`/`find`/`contains`/`count`/`empty`/`items`/`clear`; stable-sort by priority
+  - [x] StatusBarManager — three-section registry (Left/Center/Right); `addItem`/`removeItem`/`updateItem`/`findItem`/`contains`/`sectionOf`; `enableItem`/`disableItem`; `clear`; observer callbacks on change (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase25_status_bar.cpp` — 33 test cases / 80 assertions:
+  - [x] StatusBarSide enum (1 test): all 3 values
+  - [x] StatusBarItem (4 tests): default invalid, valid construction, invalid without id, equality by id
+  - [x] StatusBarSection (11 tests): empty state, add, duplicate fails, invalid rejected, remove, remove unknown fails, find, priority sorting, update re-sorts, update unknown fails, clear
+  - [x] StatusBarManager (12 tests): addItem left, addItem center+right, removeItem, removeItem unknown, updateItem, findItem, enable/disable, sectionOf, observer on add, observer on remove, removeObserver, clear
+  - [x] Integration (5 tests): full pipeline all three sides, priority sorting preserved, update+observer, clearObservers, multiple observers
+- [x] Wire `NF_Phase25Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- StatusBarSide provides three placement zones with name helpers ✓
+- StatusBarSection maintains stable priority order on add/update ✓
+- StatusBarManager routes items into three independent sections ✓
+- Observer notifies on every structural change (add/remove/update/enable) ✓
+- 33 test cases pass (80 assertions) ✓
+- Total test suite: ~2370 tests passing ✓
+
+---
+
+## Phase 26 – Workspace Context Menu System
+
+**Status: Done**
+
+- [x] Create `WorkspaceContextMenu.h` — workspace context menu definition and lifecycle
+  - [x] MenuItemKind enum (Action/Separator/Submenu) with `menuItemKindName()` helper
+  - [x] ContextMenuItem — id + label + kind + enabled + shortcut + icon; `isValid()` (id non-empty; label required for non-Separator); `separator()` factory; equality by id
+  - [x] ContextMenu — id + ordered item list (MAX_ITEMS=128); `addItem`/`removeItem`/`updateItem`/`findItem`/`contains`/`itemCount`/`empty`/`items`/`clear`; `attachSubmenu`/`findSubmenu`
+  - [x] ContextMenuManager — named menu registry (MAX_MENUS=64); `registerMenu`/`unregisterMenu`/`isRegistered`/`findMenu`/`allMenuIds`; `openMenu`/`closeMenu`/`isOpen`/`hasOpenMenu`/`openMenuId` (one-open constraint, auto-close on second open); `activateItem` (action-only, enabled-only); `clear`; action observers + lifecycle observers (MAX_OBSERVERS=16 each); `removeObserver`/`clearObservers`
+- [x] Add `Tests/Workspace/test_phase26_context_menu.cpp` — 46 test cases / 98 assertions:
+  - [x] MenuItemKind enum (1 test): all 3 values
+  - [x] ContextMenuItem (7 tests): default invalid, valid action, invalid without id, invalid action without label, separator valid, separator invalid, equality by id
+  - [x] ContextMenu (14 tests): default invalid, valid construction, addItem, duplicate fails, invalid rejected, removeItem, removeItem unknown, updateItem, updateItem unknown, findItem, separator added, attachSubmenu, attachSubmenu fails non-Submenu kind, clear
+  - [x] ContextMenuManager (18 tests): empty state, register, duplicate fails, invalid rejected, unregister, unregister unknown, openMenu, openMenu unknown, openMenu same twice, closeMenu, closeMenu nothing open, opening second closes first, unregister closes open, activateItem observer, disabled item fails, separator fails, lifecycle observer, removeObserver, allMenuIds, clear
+  - [x] Integration (5 tests): full pipeline, submenu tree preserved, second open auto-closes first with events, clearObservers
+- [x] Wire `NF_Phase26Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- MenuItemKind provides typed classification with name helpers ✓
+- ContextMenuItem provides id-based equality with separator factory ✓
+- ContextMenu maintains ordered item list with submenu tree support ✓
+- ContextMenuManager enforces single-open constraint with auto-close on second open ✓
+- Action/lifecycle observer pipelines independently notified ✓
+- 46 test cases pass (98 assertions) ✓
+- Total test suite: ~2416 tests passing ✓
+
+---
+
+## Phase 27 – Workspace Badge and Icon Registry
+
+**Status: Done**
+
+- [x] Create `WorkspaceBadge.h` — workspace badge overlay and icon asset management
+  - [x] BadgeKind enum (Info/Warning/Error/Success/Count/Custom) with `badgeKindName()` helper
+  - [x] Badge — id + targetId + kind + label + count + visible; `isValid()` (id + targetId non-empty); equality by id
+  - [x] BadgeRegistry — `attach`/`detach`/`update`/`isAttached`/`findById`/`findByTarget`/`findByKind` (MAX_BADGES=512); `setVisible`/`setCount` (Count-kind only); `totalCount`/`empty`/`clear`; observer callbacks (MAX_OBSERVERS=16)
+  - [x] IconEntry — id + path + alias + category + size; `isValid()` (id + path non-empty); equality by id
+  - [x] IconRegistry — `registerIcon`/`unregisterIcon`/`isRegistered`/`findById`/`findByAlias`/`find` (id-first then alias); `findByCategory`; `allIds`/`count`/`empty`/`clear` (MAX_ICONS=1024)
+- [x] Add `Tests/Workspace/test_phase27_badge.cpp` — 47 test cases / 104 assertions:
+  - [x] BadgeKind enum (1 test): all 6 values
+  - [x] Badge (6 tests): default invalid, valid construction, invalid without id, invalid without targetId, equality by id, Count kind with numeric count
+  - [x] BadgeRegistry (17 tests): empty state, attach, duplicate fails, invalid rejected, detach, detach unknown fails, update, update unknown fails, findByTarget, findByKind, setVisible, setVisible unknown fails, setCount, setCount non-Count fails, observer on attach, observer on detach, removeObserver, clear
+  - [x] IconEntry (5 tests): default invalid, valid construction, invalid without id, invalid without path, equality by id
+  - [x] IconRegistry (12 tests): empty state, registerIcon, duplicate fails, invalid rejected, unregisterIcon, unregister unknown fails, findById, findByAlias, find id-or-alias, findByCategory, allIds, clear
+  - [x] Integration (6 tests): full badge pipeline, multi-target queries, alias lookup, clearObservers, multiple observers
+- [x] Wire `NF_Phase27Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- BadgeKind provides semantic overlay classification with name helpers ✓
+- BadgeRegistry supports multi-target and multi-kind queries with setCount for Count badges ✓
+- IconRegistry provides id-first-then-alias lookup with category grouping ✓
+- Observer notifies on every badge structural change ✓
+- 47 test cases pass (104 assertions) ✓
+- Total test suite: ~2463 tests passing ✓
+
+---
+
+## Phase 28 – Workspace Minimap / Overview
+
+**Status: Done**
+
+- [x] Create `WorkspaceMinimap.h` — workspace minimap region and viewport tracking
+  - [x] MinimapRect — normalized [0,1] float rectangle; `isValid()` (w>0 && h>0); equality
+  - [x] MinimapRegion — id + label + rect + color + visible; `isValid()` (id non-empty + rect valid); equality by id
+  - [x] MinimapViewport — rect + locked flag; `isValid()` delegates to rect
+  - [x] MinimapManager — region registry (MAX_REGIONS=256); `addRegion`/`removeRegion`/`updateRegion`/`findRegion`/`isRegistered`/`setVisible`/`visibleRegions`; `setViewport`/`scrollViewport` (clamped to [0, 1-w]/[0, 1-h])/`lockViewport`/`unlockViewport`; separate region observers + viewport observers (MAX_OBSERVERS=16 each)
+- [x] Add `Tests/Workspace/test_phase28_minimap.cpp` — 37 test cases / 71 assertions:
+  - [x] MinimapRect (4 tests): default invalid, valid with positive size, invalid zero width, equality
+  - [x] MinimapRegion (5 tests): default invalid, valid construction, invalid without id, invalid zero rect, equality by id
+  - [x] MinimapViewport (2 tests): default invalid, valid with positive rect
+  - [x] MinimapManager (21 tests): empty state, addRegion, duplicate fails, invalid rejected, removeRegion, remove unknown, updateRegion, update unknown, setVisible, visibleRegions filter, setViewport, setViewport invalid, scrollViewport, scroll clamped, scroll locked, lock/unlock, region observer add, region observer remove, viewport observer setViewport, viewport observer scroll, removeObserver, clear
+  - [x] Integration (5 tests): full pipeline, visible filter, clearObservers, multiple observers
+- [x] Wire `NF_Phase28Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- MinimapRect provides normalized float rect with validity check ✓
+- MinimapRegion provides labeled colored area with id-based equality ✓
+- MinimapManager tracks three-zone visibility and viewport with scroll clamping ✓
+- Region and viewport observer pipelines independently notified ✓
+- 37 test cases pass (71 assertions) ✓
+- Total test suite: ~2500 tests passing ✓
+
+---
+
+## Phase 29 – Workspace Annotation System
+
+**Status: Done**
+
+- [x] Create `WorkspaceAnnotation.h` — workspace annotation anchoring and lifecycle
+  - [x] AnnotationKind enum (Note/Warning/Todo/Bookmark/Review) with `annotationKindName()` helper
+  - [x] AnnotationAnchor — targetId + contextKey + x/y position; `isValid()` (targetId non-empty)
+  - [x] Annotation — id + kind + author + body + anchor + resolved + timestamp; `isValid()` (id + body + anchor valid); equality by id
+  - [x] AnnotationManager — registry (MAX_ANNOTATIONS=1024); `add`/`remove`/`update`/`resolve`/`reopen`/`findById`; filter: `findByTarget`/`findByAuthor`/`findByKind`/`unresolved`/`resolved`/`allIds`; monotonic timestamp assigned on add; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase29_annotation.cpp` — 37 test cases / 78 assertions:
+  - [x] AnnotationKind enum (1 test): all 5 values
+  - [x] AnnotationAnchor (3 tests): default invalid, valid with targetId, invalid without targetId
+  - [x] Annotation (7 tests): default invalid, valid construction, invalid without id, invalid without body, invalid without anchor target, equality by id
+  - [x] AnnotationManager (23 tests): empty state, add, duplicate fails, invalid rejected, timestamps increment, remove, remove unknown, update, update unknown, resolve, resolve already resolved, reopen, reopen already open, findByTarget, findByAuthor, findByKind, unresolved/resolved filters, allIds, observer on add, observer on remove, observer on resolve, removeObserver, clear
+  - [x] Integration (4 tests): full pipeline, filter subsets, timestamps monotonic, clearObservers
+- [x] Wire `NF_Phase29Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- AnnotationKind provides semantic category with name helpers ✓
+- AnnotationAnchor ties annotations to workspace elements ✓
+- AnnotationManager supports resolve/reopen lifecycle with monotonic timestamps ✓
+- Filter queries by target, author, and kind work independently ✓
+- 37 test cases pass (78 assertions) ✓
+- Total test suite: ~2537 tests passing ✓
+
+---
+
+## Phase 30 – Workspace Filter and Search Index
+
+**Status: Done**
+
+- [x] Create `WorkspaceFilterIndex.h` — workspace searchable item index with tag and field filters
+  - [x] IndexedItemKind enum (Asset/Panel/Tool/Node/Command/Custom) with `indexedItemKindName()` helper
+  - [x] IndexedItem — id + kind + label + tags + fields (string map); `isValid()` (id + label non-empty); `hasTag`/`hasField`/`fieldValue`; equality by id
+  - [x] FilterQuery — text (case-insensitive label substring) + filterKind/kind + requiredTags (all must match) + requiredFields (all keys must exist); `matchesItem()` combines all predicates
+  - [x] WorkspaceFilterIndex — item registry (MAX_ITEMS=4096); `addItem`/`removeItem`/`updateItem`/`findById`/`isIndexed`; query: `query(FilterQuery)`/`findByKind`/`findByTag`/`allIds`; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase30_filter_index.cpp` — 32 test cases / 78 assertions:
+  - [x] IndexedItemKind enum (1 test): all 6 values
+  - [x] IndexedItem (5 tests): default invalid, valid with tags+fields, invalid without id, invalid without label, equality by id
+  - [x] FilterQuery (6 tests): empty matches all, text case-insensitive, kind filter, required tags, required fields, combined all predicates
+  - [x] WorkspaceFilterIndex (16 tests): empty state, addItem, duplicate fails, invalid rejected, removeItem, remove unknown, updateItem, update unknown, query by text, findByKind, findByTag, allIds, observer on add, observer on remove, removeObserver, clear
+  - [x] Integration (4 tests): full pipeline, combined filter, clearObservers, multiple observers
+- [x] Wire `NF_Phase30Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- IndexedItemKind provides typed categorization with name helpers ✓
+- IndexedItem supports tag set and arbitrary field map with helper accessors ✓
+- FilterQuery combines text/kind/tag/field predicates independently ✓
+- WorkspaceFilterIndex returns filtered item lists without mutation ✓
+- 32 test cases pass (78 assertions) ✓
+- Total test suite: ~2569 tests passing ✓

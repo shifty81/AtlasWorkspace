@@ -401,3 +401,102 @@ target_link_libraries(NF_Phase21Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase21Tests)
+
+# Phase 22 — Workspace Drag and Drop System tests
+add_executable(NF_Phase22Tests
+    Workspace/test_phase22_drag_drop.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase22Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase22Tests)
+
+# Phase 23 — Workspace Hotkey Manager tests
+add_executable(NF_Phase23Tests
+    Workspace/test_phase23_hotkeys.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase23Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase23Tests)
+
+# Phase 24 — Workspace Tooltip and Help System tests
+add_executable(NF_Phase24Tests
+    Workspace/test_phase24_tooltip.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase24Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase24Tests)
+
+# Phase 25 — Workspace Status Bar System tests
+add_executable(NF_Phase25Tests
+    Workspace/test_phase25_status_bar.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase25Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase25Tests)
+
+# Phase 26 — Workspace Context Menu System tests
+add_executable(NF_Phase26Tests
+    Workspace/test_phase26_context_menu.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase26Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase26Tests)
+
+# Phase 27 — Workspace Badge and Icon Registry tests
+add_executable(NF_Phase27Tests
+    Workspace/test_phase27_badge.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase27Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase27Tests)
+
+# Phase 28 — Workspace Minimap / Overview tests
+add_executable(NF_Phase28Tests
+    Workspace/test_phase28_minimap.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase28Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase28Tests)
+
+# Phase 29 — Workspace Annotation System tests
+add_executable(NF_Phase29Tests
+    Workspace/test_phase29_annotation.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase29Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase29Tests)
+
+# Phase 30 — Workspace Filter and Search Index tests
+add_executable(NF_Phase30Tests
+    Workspace/test_phase30_filter_index.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase30Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase30Tests)
