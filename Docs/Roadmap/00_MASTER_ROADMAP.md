@@ -819,3 +819,87 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration tests verify pipeline, auto-hide, observer sequencing, and timestamp ordering ✓
 - 43 test cases pass ✓
 - Total test suite: ~2337 tests passing ✓
+
+---
+
+## Phase 25 – Workspace Status Bar System
+
+**Status: Done**
+
+- [x] Create `WorkspaceStatusBar.h` — workspace status bar item management
+  - [x] StatusBarSide enum (Left/Center/Right) with `statusBarSideName()` helper
+  - [x] StatusBarItem — id + label + tooltip + icon + priority + enabled; `isValid()`; equality by id
+  - [x] StatusBarSection — ordered priority-sorted collection (MAX_ITEMS=64); `add`/`remove`/`update`/`find`/`contains`/`count`/`empty`/`items`/`clear`; stable-sort by priority
+  - [x] StatusBarManager — three-section registry (Left/Center/Right); `addItem`/`removeItem`/`updateItem`/`findItem`/`contains`/`sectionOf`; `enableItem`/`disableItem`; `clear`; observer callbacks on change (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase25_status_bar.cpp` — 33 test cases / 80 assertions:
+  - [x] StatusBarSide enum (1 test): all 3 values
+  - [x] StatusBarItem (4 tests): default invalid, valid construction, invalid without id, equality by id
+  - [x] StatusBarSection (11 tests): empty state, add, duplicate fails, invalid rejected, remove, remove unknown fails, find, priority sorting, update re-sorts, update unknown fails, clear
+  - [x] StatusBarManager (12 tests): addItem left, addItem center+right, removeItem, removeItem unknown, updateItem, findItem, enable/disable, sectionOf, observer on add, observer on remove, removeObserver, clear
+  - [x] Integration (5 tests): full pipeline all three sides, priority sorting preserved, update+observer, clearObservers, multiple observers
+- [x] Wire `NF_Phase25Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- StatusBarSide provides three placement zones with name helpers ✓
+- StatusBarSection maintains stable priority order on add/update ✓
+- StatusBarManager routes items into three independent sections ✓
+- Observer notifies on every structural change (add/remove/update/enable) ✓
+- 33 test cases pass (80 assertions) ✓
+- Total test suite: ~2370 tests passing ✓
+
+---
+
+## Phase 26 – Workspace Context Menu System
+
+**Status: Done**
+
+- [x] Create `WorkspaceContextMenu.h` — workspace context menu definition and lifecycle
+  - [x] MenuItemKind enum (Action/Separator/Submenu) with `menuItemKindName()` helper
+  - [x] ContextMenuItem — id + label + kind + enabled + shortcut + icon; `isValid()` (id non-empty; label required for non-Separator); `separator()` factory; equality by id
+  - [x] ContextMenu — id + ordered item list (MAX_ITEMS=128); `addItem`/`removeItem`/`updateItem`/`findItem`/`contains`/`itemCount`/`empty`/`items`/`clear`; `attachSubmenu`/`findSubmenu`
+  - [x] ContextMenuManager — named menu registry (MAX_MENUS=64); `registerMenu`/`unregisterMenu`/`isRegistered`/`findMenu`/`allMenuIds`; `openMenu`/`closeMenu`/`isOpen`/`hasOpenMenu`/`openMenuId` (one-open constraint, auto-close on second open); `activateItem` (action-only, enabled-only); `clear`; action observers + lifecycle observers (MAX_OBSERVERS=16 each); `removeObserver`/`clearObservers`
+- [x] Add `Tests/Workspace/test_phase26_context_menu.cpp` — 46 test cases / 98 assertions:
+  - [x] MenuItemKind enum (1 test): all 3 values
+  - [x] ContextMenuItem (7 tests): default invalid, valid action, invalid without id, invalid action without label, separator valid, separator invalid, equality by id
+  - [x] ContextMenu (14 tests): default invalid, valid construction, addItem, duplicate fails, invalid rejected, removeItem, removeItem unknown, updateItem, updateItem unknown, findItem, separator added, attachSubmenu, attachSubmenu fails non-Submenu kind, clear
+  - [x] ContextMenuManager (18 tests): empty state, register, duplicate fails, invalid rejected, unregister, unregister unknown, openMenu, openMenu unknown, openMenu same twice, closeMenu, closeMenu nothing open, opening second closes first, unregister closes open, activateItem observer, disabled item fails, separator fails, lifecycle observer, removeObserver, allMenuIds, clear
+  - [x] Integration (5 tests): full pipeline, submenu tree preserved, second open auto-closes first with events, clearObservers
+- [x] Wire `NF_Phase26Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- MenuItemKind provides typed classification with name helpers ✓
+- ContextMenuItem provides id-based equality with separator factory ✓
+- ContextMenu maintains ordered item list with submenu tree support ✓
+- ContextMenuManager enforces single-open constraint with auto-close on second open ✓
+- Action/lifecycle observer pipelines independently notified ✓
+- 46 test cases pass (98 assertions) ✓
+- Total test suite: ~2416 tests passing ✓
+
+---
+
+## Phase 27 – Workspace Badge and Icon Registry
+
+**Status: Done**
+
+- [x] Create `WorkspaceBadge.h` — workspace badge overlay and icon asset management
+  - [x] BadgeKind enum (Info/Warning/Error/Success/Count/Custom) with `badgeKindName()` helper
+  - [x] Badge — id + targetId + kind + label + count + visible; `isValid()` (id + targetId non-empty); equality by id
+  - [x] BadgeRegistry — `attach`/`detach`/`update`/`isAttached`/`findById`/`findByTarget`/`findByKind` (MAX_BADGES=512); `setVisible`/`setCount` (Count-kind only); `totalCount`/`empty`/`clear`; observer callbacks (MAX_OBSERVERS=16)
+  - [x] IconEntry — id + path + alias + category + size; `isValid()` (id + path non-empty); equality by id
+  - [x] IconRegistry — `registerIcon`/`unregisterIcon`/`isRegistered`/`findById`/`findByAlias`/`find` (id-first then alias); `findByCategory`; `allIds`/`count`/`empty`/`clear` (MAX_ICONS=1024)
+- [x] Add `Tests/Workspace/test_phase27_badge.cpp` — 47 test cases / 104 assertions:
+  - [x] BadgeKind enum (1 test): all 6 values
+  - [x] Badge (6 tests): default invalid, valid construction, invalid without id, invalid without targetId, equality by id, Count kind with numeric count
+  - [x] BadgeRegistry (17 tests): empty state, attach, duplicate fails, invalid rejected, detach, detach unknown fails, update, update unknown fails, findByTarget, findByKind, setVisible, setVisible unknown fails, setCount, setCount non-Count fails, observer on attach, observer on detach, removeObserver, clear
+  - [x] IconEntry (5 tests): default invalid, valid construction, invalid without id, invalid without path, equality by id
+  - [x] IconRegistry (12 tests): empty state, registerIcon, duplicate fails, invalid rejected, unregisterIcon, unregister unknown fails, findById, findByAlias, find id-or-alias, findByCategory, allIds, clear
+  - [x] Integration (6 tests): full badge pipeline, multi-target queries, alias lookup, clearObservers, multiple observers
+- [x] Wire `NF_Phase27Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- BadgeKind provides semantic overlay classification with name helpers ✓
+- BadgeRegistry supports multi-target and multi-kind queries with setCount for Count badges ✓
+- IconRegistry provides id-first-then-alias lookup with category grouping ✓
+- Observer notifies on every badge structural change ✓
+- 47 test cases pass (104 assertions) ✓
+- Total test suite: ~2463 tests passing ✓

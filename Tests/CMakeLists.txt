@@ -434,3 +434,36 @@ target_link_libraries(NF_Phase24Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase24Tests)
+
+# Phase 25 — Workspace Status Bar System tests
+add_executable(NF_Phase25Tests
+    Workspace/test_phase25_status_bar.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase25Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase25Tests)
+
+# Phase 26 — Workspace Context Menu System tests
+add_executable(NF_Phase26Tests
+    Workspace/test_phase26_context_menu.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase26Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase26Tests)
+
+# Phase 27 — Workspace Badge and Icon Registry tests
+add_executable(NF_Phase27Tests
+    Workspace/test_phase27_badge.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase27Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase27Tests)
