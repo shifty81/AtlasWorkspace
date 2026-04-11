@@ -73,6 +73,26 @@ if(ATLAS_BUILD_WORKSPACE)
     add_subdirectory(Source/Programs/AtlasWorkspace)
 endif()
 
+# ── Standalone child executables ──────────────────────────────────
+# Builds NovaForgeEditor, NovaForgeGame, and NovaForgeServer into the
+# same bin/ directory as AtlasWorkspace so the launch service can find them.
+option(ATLAS_BUILD_PROGRAMS "Build standalone child executables (NovaForgeEditor, NovaForgeGame, NovaForgeServer)" ON)
+
+if(ATLAS_BUILD_PROGRAMS)
+    # NovaForge game-specific modules (Game, World, Patch).
+    # These depend only on the Atlas engine subsystems already built above.
+    add_subdirectory(NovaForge/Source/Game)
+    add_subdirectory(NovaForge/Source/World)
+    add_subdirectory(NovaForge/Source/Patch)
+
+    # Enable all three child executables, then include the programs directory
+    # that already knows how to build them.
+    set(NF_BUILD_EDITOR ON)
+    set(NF_BUILD_GAME   ON)
+    set(NF_BUILD_SERVER ON)
+    add_subdirectory(NovaForge/Source/Programs)
+endif()
+
 if(ATLAS_BUILD_TESTS)
     enable_testing()
     add_subdirectory(Tests)
@@ -81,5 +101,6 @@ endif()
 message(STATUS "")
 message(STATUS "=== AtlasWorkspace ${PROJECT_VERSION} ===")
 message(STATUS "  Build Workspace: ${ATLAS_BUILD_WORKSPACE}")
+message(STATUS "  Build Programs:  ${ATLAS_BUILD_PROGRAMS}")
 message(STATUS "  Build Tests:     ${ATLAS_BUILD_TESTS}")
 message(STATUS "")
