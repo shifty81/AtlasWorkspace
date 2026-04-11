@@ -180,7 +180,7 @@ TEST_CASE("WorkspaceBootstrap: runCount increments on success", "[Phase8][Bootst
         WorkspaceBootstrapConfig cfg;
         cfg.launchMode = WorkspaceStartupMode::Headless;
         WorkspaceShell shell;
-        boot.run(cfg, shell);
+        (void)boot.run(cfg, shell);
         shell.shutdown();
     }
     CHECK(boot.runCount() == 3);
@@ -665,7 +665,7 @@ TEST_CASE("ConsoleCommandBus disabled command returns PermissionDenied",
           "[Phase8][ConsoleCmd]") {
     ConsoleCommandBus bus;
     ConsoleCommand cmd("locked", ConsoleCmdScope::Global, ConsoleCmdArgType::None);
-    bus.registerCommand(cmd);
+    (void)bus.registerCommand(cmd);
     bus.findCommand("locked")->setEnabled(false);
     CHECK(bus.execute("locked") == ConsoleCmdExecResult::PermissionDenied);
 }
@@ -673,7 +673,7 @@ TEST_CASE("ConsoleCommandBus disabled command returns PermissionDenied",
 TEST_CASE("ConsoleCommandBus unregisterCommand works", "[Phase8][ConsoleCmd]") {
     ConsoleCommandBus bus;
     ConsoleCommand cmd("temp", ConsoleCmdScope::Global, ConsoleCmdArgType::None);
-    bus.registerCommand(cmd);
+    (void)bus.registerCommand(cmd);
     CHECK(bus.unregisterCommand("temp"));
     CHECK(bus.commandCount() == 0);
     CHECK_FALSE(bus.unregisterCommand("temp"));
@@ -689,9 +689,9 @@ TEST_CASE("ConsoleCommandBus countByScope and hiddenCount and enabledCount",
     g2.setHidden(true);
     e1.setEnabled(false);
 
-    bus.registerCommand(g1);
-    bus.registerCommand(g2);
-    bus.registerCommand(e1);
+    (void)bus.registerCommand(g1);
+    (void)bus.registerCommand(g2);
+    (void)bus.registerCommand(e1);
 
     CHECK(bus.countByScope(ConsoleCmdScope::Global) == 2);
     CHECK(bus.countByScope(ConsoleCmdScope::Editor) == 1);

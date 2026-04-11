@@ -10,6 +10,16 @@
 #include <unordered_map>
 #include <vector>
 
+// Windows types (HWND, DWORD, HANDLE, etc.) must be in the global namespace.
+// Include windows.h here, before namespace NF, so that the types land at
+// global scope even when this header is pulled in transitively.
+#if defined(_WIN32)
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <windows.h>
+#endif
+
 namespace NF {
 
 // ── WorkspaceLaunchMode ──────────────────────────────────────────
@@ -177,10 +187,6 @@ private:
 // to NullLaunchService semantics via the guarded implementation.
 
 #if defined(_WIN32)
-#  ifndef WIN32_LEAN_AND_MEAN
-#    define WIN32_LEAN_AND_MEAN
-#  endif
-#  include <windows.h>
 
 class Win32LaunchService final : public WorkspaceLaunchService {
 public:
