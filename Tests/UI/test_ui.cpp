@@ -553,3 +553,117 @@ TEST_CASE("UIContext textInput renders field", "[UI][Widgets]") {
     r.endFrame();
     r.shutdown();
 }
+
+// ── UIContext::hitRegion ─────────────────────────────────────────
+
+TEST_CASE("UIContext hitRegion returns true on click inside rect", "[UI][Widgets]") {
+    NF::UIRenderer r;
+    r.init();
+    r.beginFrame(800.f, 600.f);
+
+    NF::UITheme theme = NF::UITheme::dark();
+    NF::UIMouseState mouse{};
+    mouse.x           = 50.f;
+    mouse.y           = 50.f;
+    mouse.leftReleased = true;  // mouse was just released inside the rect
+
+    NF::UIContext ctx;
+    ctx.begin(r, mouse, theme, 0.016f);
+
+    // hitRegion works without any layout cursor (no beginPanel needed)
+    bool clicked = ctx.hitRegion({10.f, 10.f, 100.f, 80.f});
+
+    ctx.end();
+
+    REQUIRE(clicked);
+    r.endFrame();
+    r.shutdown();
+}
+
+TEST_CASE("UIContext hitRegion returns false when mouse outside rect", "[UI][Widgets]") {
+    NF::UIRenderer r;
+    r.init();
+    r.beginFrame(800.f, 600.f);
+
+    NF::UITheme theme = NF::UITheme::dark();
+    NF::UIMouseState mouse{};
+    mouse.x           = 200.f;  // outside {10,10,100,80}
+    mouse.y           = 200.f;
+    mouse.leftReleased = true;
+
+    NF::UIContext ctx;
+    ctx.begin(r, mouse, theme, 0.016f);
+    bool clicked = ctx.hitRegion({10.f, 10.f, 100.f, 80.f});
+    ctx.end();
+
+    REQUIRE_FALSE(clicked);
+    r.endFrame();
+    r.shutdown();
+}
+
+TEST_CASE("UIContext hitRegion returns false when leftReleased is false", "[UI][Widgets]") {
+    NF::UIRenderer r;
+    r.init();
+    r.beginFrame(800.f, 600.f);
+
+    NF::UITheme theme = NF::UITheme::dark();
+    NF::UIMouseState mouse{};
+    mouse.x            = 50.f;
+    mouse.y            = 50.f;
+    mouse.leftDown     = true;  // held but not released
+    mouse.leftReleased = false;
+
+    NF::UIContext ctx;
+    ctx.begin(r, mouse, theme, 0.016f);
+    bool clicked = ctx.hitRegion({10.f, 10.f, 100.f, 80.f});
+    ctx.end();
+
+    REQUIRE_FALSE(clicked);  // click only fires on leftReleased
+    r.endFrame();
+    r.shutdown();
+}
+
+TEST_CASE("UIContext hitRegion draws hover highlight when hovered", "[UI][Widgets]") {
+    NF::UIRenderer r;
+    r.init();
+    r.beginFrame(800.f, 600.f);
+
+    NF::UITheme theme = NF::UITheme::dark();
+    NF::UIMouseState mouse{};
+    mouse.x = 50.f;
+    mouse.y = 50.f;
+    // No click — just hovering
+    size_t verticesBefore = r.vertices().size();
+
+    NF::UIContext ctx;
+    ctx.begin(r, mouse, theme, 0.016f);
+    ctx.hitRegion({10.f, 10.f, 100.f, 80.f}, true);  // drawHover=true
+    ctx.end();
+
+    // Hover should have drawn a rect (4 more vertices)
+    REQUIRE(r.vertices().size() == verticesBefore + 4);
+    r.endFrame();
+    r.shutdown();
+}
+
+TEST_CASE("UIContext hitRegion suppresses hover highlight when drawHover=false", "[UI][Widgets]") {
+    NF::UIRenderer r;
+    r.init();
+    r.beginFrame(800.f, 600.f);
+
+    NF::UITheme theme = NF::UITheme::dark();
+    NF::UIMouseState mouse{};
+    mouse.x = 50.f;
+    mouse.y = 50.f;
+    size_t verticesBefore = r.vertices().size();
+
+    NF::UIContext ctx;
+    ctx.begin(r, mouse, theme, 0.016f);
+    ctx.hitRegion({10.f, 10.f, 100.f, 80.f}, false);  // drawHover=false
+    ctx.end();
+
+    // No additional vertices should be emitted
+    REQUIRE(r.vertices().size() == verticesBefore);
+    r.endFrame();
+    r.shutdown();
+}

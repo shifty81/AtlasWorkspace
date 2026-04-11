@@ -567,6 +567,21 @@ public:
         if (!m_clipStack.empty()) m_clipStack.pop_back();
     }
 
+    // ── Absolute-position hit regions ────────────────────────────
+    // hitRegion tests |r| (in client pixels) against the current mouse state.
+    // Does NOT require a layout cursor — call any time between begin()/end().
+    // When hovered and |drawHover| is true, a subtle highlight is drawn over |r|.
+    // Returns true on left-click-release (i.e. when the user clicks inside |r|).
+
+    bool hitRegion(const Rect& r, bool drawHover = true) {
+        if (!m_renderer) return false;
+        bool hovered = hitTest(r);
+        bool clicked = hovered && m_mouse.leftReleased;
+        if (hovered && drawHover)
+            m_renderer->drawRect(r, m_theme->hoverHighlight);
+        return clicked;
+    }
+
     // ── Tooltip ──────────────────────────────────────────────────
 
     void tooltip(std::string_view text) {
