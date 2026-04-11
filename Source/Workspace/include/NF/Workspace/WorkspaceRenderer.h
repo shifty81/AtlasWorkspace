@@ -42,7 +42,7 @@ public:
     static constexpr float kToolbarH = 28.f;
     static constexpr float kStatusH  = 24.f;
     static constexpr float kSidebarW = 224.f;
-    static constexpr float kContentY = kTitleH + kToolbarH;
+    static constexpr float kContentY = kToolbarH;
 
     // ── Colors (RRGGBBAA) ─────────────────────────────────────────
     static constexpr uint32_t kBackground    = 0x1E1E1EFF;
@@ -69,7 +69,6 @@ public:
     {
         ui.beginFrame(width, height);
         renderBackground(ui, width, height);
-        renderTitleBar(ui, width, shell);
         renderToolbar(ui, width, shell, mouse);
         renderSidebar(ui, height, shell, mouse, launchSvc);
         renderMainArea(ui, width, height, shell, mouse);
@@ -97,33 +96,16 @@ private:
         ui.drawRect({0.f, 0.f, w, h}, kBackground);
     }
 
-    // ── Title bar ─────────────────────────────────────────────────
-    void renderTitleBar(UIRenderer& ui, float width, const WorkspaceShell& shell) {
-        ui.drawRect({0.f, 0.f, width, kTitleH}, kSurface);
-        // Left accent stripe
-        ui.drawRect({0.f, 0.f, 3.f, kTitleH}, kAccentBlue);
-
-        // Title + optional project name
-        std::string title = "Atlas Workspace";
-        if (shell.hasProject() && shell.projectAdapter())
-            title += "  -  " + shell.projectAdapter()->projectDisplayName();
-        ui.drawText(12.f, 8.f, title, kTextPrimary);
-
-        // Phase indicator aligned to the right
-        std::string phase = std::string("[") + shellPhaseName(shell.phase()) + "]";
-        float phaseX = width - static_cast<float>(phase.size()) * 8.f - 12.f;
-        if (phaseX > width * 0.5f)
-            ui.drawText(phaseX, 8.f, phase, kTextSecondary);
-    }
-
     // ── Toolbar ───────────────────────────────────────────────────
     void renderToolbar(UIRenderer& ui, float width, WorkspaceShell& shell,
                        const UIMouseState& mouse)
     {
-        float y = kTitleH;
+        float y = 0.f;
         ui.drawRect({0.f, y, width, kToolbarH}, kSurface);
         // Bottom separator
         ui.drawRect({0.f, y + kToolbarH - 1.f, width, 1.f}, kBorder);
+        // Left accent stripe
+        ui.drawRect({0.f, y, 3.f, kToolbarH}, kAccentBlue);
 
         static const char* kMenuItems[] = {"File", "Project", "Tools", "View", "Help"};
         // Corresponding command names used in the command bus
@@ -136,18 +118,20 @@ private:
         // Begin widget pass for this frame's toolbar hit regions
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
 
-        float mx = 8.f;
+        float mx = 10.f;
         for (size_t i = 0; i < 5; ++i) {
             const char* item = kMenuItems[i];
             float iw = static_cast<float>(std::strlen(item)) * 8.f + 16.f;
             Rect btnR{mx, y + 4.f, iw, 20.f};
 
-            // Draw button background
-            ui.drawRect(btnR, kButtonBg);
+            // Draw button background — check hover manually so the tint is
+            // applied BEFORE the text, preventing the highlight from covering it.
+            bool hovered = btnR.contains(mouse.x, mouse.y);
+            ui.drawRect(btnR, hovered ? m_wsTheme.buttonHover : kButtonBg);
             ui.drawText(mx + 6.f, y + 7.f, item, kTextPrimary);
 
-            // Interactive layer: hover highlight + click detection
-            if (m_ctx.hitRegion(btnR)) {
+            // Click detection only (hover highlight already drawn above).
+            if (m_ctx.hitRegion(btnR, false)) {
                 NF_LOG_INFO("WorkspaceUI",
                     std::string("Menu clicked: ") + item
                     + "  [cmd=" + kMenuCmds[i] + "]");
@@ -159,6 +143,12 @@ private:
         }
 
         m_ctx.end();
+
+        // Phase indicator aligned to the right of the toolbar row
+        std::string phase = std::string("[") + shellPhaseName(shell.phase()) + "]";
+        float phaseX = width - static_cast<float>(phase.size()) * 8.f - 12.f;
+        if (phaseX > mx + 8.f)
+            ui.drawText(phaseX, y + 7.f, phase, kTextSecondary);
     }
 
     // ── Left sidebar: tool launcher ───────────────────────────────
@@ -183,7 +173,11 @@ private:
             if (ay + 46.f > y + h) break;
 
             Rect cardR{4.f, ay, kSidebarW - 8.f, 38.f};
-            ui.drawRect(cardR, kCardBg);
+
+            // Draw card background with hover tint BEFORE text so the
+            // highlight does not overwrite the card content.
+            bool hovered = cardR.contains(mouse.x, mouse.y);
+            ui.drawRect(cardR, hovered ? m_wsTheme.hoverHighlight : kCardBg);
             ui.drawRectOutline(cardR, kBorder, 1.f);
 
             // App name
@@ -194,8 +188,8 @@ private:
             if (path.size() > 24) path = path.substr(0, 21) + "...";
             ui.drawText(12.f, ay + 20.f, path, kTextMuted);
 
-            // Interactive layer: hover + click → launch
-            if (m_ctx.hitRegion(cardR)) {
+            // Click detection only — hover highlight is already drawn above.
+            if (m_ctx.hitRegion(cardR, false)) {
                 NF_LOG_INFO("WorkspaceUI",
                     std::string("Launching: ") + desc.name
                     + "  (" + desc.executablePath + ")");
@@ -284,26 +278,30 @@ private:
         float card1X = cx - cardW - 8.f;
         float card2X = cx + 8.f;
 
-        // New Project card
         Rect newProjR{card1X, cardY, cardW, cardH};
-        ui.drawRect(newProjR, kCardBg);
+        Rect openProjR{card2X, cardY, cardW, cardH};
+
+        // Interactive layer for welcome cards — begin before drawing so hover
+        // state can be used to tint the background before the text is drawn.
+        m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
+        // New Project card
+        bool newHovered  = newProjR.contains(mouse.x, mouse.y);
+        ui.drawRect(newProjR,  newHovered  ? m_wsTheme.hoverHighlight : kCardBg);
         ui.drawRectOutline(newProjR, kBorder, 1.f);
         ui.drawRect({card1X, cardY, cardW, 3.f}, kAccentBlue);
         ui.drawText(card1X + 10.f, cardY + 9.f,  "New Project",         kTextPrimary);
         ui.drawText(card1X + 10.f, cardY + 26.f, "File > New Project",  kTextMuted);
 
         // Open Project card
-        Rect openProjR{card2X, cardY, cardW, cardH};
-        ui.drawRect(openProjR, kCardBg);
+        bool openHovered = openProjR.contains(mouse.x, mouse.y);
+        ui.drawRect(openProjR, openHovered ? m_wsTheme.hoverHighlight : kCardBg);
         ui.drawRectOutline(openProjR, kBorder, 1.f);
         ui.drawRect({card2X, cardY, cardW, 3.f}, kButtonBg);
         ui.drawText(card2X + 10.f, cardY + 9.f,  "Open Project",        kTextPrimary);
         ui.drawText(card2X + 10.f, cardY + 26.f, "File > Open Project", kTextMuted);
 
-        // Interactive layer for welcome cards
-        m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
-
-        if (m_ctx.hitRegion(newProjR)) {
+        if (m_ctx.hitRegion(newProjR, false)) {
             NF_LOG_INFO("WorkspaceUI", "New Project clicked");
             // TODO: open project creation dialog when project workflow is implemented
             Notification n;
@@ -311,7 +309,7 @@ private:
             n.message = "Project creation dialog not yet implemented";
             shell.shellContract().postNotification(n);
         }
-        if (m_ctx.hitRegion(openProjR)) {
+        if (m_ctx.hitRegion(openProjR, false)) {
             NF_LOG_INFO("WorkspaceUI", "Open Project clicked");
             // TODO: open file-open dialog when project workflow is implemented
             Notification n;

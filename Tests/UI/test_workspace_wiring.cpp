@@ -874,11 +874,11 @@ TEST_CASE("NullLaunchService records sidebar app launch via WorkspaceRenderer cl
     NF::NullLaunchService launchSvc;
 
     // Simulate a click on the first sidebar card.
-    // Sidebar cards start at y = kContentY + 30 = 28 + 28 + 30 = 86
-    // x range: 4 to 4 + (224 - 8) = 220, so center at x=112, y=86+19=105
+    // Sidebar cards start at y = kContentY + 30 = 28 + 30 = 58
+    // x range: 4 to 4 + (224 - 8) = 220, so center at x=112, y=58+19=77
     NF::UIMouseState mouse{};
     mouse.x            = 112.f;   // inside first sidebar card
-    mouse.y            = 105.f;   // y = kContentY(56) + 30 + 19 = 105
+    mouse.y            = 77.f;    // y = kContentY(28) + 30 + 19 = 77
     mouse.leftReleased = true;    // simulate a click release
 
     NF::WorkspaceRenderer renderer;
