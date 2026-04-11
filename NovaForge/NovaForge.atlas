@@ -1,0 +1,27 @@
+{
+  "atlas_project": {
+    "id": "novaforge",
+    "displayName": "NovaForge",
+    "type": "game_project",
+    "version": "0.1.0",
+    "description": "NovaForge — open-world voxel MMO built on the Atlas engine."
+  },
+  "adapter": "novaforge",
+  "contentRoots": [
+    "Content",
+    "Data"
+  ],
+  "configRoot": "Config",
+  "saveRoot": "Saved",
+  "logRoot": "Saved/Logs",
+  "phases": [
+    "Phase0_Bootstrap",
+    "Phase1_DevWorldOnly",
+    "Phase2_VoxelRuntimeOnly",
+    "Phase3_FirstInteractionLoopOnly",
+    "Phase4_VoxelMeshRendering",
+    "Phase5_MovementFPSCamera",
+    "Phase6_MultiplayerFoundation"
+  ],
+  "openInstructions": "Open this file with AtlasWorkspace.exe via Project → Load NovaForge, or File → Open Project."
+}

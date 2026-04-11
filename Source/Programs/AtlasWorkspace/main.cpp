@@ -28,6 +28,7 @@
 #  include "NF/UI/GDIBackend.h"
 #endif
 #include <chrono>
+#include <filesystem>
 #include <string>
 
 // ── Global state for Win32 WndProc ───────────────────────────────
@@ -61,6 +62,43 @@ private:
     std::string m_id;
     std::string m_displayName;
     std::string m_path;
+};
+
+// ── NovaForgeWorkspaceAdapter ─────────────────────────────────────
+// IGameProjectAdapter for the NovaForge game project that lives in the
+// repo tree under the NovaForge/ subdirectory.  It exposes the project's
+// content roots so the workspace can browse and reference NovaForge assets.
+
+class NovaForgeWorkspaceAdapter final : public NF::IGameProjectAdapter {
+public:
+    explicit NovaForgeWorkspaceAdapter(std::string projectRoot)
+        : m_root(std::move(projectRoot)) {}
+
+    std::string projectId()          const override { return "novaforge"; }
+    std::string projectDisplayName() const override { return "NovaForge"; }
+
+    bool initialize() override { return true; }
+    void shutdown()   override {}
+
+    std::vector<NF::GameplaySystemPanelDescriptor> panelDescriptors() const override {
+        return {};
+    }
+
+    std::vector<std::string> contentRoots() const override {
+        return { m_root + "/Content", m_root + "/Data" };
+    }
+
+    std::vector<std::string> customCommands() const override {
+        return {
+            "novaforge.build_game",
+            "novaforge.build_server",
+            "novaforge.launch_editor",
+            "novaforge.validate_assets",
+        };
+    }
+
+private:
+    std::string m_root;
 };
 
 // ── String conversion helpers ─────────────────────────────────────
@@ -155,8 +193,21 @@ static void doOpenProject(NF::WorkspaceShell& shell, HWND hwnd) {
     std::string name    = wideToUtf8(wname.c_str());
     std::string pathStr = wideToUtf8(buf);
 
-    auto adapter = std::make_unique<LocalProjectAdapter>(
-        "local." + name, name, pathStr);
+    // Check whether the chosen .atlas file is the NovaForge project descriptor.
+    // If so, use the specialised adapter so its content roots and commands are
+    // registered correctly.  For any other project file, fall back to the
+    // generic LocalProjectAdapter.
+    std::filesystem::path atlaspath(pathStr);
+    std::filesystem::path projectDir = atlaspath.parent_path();
+    bool isNovaForge = (name == "NovaForge") &&
+                       std::filesystem::exists(projectDir / "novaforge.project.json");
+
+    std::unique_ptr<NF::IGameProjectAdapter> adapter;
+    if (isNovaForge) {
+        adapter = std::make_unique<NovaForgeWorkspaceAdapter>(projectDir.string());
+    } else {
+        adapter = std::make_unique<LocalProjectAdapter>("local." + name, name, pathStr);
+    }
 
     if (!shell.loadProject(std::move(adapter))) {
         MessageBoxW(hwnd,
@@ -167,12 +218,59 @@ static void doOpenProject(NF::WorkspaceShell& shell, HWND hwnd) {
     }
 }
 
+// ── Load the NovaForge project ────────────────────────────────────
+// Locates the NovaForge/ directory relative to the binary and loads it as a
+// project adapter.  Must be called from OUTSIDE WM_PAINT (main loop).
+static void doLoadNovaForge(NF::WorkspaceShell& shell, HWND hwnd,
+                             const std::string& binDir)
+{
+    // Try candidate locations for the NovaForge project root, in priority order.
+    const std::vector<std::string> candidates = {
+        binDir + "/../../NovaForge",     // build tree: bin/Debug/../../NovaForge
+        binDir + "/../NovaForge",        // in-tree next to build output
+        "NovaForge",                     // working-directory relative
+    };
+
+    std::string found;
+    for (const auto& c : candidates) {
+        std::filesystem::path cfg = std::filesystem::path(c) / "novaforge.project.json";
+        std::error_code ec;
+        if (std::filesystem::exists(cfg, ec)) {
+            found = std::filesystem::canonical(std::filesystem::path(c), ec).string();
+            if (ec) found = c;  // fall back to the raw path on canonicalization failure
+            break;
+        }
+    }
+
+    if (found.empty()) {
+        MessageBoxW(hwnd,
+            L"Could not find the NovaForge project directory.\n\n"
+            L"Expected novaforge.project.json inside a 'NovaForge' folder "
+            L"adjacent to the repository root.",
+            L"Load NovaForge", MB_OK | MB_ICONWARNING);
+        return;
+    }
+
+    // Unload any existing project first.
+    if (shell.hasProject()) shell.unloadProject();
+
+    auto adapter = std::make_unique<NovaForgeWorkspaceAdapter>(found);
+    if (!shell.loadProject(std::move(adapter))) {
+        MessageBoxW(hwnd,
+            L"The workspace could not load NovaForge as a project.",
+            L"Load NovaForge", MB_OK | MB_ICONERROR);
+    } else {
+        NF_LOG_INFO("AtlasWorkspace", "NovaForge project loaded from: " + found);
+    }
+}
+
 // ── Handle deferred workspace actions ────────────────────────────
 // Called from the main loop after PeekMessage dispatch so that modal dialogs
 // open outside WM_PAINT and do not create unsafe nested message loops.
 
 static void handlePendingWorkspaceActions(NF::WorkspaceRenderer& renderer,
-                                          NF::WorkspaceShell& shell, HWND hwnd)
+                                          NF::WorkspaceShell& shell, HWND hwnd,
+                                          const std::string& binDir)
 {
     // Show any launch or runtime error dialog first (non-blocking, informational).
     NF::WorkspacePendingError err = renderer.takePendingError();
@@ -191,6 +289,12 @@ static void handlePendingWorkspaceActions(NF::WorkspaceRenderer& renderer,
         case NF::WorkspaceAction::OpenProject:
             doOpenProject(shell, hwnd);
             break;
+        case NF::WorkspaceAction::LoadNovaForge:
+            doLoadNovaForge(shell, hwnd, binDir);
+            break;
+        case NF::WorkspaceAction::Exit:
+            DestroyWindow(hwnd);
+            break;
         default:
             break;
     }
@@ -204,6 +308,7 @@ static NF::GDIBackend*        g_gdiBackend  = nullptr;
 static NF::InputSystem*       g_inputSystem = nullptr;
 static NF::WorkspaceLaunchService* g_launchSvc = nullptr;
 static int g_clientW = 1280, g_clientH = 800;
+static std::string g_binDir;  // resolved once at startup; used by deferred action handlers
 
 // Per-frame left-button state for edge detection (leftPressed / leftReleased).
 // Updated each WM_PAINT so transitions fire for exactly one rendered frame.
@@ -408,6 +513,7 @@ int main(int argc, char* argv[]) {
     g_gdiBackend  = &gdiBackend;
     g_inputSystem = &input;
     g_launchSvc   = &win32LaunchSvc;
+    g_binDir      = binDir;
 
     NF::Win32InputAdapter inputAdapter(input);
     g_inputAdapter = &inputAdapter;
@@ -462,7 +568,7 @@ int main(int argc, char* argv[]) {
         // These are processed here — outside WM_PAINT — so that modal dialogs
         // (SHBrowseForFolderW, GetOpenFileNameW, MessageBoxW) can open safely
         // without creating a nested message loop inside the paint callback.
-        handlePendingWorkspaceActions(*g_renderer, *g_shell, hwnd);
+        handlePendingWorkspaceActions(*g_renderer, *g_shell, hwnd, g_binDir);
 #else
         running = false; // headless: single frame then exit
 #endif
