@@ -602,3 +602,36 @@ target_link_libraries(NF_Phase39Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase39Tests)
+
+# Phase 40 — Asset Import Queue tests
+add_executable(NF_Phase40Tests
+    Workspace/test_phase40_asset_import_queue.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase40Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase40Tests)
+
+# Phase 41 — Workspace Layout Manager tests
+add_executable(NF_Phase41Tests
+    Workspace/test_phase41_workspace_layout.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase41Tests PRIVATE
+    NF::Workspace NF::Pipeline NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase41Tests)
+
+# Phase 42 — Logging Route V1 tests
+add_executable(NF_Phase42Tests
+    Workspace/test_phase42_logging_route.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase42Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase42Tests)

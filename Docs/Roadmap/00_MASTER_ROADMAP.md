@@ -1256,3 +1256,96 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - State machine: Idle→DragOver→Dropped (or Rejected) transitions correct ✓
 - 42 test cases pass (95 assertions) ✓
 - Total test suite: ~2888 tests passing ✓
+
+---
+
+## Phase 40 – Asset Import Queue
+
+**Status: Done**
+
+- [x] Use `AssetImportQueue.h` — batch import job processing for the intake pipeline
+  - [x] ImportJobStatus enum (Queued/Validating/Importing/PostProcess/Done/Failed/Cancelled) with `importJobStatusName()` helper
+  - [x] ImportJob — id + intakeItem + status + progress + errorMsg + outputPath + priority; isDone/isFailed/isActive/isFinished helpers
+  - [x] AssetImportQueue — MAX_JOBS=256 MAX_PARALLEL=4; `enqueue`/`enqueueFromPipeline`/`cancel`/`startNext`/`advance`/`failJob`/`find`; `clearFinished`; priority-sorted queue; `setOnComplete` callback; stats (totalEnqueued/Completed/Failed/Cancelled)
+- [x] Add `Tests/Workspace/test_phase40_asset_import_queue.cpp` — 24 test cases / 75 assertions:
+  - [x] ImportJobStatus (1 test): all 7 values
+  - [x] ImportJob (5 tests): default state, isDone, isFailed, isActive, isFinished
+  - [x] AssetImportQueue (16 tests): default empty, enqueue, find, find unknown, startNext, startNext empty, advance pipeline, totalCompleted, failJob, failJob finished, cancel, cancel unknown, clearFinished, priority ordering, onComplete callback, enqueueFromPipeline
+  - [x] Integration (2 tests): full pipeline enqueue+advance+complete, mixed complete/fail/cancel+clearFinished
+- [x] Wire `NF_Phase40Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ImportJob.isActive() covers Validating/Importing/PostProcess states ✓
+- AssetImportQueue.advance() walks Queued→Validating→Importing→PostProcess→Done ✓
+- failJob() and cancel() ignore already-finished jobs ✓
+- clearFinished() removes Done/Failed/Cancelled jobs only ✓
+- Priority ordering: higher priority enqueued jobs appear first ✓
+- onComplete callback fires exactly on Done transition ✓
+- 24 test cases pass (75 assertions) ✓
+- Total test suite: ~2912 tests passing ✓
+
+---
+
+## Phase 41 – Workspace Layout Manager
+
+**Status: Done**
+
+- [x] Use `WorkspaceLayout.h` — workspace panel layout and layout manager
+  - [x] LayoutPanelType enum (Viewport/Inspector/Hierarchy/ContentBrowser/Console/Profiler/Timeline/Custom) with `layoutPanelTypeName()` helper
+  - [x] LayoutDockZone enum (Left/Right/Top/Bottom) with `layoutDockZoneName()` helper
+  - [x] LayoutPanel — id/title/type/dockZone/width/height/visible/pinned; show/hide/pin/unpin; isVisible/isPinned/hasSize
+  - [x] LayoutSplit — firstPanelId/secondPanelId/isHorizontal/ratio; isValid(); flipOrientation()
+  - [x] WorkspaceLayout — named container; addPanel/removePanel/findPanel/addSplit; visiblePanelCount/pinnedPanelCount; showAll/hideAll
+  - [x] WorkspaceLayoutManager — MAX_LAYOUTS=32; createLayout/removeLayout/findLayout/setActive/activeLayout; hasActive/activeName; removing active clears active name
+- [x] Add `Tests/Workspace/test_phase41_workspace_layout.cpp` — 38 test cases / 84 assertions:
+  - [x] LayoutPanelType (1 test): all 8 values
+  - [x] LayoutDockZone (1 test): all 4 values
+  - [x] LayoutPanel (5 tests): default visible/not-pinned, hide+show, pin+unpin, hasSize both dims, hasSize one dim
+  - [x] LayoutSplit (4 tests): invalid no ids, invalid ratio 0/1, valid, flipOrientation
+  - [x] WorkspaceLayout (12 tests): construct, addPanel, addPanel duplicate, removePanel, removePanel unknown, findPanel, findPanel null, findPanel mutates, addSplit invalid, addSplit valid, visiblePanelCount, pinnedPanelCount, showAll+hideAll
+  - [x] WorkspaceLayoutManager (13 tests): default empty, createLayout, duplicate, removeLayout, remove unknown, findLayout, find null, setActive, setActive unknown, activeLayout, activeLayout null, removing active clears name
+  - [x] Integration (2 tests): full multi-layout workflow, hide all/show all/manual hide
+- [x] Wire `NF_Phase41Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- LayoutPanel visibility and pinning are independent boolean flags ✓
+- LayoutSplit.isValid() rejects ratio ≤ 0 or ≥ 1 ✓
+- WorkspaceLayout.findPanel() returns a mutable pointer allowing in-place mutation ✓
+- WorkspaceLayoutManager.createLayout() returns nullptr on duplicate name ✓
+- Removing active layout clears the active name ✓
+- Pointers fetched after all creates to avoid vector reallocation ✓
+- 38 test cases pass (84 assertions) ✓
+- Total test suite: ~2950 tests passing ✓
+
+---
+
+## Phase 42 – Logging Route V1
+
+**Status: Done**
+
+- [x] Use `LoggingRouteV1.h` — structured log routing with sinks, routes, and level filtering
+  - [x] `logLevelName()` helper — maps Core LogLevel (Trace/Debug/Info/Warn/Error/Fatal) to string
+  - [x] `logLevelAtLeast()` helper — ordered comparison for threshold filtering
+  - [x] LogEntry — seq/level/tag/message/source/timestampMs; isValid()/isError()/isWarning()
+  - [x] LogSink — id/name/minLevel/tagFilter/callback/enabled; isValid(); accepts() (level+tag+enabled checks)
+  - [x] LogRoute — id/name/sourcePattern/sinkIds/passThrough; isValid(); matchesSource() (prefix match; empty = all)
+  - [x] LoggingRouteV1 — MAX_BUFFER=4096 MAX_SINKS=32 MAX_ROUTES=64; addSink/removeSink/addRoute/removeRoute; log/trace/debug/info/warn/error/fatal; setSinkEnabled/setMinLevel; buffer/bufferSize/logCount/sinkCount/routeCount; countByLevel; clearBuffer; findSink (const)
+- [x] Add `Tests/Workspace/test_phase42_logging_route.cpp` — 40 test cases / 99 assertions:
+  - [x] logLevelName (1 test): all 6 levels
+  - [x] logLevelAtLeast (1 test): ordering comparisons
+  - [x] LogEntry (4 tests): default invalid, valid, isError, isWarning
+  - [x] LogSink (7 tests): invalid no id, invalid no name, invalid no callback, valid, accepts minLevel, accepts tagFilter, disabled never accepts
+  - [x] LogRoute (5 tests): invalid no id, invalid no name, valid, matchesSource empty, matchesSource prefix
+  - [x] LoggingRouteV1 (19 tests): default empty, addSink, addSink invalid, addSink duplicate, removeSink, removeSink unknown, addRoute, addRoute invalid, addRoute duplicate, removeRoute, log buffers, convenience helpers, countByLevel, clearBuffer, sink level filtering, setSinkEnabled, setMinLevel, findSink const
+  - [x] Integration (3 tests): multi-sink level filters, tag-filtered sink, buffer accumulation and clearBuffer
+- [x] Wire `NF_Phase42Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- logLevelAtLeast() correctly orders Trace < Debug < Info < Warn < Error < Fatal ✓
+- LogSink.accepts() checks enabled, minLevel, and tagFilter independently ✓
+- LogRoute.matchesSource() with empty pattern matches any source ✓
+- LoggingRouteV1 buffers all entries and delivers only to accepting sinks ✓
+- setSinkEnabled/setMinLevel mutate sink in-place via private findSink ✓
+- clearBuffer empties the ring buffer without resetting the cumulative logCount ✓
+- 40 test cases pass (99 assertions) ✓
+- Total test suite: ~2985 tests passing ✓
