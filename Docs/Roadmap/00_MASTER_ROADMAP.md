@@ -1163,3 +1163,96 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Integration: multi-turn conversation, reset+restart, pinned context persistence ✓
 - 34 test cases pass (80 assertions) ✓
 - Total test suite: ~2791 tests passing ✓
+
+---
+
+## Phase 37 – Console Command Bus
+
+**Status: Done**
+
+- [x] Use `ConsoleCommandBus.h` — console command palette backend
+  - [x] ConsoleCmdScope enum (Global/Editor/Game/Server/Client/Plugin) with `consoleCmdScopeName()` helper
+  - [x] ConsoleCmdArgType enum (None/Bool/Int/Float/String/Enum) with `consoleCmdArgTypeName()` helper
+  - [x] ConsoleCmdExecResult enum (Ok/NotFound/InvalidArgs/PermissionDenied/Error) with `consoleCmdExecResultName()` helper
+  - [x] ConsoleCommand — name + scope + argType + description + enabled + hidden; setters/getters
+  - [x] ConsoleCommandBus — MAX_COMMANDS=1024; `registerCommand`/`unregisterCommand`/`findCommand`; `execute()` → ConsoleCmdExecResult; `lastExec()`; `countByScope`/`hiddenCount`/`enabledCount`
+- [x] Add `Tests/Workspace/test_phase37_console_command_bus.cpp` — 24 test cases / 55 assertions:
+  - [x] ConsoleCmdScope (1 test): all 6 values
+  - [x] ConsoleCmdArgType (1 test): all 6 values
+  - [x] ConsoleCmdExecResult (1 test): all 5 values
+  - [x] ConsoleCommand (5 tests): stores name/scope/argType, default enabled+visible, setDescription, setEnabled false, setHidden true
+  - [x] ConsoleCommandBus (13 tests): default empty, registerCommand, duplicate fails, unregisterCommand, unregister unknown, findCommand nullptr, findCommand found, execute Ok, execute NotFound, execute PermissionDenied, countByScope, hiddenCount, enabledCount
+  - [x] Integration (3 tests): multi-scope palette, execute+lastExec tracking, disable+re-enable via findCommand
+- [x] Wire `NF_Phase37Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ConsoleCmdScope/ArgType/ExecResult provide typed enums with name helpers ✓
+- ConsoleCommand defaults to enabled and visible ✓
+- ConsoleCommandBus.execute() returns PermissionDenied for disabled commands, NotFound for unknown ✓
+- countByScope/hiddenCount/enabledCount correctly filter command lists ✓
+- 24 test cases pass (55 assertions) ✓
+- Total test suite: ~2815 tests passing ✓
+
+---
+
+## Phase 38 – Dock Tree Serializer
+
+**Status: Done**
+
+- [x] Use `DockTreeSerializer.h` — text-format dock layout persistence
+  - [x] DockSplitOrientation enum (Horizontal/Vertical) with `dockSplitOrientationName()` helper
+  - [x] DockNodeKind enum (Split/TabStack) with `dockNodeKindName()` helper
+  - [x] DockTreeNode — id + kind + orientation + splitRatio + firstChild + secondChild + panelIds + activeTab; `isValid()`/`isSplit()`/`isTabStack()`; `addPanel`/`removePanel`
+  - [x] DockTree — `addNode`/`removeNode`/`findNode`/`findNodeMut`/`setRootId`/`rootId`/`nodeCount`/`nodes`/`clear`; first added node auto-sets rootId
+  - [x] DockTreeSerializer — `serialize(DockTree)` → text; `deserialize(text, DockTree&)` → bool; wire format: `root:<id>`, `node:<id>|split|…`, `node:<id>|tabs|…`
+- [x] Add `Tests/Workspace/test_phase38_dock_tree_serializer.cpp` — 31 test cases / 78 assertions:
+  - [x] DockSplitOrientation (1 test): both values
+  - [x] DockNodeKind (1 test): both values
+  - [x] DockTreeNode (7 tests): invalid default, valid with id, default TabStack, isSplit, addPanel, removePanel, removePanel unknown
+  - [x] DockTree (11 tests): default empty, addNode valid, addNode sets rootId, addNode invalid, addNode duplicate, removeNode, removeNode unknown, findNode nullptr, findNode found, findNodeMut mutates, setRootId, clear
+  - [x] DockTreeSerializer (8 tests): serialize root line, serialize TabStack, serialize Split, deserialize empty fails, deserialize no-root fails, round-trip TabStack, round-trip Split
+  - [x] Integration (3 tests): full layout round-trip, empty tree serializes but fails deserialize, mutate+re-serialize
+- [x] Wire `NF_Phase38Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- DockTreeNode cleanly models Split and TabStack node duality ✓
+- DockTree auto-assigns rootId to the first inserted node ✓
+- DockTreeSerializer round-trip is lossless for panel ids, active tab, split ratio, children ✓
+- deserialize rejects empty input and input without a root: line ✓
+- 31 test cases pass (78 assertions) ✓
+- Total test suite: ~2846 tests passing ✓
+
+---
+
+## Phase 39 – Content Router and Drop Target Handler
+
+**Status: Done**
+
+- [x] Use `ContentRouter.h` — file-type to tool routing rules
+  - [x] ContentRouterPolicy enum (Reject/UseDefault/Prompt) with `contentRouterPolicyName()` helper
+  - [x] RouteResult — matched + toolId + ruleName + needsPrompt; `succeeded()`
+  - [x] RoutingRule — name + toolId + typeTag + sourceFilter + filterBySource + priority + enabled; `isValid()`; `matches(tag, source)` with wildcard support (Unknown = any type)
+  - [x] ContentRouter — MAX_RULES=128; `addRule`/`removeRule`/`enableRule`/`hasRule`/`ruleCount`; `route(tag)`/`route(AssetDescriptor)`/`route(IntakeItem)`; policy handling; `routeCount`/`missCount`/`clearRules`; rules sorted descending by priority
+- [x] Use `DropTargetHandler.h` — file drag-and-drop surface
+  - [x] DropState enum (Idle/DragOver/DragLeave/Dropped/Rejected) with `dropStateName()` helper
+  - [x] DropEffect enum (None/Copy/Move/Link) with `dropEffectName()` helper
+  - [x] DropTargetHandler — `onDragEnter`/`onDragOver`/`onDragLeave`/`onDrop`/`reset`; `setDefaultEffect`/`setAcceptUnknown`; `bindPipeline`; enter/leave/drop count tracking; `isDragActive()`; `lastDroppedPaths()`/`hoveredPaths()`
+- [x] Add `Tests/Workspace/test_phase39_content_router.cpp` — 42 test cases / 95 assertions:
+  - [x] ContentRouterPolicy (1 test): all 3 values
+  - [x] RouteResult (1 test): default not matched
+  - [x] RoutingRule (7 tests): invalid no name, invalid no toolId, valid, matches type, wildcard, disabled never matches, source filter
+  - [x] ContentRouter (16 tests): default Reject policy, addRule, addRule invalid, addRule duplicate, removeRule, removeRule unknown, hasRule, enableRule, route matched, route Reject policy, route UseDefault, route Prompt, route priority ordering, routeCount, missCount, clearRules
+  - [x] DropState (1 test): all 5 values
+  - [x] DropEffect (1 test): all 4 values
+  - [x] DropTargetHandler (12 tests): default Idle, default Copy effect, onDragEnter known ext, onDragEnter rejects unknown, acceptUnknown flag, onDragOver not-rejected, onDragOver rejected, onDragLeave, onDrop without pipeline, lastDroppedPaths, reset, setDefaultEffect
+  - [x] Integration (3 tests): multi-type routing pipeline, disable+fallback-to-default, enter→hover→drop sequence
+- [x] Wire `NF_Phase39Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- RoutingRule.matches() respects enabled flag, type wildcard, and optional source filter ✓
+- ContentRouter sorts rules by priority descending so higher-priority rules win ✓
+- ContentRouterPolicy (Reject/UseDefault/Prompt) handled distinctly in route() ✓
+- DropTargetHandler rejects unknown extensions by default; acceptUnknown flag overrides ✓
+- State machine: Idle→DragOver→Dropped (or Rejected) transitions correct ✓
+- 42 test cases pass (95 assertions) ✓
+- Total test suite: ~2888 tests passing ✓

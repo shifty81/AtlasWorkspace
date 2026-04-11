@@ -569,3 +569,36 @@ target_link_libraries(NF_Phase36Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase36Tests)
+
+# Phase 37 — Console Command Bus tests
+add_executable(NF_Phase37Tests
+    Workspace/test_phase37_console_command_bus.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase37Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase37Tests)
+
+# Phase 38 — Dock Tree Serializer tests
+add_executable(NF_Phase38Tests
+    Workspace/test_phase38_dock_tree_serializer.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase38Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase38Tests)
+
+# Phase 39 — Content Router and Drop Target Handler tests
+add_executable(NF_Phase39Tests
+    Workspace/test_phase39_content_router.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase39Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase39Tests)
