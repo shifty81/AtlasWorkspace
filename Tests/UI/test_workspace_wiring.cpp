@@ -824,7 +824,7 @@ TEST_CASE("WorkspaceRenderer renders with UIMouseState and NullLaunchService", "
     NF::WorkspaceBootstrap bootstrap;
     NF::WorkspaceBootstrapConfig cfg;
     cfg.launchMode = NF::WorkspaceStartupMode::Hosted;
-    bootstrap.run(cfg, shell);
+    (void)bootstrap.run(cfg, shell);
 
     // Register a test app
     NF::WorkspaceAppDescriptor desc;
@@ -860,7 +860,7 @@ TEST_CASE("NullLaunchService records sidebar app launch via WorkspaceRenderer cl
     NF::WorkspaceBootstrap bootstrap;
     NF::WorkspaceBootstrapConfig cfg;
     cfg.launchMode = NF::WorkspaceStartupMode::Hosted;
-    bootstrap.run(cfg, shell);
+    (void)bootstrap.run(cfg, shell);
 
     // Register a non-project-scoped app (simpler launch path)
     NF::WorkspaceAppDescriptor desc;

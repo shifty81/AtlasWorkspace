@@ -108,14 +108,14 @@ TEST_CASE("ConsoleCommandBus registerCommand adds command", "[ConsoleCommandBus]
 
 TEST_CASE("ConsoleCommandBus registerCommand duplicate fails", "[ConsoleCommandBus]") {
     ConsoleCommandBus bus;
-    bus.registerCommand(makeCmd("r.bloom"));
+    (void)bus.registerCommand(makeCmd("r.bloom"));
     CHECK_FALSE(bus.registerCommand(makeCmd("r.bloom")));
     CHECK(bus.commandCount() == 1u);
 }
 
 TEST_CASE("ConsoleCommandBus unregisterCommand removes command", "[ConsoleCommandBus]") {
     ConsoleCommandBus bus;
-    bus.registerCommand(makeCmd("r.bloom"));
+    (void)bus.registerCommand(makeCmd("r.bloom"));
     CHECK(bus.unregisterCommand("r.bloom"));
     CHECK(bus.commandCount() == 0u);
 }
@@ -132,7 +132,7 @@ TEST_CASE("ConsoleCommandBus findCommand returns nullptr for unknown", "[Console
 
 TEST_CASE("ConsoleCommandBus findCommand returns pointer to existing", "[ConsoleCommandBus]") {
     ConsoleCommandBus bus;
-    bus.registerCommand(makeCmd("r.bloom", ConsoleCmdScope::Editor));
+    (void)bus.registerCommand(makeCmd("r.bloom", ConsoleCmdScope::Editor));
     ConsoleCommand* c = bus.findCommand("r.bloom");
     REQUIRE(c != nullptr);
     CHECK(c->scope() == ConsoleCmdScope::Editor);
@@ -140,7 +140,7 @@ TEST_CASE("ConsoleCommandBus findCommand returns pointer to existing", "[Console
 
 TEST_CASE("ConsoleCommandBus execute known command returns Ok", "[ConsoleCommandBus]") {
     ConsoleCommandBus bus;
-    bus.registerCommand(makeCmd("r.bloom"));
+    (void)bus.registerCommand(makeCmd("r.bloom"));
     CHECK(bus.execute("r.bloom") == ConsoleCmdExecResult::Ok);
     CHECK(bus.lastExec() == "r.bloom");
 }
@@ -154,15 +154,15 @@ TEST_CASE("ConsoleCommandBus execute disabled command returns PermissionDenied",
     ConsoleCommandBus bus;
     auto cmd = makeCmd("debug.crash");
     cmd.setEnabled(false);
-    bus.registerCommand(cmd);
+    (void)bus.registerCommand(cmd);
     CHECK(bus.execute("debug.crash") == ConsoleCmdExecResult::PermissionDenied);
 }
 
 TEST_CASE("ConsoleCommandBus countByScope filters correctly", "[ConsoleCommandBus]") {
     ConsoleCommandBus bus;
-    bus.registerCommand(makeCmd("r.bloom",   ConsoleCmdScope::Editor));
-    bus.registerCommand(makeCmd("g.gravity", ConsoleCmdScope::Game));
-    bus.registerCommand(makeCmd("r.shadow",  ConsoleCmdScope::Editor));
+    (void)bus.registerCommand(makeCmd("r.bloom",   ConsoleCmdScope::Editor));
+    (void)bus.registerCommand(makeCmd("g.gravity", ConsoleCmdScope::Game));
+    (void)bus.registerCommand(makeCmd("r.shadow",  ConsoleCmdScope::Editor));
     CHECK(bus.countByScope(ConsoleCmdScope::Editor) == 2u);
     CHECK(bus.countByScope(ConsoleCmdScope::Game)   == 1u);
     CHECK(bus.countByScope(ConsoleCmdScope::Global) == 0u);
@@ -172,8 +172,8 @@ TEST_CASE("ConsoleCommandBus hiddenCount counts hidden commands", "[ConsoleComma
     ConsoleCommandBus bus;
     auto hidden = makeCmd("internal");
     hidden.setHidden(true);
-    bus.registerCommand(hidden);
-    bus.registerCommand(makeCmd("visible"));
+    (void)bus.registerCommand(hidden);
+    (void)bus.registerCommand(makeCmd("visible"));
     CHECK(bus.hiddenCount() == 1u);
 }
 
@@ -181,8 +181,8 @@ TEST_CASE("ConsoleCommandBus enabledCount counts enabled commands", "[ConsoleCom
     ConsoleCommandBus bus;
     auto disabled = makeCmd("debug.crash");
     disabled.setEnabled(false);
-    bus.registerCommand(disabled);
-    bus.registerCommand(makeCmd("r.bloom"));
+    (void)bus.registerCommand(disabled);
+    (void)bus.registerCommand(makeCmd("r.bloom"));
     CHECK(bus.enabledCount() == 1u);
 }
 
@@ -193,10 +193,10 @@ TEST_CASE("ConsoleCmdBus integration: multi-scope command palette", "[ConsoleCmd
     ConsoleCommandBus bus;
 
     // Register commands across scopes
-    bus.registerCommand(makeCmd("quit",        ConsoleCmdScope::Global));
-    bus.registerCommand(makeCmd("r.bloom",     ConsoleCmdScope::Editor));
-    bus.registerCommand(makeCmd("g.gravity",   ConsoleCmdScope::Game));
-    bus.registerCommand(makeCmd("net.lag_sim", ConsoleCmdScope::Server));
+    (void)bus.registerCommand(makeCmd("quit",        ConsoleCmdScope::Global));
+    (void)bus.registerCommand(makeCmd("r.bloom",     ConsoleCmdScope::Editor));
+    (void)bus.registerCommand(makeCmd("g.gravity",   ConsoleCmdScope::Game));
+    (void)bus.registerCommand(makeCmd("net.lag_sim", ConsoleCmdScope::Server));
 
     CHECK(bus.commandCount() == 4u);
     CHECK(bus.countByScope(ConsoleCmdScope::Global) == 1u);
@@ -205,18 +205,18 @@ TEST_CASE("ConsoleCmdBus integration: multi-scope command palette", "[ConsoleCmd
 
 TEST_CASE("ConsoleCmdBus integration: execute and lastExec tracking", "[ConsoleCmdBusIntegration]") {
     ConsoleCommandBus bus;
-    bus.registerCommand(makeCmd("r.bloom"));
-    bus.registerCommand(makeCmd("r.shadow"));
+    (void)bus.registerCommand(makeCmd("r.bloom"));
+    (void)bus.registerCommand(makeCmd("r.shadow"));
 
-    bus.execute("r.bloom");
+    (void)bus.execute("r.bloom");
     CHECK(bus.lastExec() == "r.bloom");
-    bus.execute("r.shadow");
+    (void)bus.execute("r.shadow");
     CHECK(bus.lastExec() == "r.shadow");
 }
 
 TEST_CASE("ConsoleCmdBus integration: disable then re-enable command", "[ConsoleCmdBusIntegration]") {
     ConsoleCommandBus bus;
-    bus.registerCommand(makeCmd("debug.crash"));
+    (void)bus.registerCommand(makeCmd("debug.crash"));
     CHECK(bus.execute("debug.crash") == ConsoleCmdExecResult::Ok);
 
     // Disable via findCommand
