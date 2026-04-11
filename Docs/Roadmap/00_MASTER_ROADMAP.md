@@ -1349,3 +1349,85 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - clearBuffer empties the ring buffer without resetting the cumulative logCount ✓
 - 40 test cases pass (99 assertions) ✓
 - Total test suite: ~2985 tests passing ✓
+
+---
+
+## Phase 43 – Notifications (NotificationQueue)
+
+**Status: Done**
+
+- [x] Use `Notifications.h` — lightweight editor notification queue with TTL expiry
+  - [x] NotificationType enum (Info/Success/Warning/Error)
+  - [x] EditorNotification — type/message/ttl/elapsed; isExpired(); progress() (0..1, capped at 1)
+  - [x] NotificationQueue — push(type, message, ttl=3); tick(dt) advances elapsed and removes expired; current(); hasActive(); count(); clear()
+- [x] Add `Tests/Workspace/test_phase43_notifications.cpp` — 18 test cases / 45 assertions:
+  - [x] NotificationType (1 test): all 4 enum values
+  - [x] EditorNotification (6 tests): default not expired, isExpired at ttl, not expired before, progress at 0/0.5/1, capped over-elapsed, zero ttl
+  - [x] NotificationQueue (9 tests): default empty, push adds, current returns first, push multiple, tick advances elapsed, tick removes expired, tick removes all, clear, default ttl 3
+  - [x] Integration (2 tests): FIFO ordering through ticks, progress tracking and expiry
+- [x] Wire `NF_Phase43Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- EditorNotification.progress() is clamped to [0, 1] ✓
+- NotificationQueue.tick() removes all entries where elapsed >= ttl ✓
+- FIFO ordering: front of queue is always current() ✓
+- 18 test cases pass (45 assertions) ✓
+- Total test suite: ~3003 tests passing ✓
+
+---
+
+## Phase 44 – NotificationSystem (Advanced Channels)
+
+**Status: Done**
+
+- [x] Use `NotificationSystem.h` — multi-channel notification dispatch
+  - [x] NotificationSeverity enum (Info/Success/Warning/Error/Critical/Debug/Trace/System) with `notificationSeverityName()` helper
+  - [x] NotificationState enum (Pending/Shown/Dismissed/Expired) with `notificationStateName()` helper
+  - [x] Notification — id/title/message/severity/state/durationMs/persistent; show/dismiss/expire; isDismissed/isExpired/isVisible/isError/isCritical
+  - [x] NotificationChannel — named container; post/dismiss/find/activeCount/errorCount/clearDismissed (removes Dismissed+Expired)
+  - [x] NotificationSystem — MAX_CHANNELS=16; createChannel/removeChannel/findChannel/post(channelName, n); totalActive() sums across all channels
+- [x] Add `Tests/Workspace/test_phase44_notification_system.cpp` — 33 test cases / 79 assertions:
+  - [x] NotificationSeverity (1 test): all 8 values
+  - [x] NotificationState (1 test): all 4 values
+  - [x] Notification (7 tests): default Pending, show, dismiss, expire, isError, isCritical, durationMs default
+  - [x] NotificationChannel (10 tests): construct, post shows, post duplicate, find, find null, dismiss, dismiss unknown, errorCount, clearDismissed, clearDismissed nothing
+  - [x] NotificationSystem (11 tests): default empty, createChannel, duplicate, removeChannel, remove unknown, findChannel, find null, post success, post unknown channel, totalActive sums, totalActive drops on dismiss
+  - [x] Integration (3 tests): multi-channel error aggregation, dismiss+clearDismissed, persistent notification
+- [x] Wire `NF_Phase44Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- Notification.isError() true for Error and Critical; isCritical() only for Critical ✓
+- NotificationChannel.post() auto-calls show() on the notification ✓
+- clearDismissed() removes both Dismissed and Expired states ✓
+- NotificationSystem.totalActive() aggregates across all channels ✓
+- 33 test cases pass (79 assertions) ✓
+- Total test suite: ~3036 tests passing ✓
+
+---
+
+## Phase 45 – UndoRedoSystem
+
+**Status: Done**
+
+- [x] Use `UndoRedoSystem.h` — workspace undo/redo with action groups
+  - [x] UndoActionType enum (Create/Delete/Move/Resize/Rename/Modify/Group/Ungroup) with `undoActionTypeName()` helper
+  - [x] UndoActionState enum (Pending/Applied/Undone/Invalid) with `undoActionStateName()` helper
+  - [x] UndoAction — id/description/type/state; apply/undo/invalidate; isApplied/isUndone/isValid/canUndo/canRedo
+  - [x] UndoGroup — named batch; addAction/removeAction/find; applyAll/undoAll; actionCount/appliedCount
+  - [x] UndoRedoSystem — MAX_GROUPS=64; pushGroup (clears redo stack); undo/redo; canUndo/canRedo/undoDepth/redoDepth; clear
+- [x] Add `Tests/Workspace/test_phase45_undo_redo.cpp` — 29 test cases / 88 assertions:
+  - [x] UndoActionType (1 test): all 8 values
+  - [x] UndoActionState (1 test): all 4 values
+  - [x] UndoAction (5 tests): default Pending, apply, undo from Applied, undo from non-Applied, invalidate
+  - [x] UndoGroup (9 tests): construct, addAction, duplicate, removeAction, remove unknown, find, find null, applyAll, undoAll, undoAll skips non-Applied
+  - [x] UndoRedoSystem (10 tests): default empty, pushGroup, undo, redo, undo empty, redo empty, push clears redo, multiple pushes, undo from top, clear
+  - [x] Integration (2 tests): multi-step undo/redo/branch cycle, group applyAll/undoAll through system
+- [x] Wire `NF_Phase45Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- UndoAction.undo() only transitions from Applied→Undone (Pending unchanged) ✓
+- UndoGroup.undoAll() skips non-Applied actions ✓
+- UndoRedoSystem.pushGroup() clears the redo stack ✓
+- UndoRedoSystem.undo() pops from top of undo stack, pushes to redo stack ✓
+- 29 test cases pass (88 assertions) ✓
+- Total test suite: ~3065 tests passing ✓

@@ -635,3 +635,36 @@ target_link_libraries(NF_Phase42Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase42Tests)
+
+# Phase 43 — Notifications (NotificationQueue) tests
+add_executable(NF_Phase43Tests
+    Workspace/test_phase43_notifications.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase43Tests PRIVATE
+    NF::Workspace NF::Pipeline NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase43Tests)
+
+# Phase 44 — NotificationSystem tests
+add_executable(NF_Phase44Tests
+    Workspace/test_phase44_notification_system.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase44Tests PRIVATE
+    NF::Workspace NF::Pipeline NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase44Tests)
+
+# Phase 45 — UndoRedoSystem tests
+add_executable(NF_Phase45Tests
+    Workspace/test_phase45_undo_redo.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase45Tests PRIVATE
+    NF::Workspace NF::Pipeline NF::Editor NF::Engine NF::Renderer NF::UI NF::Core NF::GraphVM NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase45Tests)
