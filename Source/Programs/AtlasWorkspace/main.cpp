@@ -20,9 +20,9 @@
 #include "NF/Workspace/WorkspaceAppRegistry.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
 #if defined(_WIN32)
+#  include <windows.h>
 #  include "NF/Input/Win32InputAdapter.h"
 #  include "NF/UI/GDIBackend.h"
-#  include <windows.h>
 #endif
 #include <chrono>
 #include <string>
