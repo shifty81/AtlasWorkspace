@@ -467,3 +467,36 @@ target_link_libraries(NF_Phase27Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase27Tests)
+
+# Phase 28 — Workspace Minimap / Overview tests
+add_executable(NF_Phase28Tests
+    Workspace/test_phase28_minimap.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase28Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase28Tests)
+
+# Phase 29 — Workspace Annotation System tests
+add_executable(NF_Phase29Tests
+    Workspace/test_phase29_annotation.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase29Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase29Tests)
+
+# Phase 30 — Workspace Filter and Search Index tests
+add_executable(NF_Phase30Tests
+    Workspace/test_phase30_filter_index.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase30Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase30Tests)

@@ -903,3 +903,84 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Observer notifies on every badge structural change ✓
 - 47 test cases pass (104 assertions) ✓
 - Total test suite: ~2463 tests passing ✓
+
+---
+
+## Phase 28 – Workspace Minimap / Overview
+
+**Status: Done**
+
+- [x] Create `WorkspaceMinimap.h` — workspace minimap region and viewport tracking
+  - [x] MinimapRect — normalized [0,1] float rectangle; `isValid()` (w>0 && h>0); equality
+  - [x] MinimapRegion — id + label + rect + color + visible; `isValid()` (id non-empty + rect valid); equality by id
+  - [x] MinimapViewport — rect + locked flag; `isValid()` delegates to rect
+  - [x] MinimapManager — region registry (MAX_REGIONS=256); `addRegion`/`removeRegion`/`updateRegion`/`findRegion`/`isRegistered`/`setVisible`/`visibleRegions`; `setViewport`/`scrollViewport` (clamped to [0, 1-w]/[0, 1-h])/`lockViewport`/`unlockViewport`; separate region observers + viewport observers (MAX_OBSERVERS=16 each)
+- [x] Add `Tests/Workspace/test_phase28_minimap.cpp` — 37 test cases / 71 assertions:
+  - [x] MinimapRect (4 tests): default invalid, valid with positive size, invalid zero width, equality
+  - [x] MinimapRegion (5 tests): default invalid, valid construction, invalid without id, invalid zero rect, equality by id
+  - [x] MinimapViewport (2 tests): default invalid, valid with positive rect
+  - [x] MinimapManager (21 tests): empty state, addRegion, duplicate fails, invalid rejected, removeRegion, remove unknown, updateRegion, update unknown, setVisible, visibleRegions filter, setViewport, setViewport invalid, scrollViewport, scroll clamped, scroll locked, lock/unlock, region observer add, region observer remove, viewport observer setViewport, viewport observer scroll, removeObserver, clear
+  - [x] Integration (5 tests): full pipeline, visible filter, clearObservers, multiple observers
+- [x] Wire `NF_Phase28Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- MinimapRect provides normalized float rect with validity check ✓
+- MinimapRegion provides labeled colored area with id-based equality ✓
+- MinimapManager tracks three-zone visibility and viewport with scroll clamping ✓
+- Region and viewport observer pipelines independently notified ✓
+- 37 test cases pass (71 assertions) ✓
+- Total test suite: ~2500 tests passing ✓
+
+---
+
+## Phase 29 – Workspace Annotation System
+
+**Status: Done**
+
+- [x] Create `WorkspaceAnnotation.h` — workspace annotation anchoring and lifecycle
+  - [x] AnnotationKind enum (Note/Warning/Todo/Bookmark/Review) with `annotationKindName()` helper
+  - [x] AnnotationAnchor — targetId + contextKey + x/y position; `isValid()` (targetId non-empty)
+  - [x] Annotation — id + kind + author + body + anchor + resolved + timestamp; `isValid()` (id + body + anchor valid); equality by id
+  - [x] AnnotationManager — registry (MAX_ANNOTATIONS=1024); `add`/`remove`/`update`/`resolve`/`reopen`/`findById`; filter: `findByTarget`/`findByAuthor`/`findByKind`/`unresolved`/`resolved`/`allIds`; monotonic timestamp assigned on add; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase29_annotation.cpp` — 37 test cases / 78 assertions:
+  - [x] AnnotationKind enum (1 test): all 5 values
+  - [x] AnnotationAnchor (3 tests): default invalid, valid with targetId, invalid without targetId
+  - [x] Annotation (7 tests): default invalid, valid construction, invalid without id, invalid without body, invalid without anchor target, equality by id
+  - [x] AnnotationManager (23 tests): empty state, add, duplicate fails, invalid rejected, timestamps increment, remove, remove unknown, update, update unknown, resolve, resolve already resolved, reopen, reopen already open, findByTarget, findByAuthor, findByKind, unresolved/resolved filters, allIds, observer on add, observer on remove, observer on resolve, removeObserver, clear
+  - [x] Integration (4 tests): full pipeline, filter subsets, timestamps monotonic, clearObservers
+- [x] Wire `NF_Phase29Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- AnnotationKind provides semantic category with name helpers ✓
+- AnnotationAnchor ties annotations to workspace elements ✓
+- AnnotationManager supports resolve/reopen lifecycle with monotonic timestamps ✓
+- Filter queries by target, author, and kind work independently ✓
+- 37 test cases pass (78 assertions) ✓
+- Total test suite: ~2537 tests passing ✓
+
+---
+
+## Phase 30 – Workspace Filter and Search Index
+
+**Status: Done**
+
+- [x] Create `WorkspaceFilterIndex.h` — workspace searchable item index with tag and field filters
+  - [x] IndexedItemKind enum (Asset/Panel/Tool/Node/Command/Custom) with `indexedItemKindName()` helper
+  - [x] IndexedItem — id + kind + label + tags + fields (string map); `isValid()` (id + label non-empty); `hasTag`/`hasField`/`fieldValue`; equality by id
+  - [x] FilterQuery — text (case-insensitive label substring) + filterKind/kind + requiredTags (all must match) + requiredFields (all keys must exist); `matchesItem()` combines all predicates
+  - [x] WorkspaceFilterIndex — item registry (MAX_ITEMS=4096); `addItem`/`removeItem`/`updateItem`/`findById`/`isIndexed`; query: `query(FilterQuery)`/`findByKind`/`findByTag`/`allIds`; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase30_filter_index.cpp` — 32 test cases / 78 assertions:
+  - [x] IndexedItemKind enum (1 test): all 6 values
+  - [x] IndexedItem (5 tests): default invalid, valid with tags+fields, invalid without id, invalid without label, equality by id
+  - [x] FilterQuery (6 tests): empty matches all, text case-insensitive, kind filter, required tags, required fields, combined all predicates
+  - [x] WorkspaceFilterIndex (16 tests): empty state, addItem, duplicate fails, invalid rejected, removeItem, remove unknown, updateItem, update unknown, query by text, findByKind, findByTag, allIds, observer on add, observer on remove, removeObserver, clear
+  - [x] Integration (4 tests): full pipeline, combined filter, clearObservers, multiple observers
+- [x] Wire `NF_Phase30Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- IndexedItemKind provides typed categorization with name helpers ✓
+- IndexedItem supports tag set and arbitrary field map with helper accessors ✓
+- FilterQuery combines text/kind/tag/field predicates independently ✓
+- WorkspaceFilterIndex returns filtered item lists without mutation ✓
+- 32 test cases pass (78 assertions) ✓
+- Total test suite: ~2569 tests passing ✓
