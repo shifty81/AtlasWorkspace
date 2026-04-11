@@ -12,6 +12,18 @@
 // Mouse state (UIMouseState) must be supplied every frame so that hover
 // highlights and click detection work correctly.
 //
+// ── Deferred action pattern ───────────────────────────────────────────────
+// Clicks detected inside render() (which runs in WM_PAINT on Windows) must
+// not open modal dialogs directly — doing so creates a nested message loop
+// inside WM_PAINT and can deadlock or corrupt paint state.
+//
+// Instead, render() stores a WorkspaceAction in m_pendingAction.  The main
+// loop calls takePendingAction() after each WM_PAINT dispatch and opens the
+// appropriate dialog safely outside the paint callback.
+//
+// Similarly, launch errors queue a WorkspacePendingError so MessageBoxW can
+// be shown from the main loop rather than from inside WM_PAINT.
+//
 // Usage (main loop):
 //
 //   NF::WorkspaceRenderer wsRenderer;
@@ -20,6 +32,9 @@
 //       ui.beginFrame(w, h);          // called internally by render()
 //       wsRenderer.render(ui, w, h, shell, mouse, &launchSvc);
 //       // ui.endFrame() is called by render() before returning
+//       // After message dispatch, handle deferred actions:
+//       auto action = wsRenderer.takePendingAction();   // WorkspaceAction
+//       auto err    = wsRenderer.takePendingError();    // WorkspacePendingError
 //   }
 //
 // Color format: RRGGBBAA (matches UIRenderer / GDIBackend convention).
@@ -32,6 +47,26 @@
 #include <string>
 
 namespace NF {
+
+// ── WorkspaceAction ───────────────────────────────────────────────
+// UI actions queued by render() to be handled by the main loop outside
+// WM_PAINT so that modal dialogs can be opened safely.
+
+enum class WorkspaceAction : uint8_t {
+    None,
+    NewProject,   // open folder-browser dialog, create and load a new project
+    OpenProject,  // open file-open dialog for .atlas files
+};
+
+// ── WorkspacePendingError ─────────────────────────────────────────
+// A title + message pair queued by render() when a launch fails or
+// another recoverable error occurs that the user should see.
+
+struct WorkspacePendingError {
+    std::string title;
+    std::string message;
+    [[nodiscard]] bool empty() const { return title.empty(); }
+};
 
 class WorkspaceRenderer {
 public:
@@ -74,6 +109,24 @@ public:
         renderMainArea(ui, width, height, shell, mouse);
         renderStatusBar(ui, width, height, shell);
         ui.endFrame();
+    }
+
+    // ── Deferred action accessors ─────────────────────────────────
+    // Call these from the main loop AFTER dispatching WM_PAINT.
+    // Each call returns the pending value and resets it to its default.
+
+    /// Returns any UI action queued during the last render() call and clears it.
+    WorkspaceAction takePendingAction() {
+        auto a = m_pendingAction;
+        m_pendingAction = WorkspaceAction::None;
+        return a;
+    }
+
+    /// Returns any error queued during the last render() call and clears it.
+    WorkspacePendingError takePendingError() {
+        auto e = m_pendingError;
+        m_pendingError = {};
+        return e;
     }
 
 private:
@@ -183,7 +236,7 @@ private:
             // App name
             ui.drawText(12.f, ay + 5.f, desc.name, kTextPrimary);
 
-            // Executable path (truncate to fit)
+            // Executable path (truncate to fit) — muted to indicate secondary info
             std::string path = desc.executablePath;
             if (path.size() > 24) path = path.substr(0, 21) + "...";
             ui.drawText(12.f, ay + 20.f, path, kTextMuted);
@@ -218,6 +271,17 @@ private:
                         NF_LOG_WARN("WorkspaceUI",
                             std::string("Launch failed: ") + desc.name
                             + "  status=" + workspaceLaunchStatusName(result.status));
+                        // Queue an error for the main loop to display as a dialog.
+                        // Showing MessageBox directly here (inside WM_PAINT) would
+                        // create a nested message loop which is unsafe.
+                        if (m_pendingError.empty()) {
+                            m_pendingError.title   = "Launch Failed: " + desc.name;
+                            m_pendingError.message =
+                                "Could not launch " + desc.name + ".\n\n"
+                                + result.errorDetail + "\n\n"
+                                "Place the executable next to AtlasWorkspace.exe "
+                                "and try again.";
+                        }
                     }
                 } else {
                     // No service wired — report intent via shell contract
@@ -250,14 +314,14 @@ private:
         ui.drawRect({x, y, w, h}, kBackground);
 
         if (!shell.hasProject()) {
-            renderWelcomeScreen(ui, x, y, w, h, shell, mouse);
+            renderWelcomeScreen(ui, x, y, w, h, mouse);
         } else {
             renderProjectDashboard(ui, x, y, w, h, shell);
         }
     }
 
     void renderWelcomeScreen(UIRenderer& ui, float x, float y, float w, float h,
-                             WorkspaceShell& shell, const UIMouseState& mouse)
+                             const UIMouseState& mouse)
     {
         float cx = x + w * 0.5f;
         float cy = y + h * 0.5f;
@@ -303,19 +367,13 @@ private:
 
         if (m_ctx.hitRegion(newProjR, false)) {
             NF_LOG_INFO("WorkspaceUI", "New Project clicked");
-            // TODO: open project creation dialog when project workflow is implemented
-            Notification n;
-            n.title   = "New Project";
-            n.message = "Project creation dialog not yet implemented";
-            shell.shellContract().postNotification(n);
+            // Queue the action; the main loop opens the folder dialog outside WM_PAINT.
+            m_pendingAction = WorkspaceAction::NewProject;
         }
         if (m_ctx.hitRegion(openProjR, false)) {
             NF_LOG_INFO("WorkspaceUI", "Open Project clicked");
-            // TODO: open file-open dialog when project workflow is implemented
-            Notification n;
-            n.title   = "Open Project";
-            n.message = "File-open dialog not yet implemented";
-            shell.shellContract().postNotification(n);
+            // Queue the action; the main loop opens the file-open dialog outside WM_PAINT.
+            m_pendingAction = WorkspaceAction::OpenProject;
         }
 
         m_ctx.end();
@@ -397,6 +455,11 @@ private:
     // Each sidebar launch increments this so repeated launches of the same
     // app produce distinct session identifiers.
     uint32_t m_launchCounter = 0;
+
+    // Deferred action queued during render() for the main loop to handle.
+    // Only one action can be pending at a time (last write wins within a frame).
+    WorkspaceAction      m_pendingAction = WorkspaceAction::None;
+    WorkspacePendingError m_pendingError;
 
     // Placeholder project path used for project-scoped apps until the
     // full project management workflow is implemented.
