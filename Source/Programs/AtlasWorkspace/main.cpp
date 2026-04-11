@@ -135,8 +135,42 @@ static void registerApps(NF::WorkspaceAppRegistry& registry) {
 
 // ── main ─────────────────────────────────────────────────────────
 
+// ── Resolve the directory that contains AtlasWorkspace.exe ───────
+// Child executables (NovaForgeEditor.exe etc.) are expected to live in
+// the same directory as the host binary.  We derive that directory from
+// argv[0] so the launch service can build absolute paths at runtime.
+static std::string resolveBaseDir(const char* argv0) {
+#if defined(_WIN32)
+    // GetModuleFileNameW is the most reliable source on Windows.
+    wchar_t buf[MAX_PATH] = {};
+    DWORD len = GetModuleFileNameW(nullptr, buf, MAX_PATH);
+    if (len > 0 && len < MAX_PATH) {
+        // Strip the filename to get the directory.
+        wchar_t* lastSep = wcsrchr(buf, L'\\');
+        if (lastSep) *lastSep = L'\0';
+        // Convert back to UTF-8.
+        int mbLen = WideCharToMultiByte(CP_UTF8, 0, buf, -1, nullptr, 0, nullptr, nullptr);
+        std::string dir(static_cast<size_t>(mbLen), '\0');
+        WideCharToMultiByte(CP_UTF8, 0, buf, -1, dir.data(), mbLen, nullptr, nullptr);
+        // Remove trailing null inserted by WideCharToMultiByte.
+        if (!dir.empty() && dir.back() == '\0') dir.pop_back();
+        return dir;
+    }
+#endif
+    // Fallback: derive from argv[0].
+    if (argv0 && *argv0) {
+        std::string p(argv0);
+        auto pos = p.find_last_of("/\\");
+        if (pos != std::string::npos) return p.substr(0, pos);
+    }
+    return ".";
+}
+
 int main(int argc, char* argv[]) {
-    (void)argc; (void)argv;
+    // Resolve the directory containing AtlasWorkspace.exe so the launch
+    // service can locate sibling executables (NovaForgeEditor.exe etc.).
+    std::string binDir = resolveBaseDir(argc > 0 ? argv[0] : nullptr);
+    NF_LOG_INFO("AtlasWorkspace", "Binary directory: " + binDir);
 
     NF::coreInit();
     NF_LOG_INFO("AtlasWorkspace", "=== Atlas Workspace ===");
@@ -191,16 +225,16 @@ int main(int argc, char* argv[]) {
     gdiBackend.init(1280, 800);
     ui.setBackend(&gdiBackend);
 
-    // NullLaunchService: records launches without spawning processes.
-    // Replace with a platform LaunchService once process-spawning is implemented.
-    NF::NullLaunchService nullLaunchSvc;
+    // Win32LaunchService: spawns real child processes from the binary directory.
+    // Falls back to NullLaunchService on non-Windows platforms.
+    NF::Win32LaunchService win32LaunchSvc(binDir);
 
     g_shell       = &shell;
     g_renderer    = &wsRenderer;
     g_ui          = &ui;
     g_gdiBackend  = &gdiBackend;
     g_inputSystem = &input;
-    g_launchSvc   = &nullLaunchSvc;
+    g_launchSvc   = &win32LaunchSvc;
 
     NF::Win32InputAdapter inputAdapter(input);
     g_inputAdapter = &inputAdapter;
@@ -230,6 +264,7 @@ int main(int argc, char* argv[]) {
     UpdateWindow(hwnd);
     NF_LOG_INFO("AtlasWorkspace", "Workspace window created (1280x800)");
 #else
+    (void)binDir;
     NF::NullBackend nullBackend;
     nullBackend.init(1280, 800);
     ui.setBackend(&nullBackend);

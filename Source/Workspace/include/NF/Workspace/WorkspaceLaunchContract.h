@@ -168,5 +168,189 @@ private:
     std::unordered_map<uint16_t, bool> m_running;
 };
 
+// ── Win32LaunchService ───────────────────────────────────────────
+// Real process-spawning implementation for Windows.
+// Uses CreateProcessW to launch child executables located relative to
+// a base directory (typically the directory of AtlasWorkspace.exe).
+//
+// Only compiled on _WIN32 — on other platforms the interface falls back
+// to NullLaunchService semantics via the guarded implementation.
+
+#if defined(_WIN32)
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <windows.h>
+
+class Win32LaunchService final : public WorkspaceLaunchService {
+public:
+    // |baseDir| is the directory that contains the child executables.
+    // Typically this is the directory of AtlasWorkspace.exe itself.
+    explicit Win32LaunchService(std::string baseDir)
+        : m_baseDir(std::move(baseDir)) {}
+
+    ~Win32LaunchService() override {
+        // Close all open process handles on destruction.
+        for (auto& entry : m_processes) {
+            if (entry.second.handle != INVALID_HANDLE_VALUE &&
+                entry.second.handle != nullptr) {
+                CloseHandle(entry.second.handle);
+            }
+        }
+    }
+
+    WorkspaceLaunchResult launchApp(const WorkspaceAppDescriptor& app,
+                                    const WorkspaceLaunchContext& context) override {
+        WorkspaceLaunchResult r;
+
+        if (!app.isValid()) {
+            r.status      = WorkspaceLaunchStatus::AppNotFound;
+            r.errorDetail = "Invalid descriptor for: " + app.name;
+            return r;
+        }
+        if (!context.isValid()) {
+            r.status      = WorkspaceLaunchStatus::InvalidContext;
+            r.errorDetail = "WorkspaceLaunchContext is incomplete";
+            return r;
+        }
+
+        // Reap any previous instance that has exited so it can be relaunched.
+        reapIfExited(app.id);
+
+        if (isRunning(app.id)) {
+            r.status      = WorkspaceLaunchStatus::AlreadyRunning;
+            r.errorDetail = app.name + " is already running (pid="
+                            + std::to_string(pidOf(app.id)) + ")";
+            return r;
+        }
+
+        // Build full path to the executable.
+        std::string exePath = m_baseDir.empty()
+            ? app.executablePath
+            : m_baseDir + "\\" + app.executablePath;
+
+        // Check the file exists before attempting CreateProcessW.
+        DWORD attrs = GetFileAttributesA(exePath.c_str());
+        if (attrs == INVALID_FILE_ATTRIBUTES) {
+            r.status      = WorkspaceLaunchStatus::ExecutableNotFound;
+            r.errorDetail = "Executable not found: " + exePath;
+            return r;
+        }
+
+        // Build command line: executable path followed by default args and
+        // context args. We append them all into one quoted command string.
+        // Format: "path\to\exe.exe" --arg1 --arg2 ...
+        std::string cmdLine = "\"" + exePath + "\"";
+        for (const auto& arg : app.defaultArgs)
+            cmdLine += " " + arg;
+        for (const auto& arg : context.toArgs())
+            cmdLine += " " + arg;
+
+        // Convert to wide string for Win32 API.
+        int wlen = MultiByteToWideChar(CP_UTF8, 0, cmdLine.c_str(), -1, nullptr, 0);
+        std::wstring wCmd(static_cast<size_t>(wlen), L'\0');
+        MultiByteToWideChar(CP_UTF8, 0, cmdLine.c_str(), -1, wCmd.data(), wlen);
+
+        STARTUPINFOW si{};
+        si.cb = sizeof(si);
+        PROCESS_INFORMATION pi{};
+
+        BOOL ok = CreateProcessW(
+            nullptr,        // application name (embedded in lpCommandLine)
+            wCmd.data(),    // command line (mutable buffer required by API)
+            nullptr,        // process security attributes
+            nullptr,        // thread security attributes
+            FALSE,          // do not inherit handles
+            0,              // creation flags
+            nullptr,        // inherit environment
+            nullptr,        // inherit current directory
+            &si,
+            &pi);
+
+        if (!ok) {
+            DWORD err = GetLastError();
+            r.status      = WorkspaceLaunchStatus::SpawnFailed;
+            r.errorDetail = "CreateProcessW failed (error=" + std::to_string(err)
+                            + ") for: " + exePath;
+            return r;
+        }
+
+        // Store the process handle for lifecycle tracking.
+        // Close the thread handle immediately — we only need the process handle.
+        CloseHandle(pi.hThread);
+
+        ProcessEntry entry;
+        entry.handle = pi.hProcess;
+        entry.pid    = pi.dwProcessId;
+        m_processes[static_cast<uint16_t>(app.id)] = entry;
+
+        r.status = WorkspaceLaunchStatus::Success;
+        r.pid    = pi.dwProcessId;
+        return r;
+    }
+
+    bool isRunning(WorkspaceAppId id) const override {
+        auto it = m_processes.find(static_cast<uint16_t>(id));
+        if (it == m_processes.end()) return false;
+        if (it->second.handle == INVALID_HANDLE_VALUE ||
+            it->second.handle == nullptr)   return false;
+        // Poll the process exit code — STILL_ACTIVE means it is alive.
+        DWORD code = 0;
+        if (!GetExitCodeProcess(it->second.handle, &code)) return false;
+        return code == STILL_ACTIVE;
+    }
+
+    void shutdownApp(WorkspaceAppId id) override {
+        auto it = m_processes.find(static_cast<uint16_t>(id));
+        if (it == m_processes.end()) return;
+        if (it->second.handle == INVALID_HANDLE_VALUE ||
+            it->second.handle == nullptr)   return;
+        // Request graceful termination.  WM_CLOSE is not available for
+        // console/server processes, so TerminateProcess is used as the
+        // portable fallback.  Child processes should handle CTRL_CLOSE_EVENT
+        // for a cleaner shutdown path once IPC is wired.
+        TerminateProcess(it->second.handle, 0);
+        WaitForSingleObject(it->second.handle, 2000);
+        CloseHandle(it->second.handle);
+        it->second.handle = INVALID_HANDLE_VALUE;
+        it->second.pid    = 0;
+    }
+
+    uint32_t pidOf(WorkspaceAppId id) const override {
+        auto it = m_processes.find(static_cast<uint16_t>(id));
+        if (it == m_processes.end()) return 0;
+        return isRunning(id) ? it->second.pid : 0u;
+    }
+
+private:
+    struct ProcessEntry {
+        HANDLE   handle = INVALID_HANDLE_VALUE;
+        uint32_t pid    = 0;
+    };
+
+    // Close and remove the handle for an app that has already exited so
+    // its slot in the map can be reused for a fresh launch.
+    void reapIfExited(WorkspaceAppId id) {
+        auto it = m_processes.find(static_cast<uint16_t>(id));
+        if (it == m_processes.end()) return;
+        DWORD code = STILL_ACTIVE;
+        if (it->second.handle != INVALID_HANDLE_VALUE &&
+            it->second.handle != nullptr) {
+            GetExitCodeProcess(it->second.handle, &code);
+        }
+        if (code != STILL_ACTIVE) {
+            if (it->second.handle != INVALID_HANDLE_VALUE &&
+                it->second.handle != nullptr) {
+                CloseHandle(it->second.handle);
+            }
+            m_processes.erase(it);
+        }
+    }
+
+    std::string m_baseDir;
+    std::unordered_map<uint16_t, ProcessEntry> m_processes;
+};
+#endif // _WIN32
+
 
 } // namespace NF
