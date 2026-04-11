@@ -20,6 +20,7 @@
 #include "NF/Workspace/WorkspaceAppRegistry.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
 #include "NF/Workspace/IGameProjectAdapter.h"
+#include "NF/Editor/CoreToolRoster.h"
 #if defined(_WIN32)
 #  include <windows.h>
 #  include <shlobj.h>     // SHBrowseForFolderW / SHGetPathFromIDListW
@@ -417,6 +418,11 @@ int main(int argc, char* argv[]) {
     NF_LOG_INFO("AtlasWorkspace",
         std::string("App registry: ") + std::to_string(shell.appRegistry().count())
         + " registered apps");
+
+    // Register the canonical primary tool roster (SceneEditor, AssetEditor,
+    // MaterialEditor, AnimationEditor, DataEditor, VisualLogicEditor, BuildTool,
+    // AtlasAI).  Factories are invoked by WorkspaceBootstrap during initialize().
+    NF::registerCoreTools(shell);
 
     // Bootstrap the shell (validates config, invokes tool factories, initializes).
     NF::WorkspaceBootstrapConfig bootCfg;

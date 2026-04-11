@@ -15,6 +15,7 @@ add_executable(AtlasWorkspace ${_ws_subsystem}
 )
 
 target_link_libraries(AtlasWorkspace PRIVATE
+    NF::Editor
     NF::Workspace
     NF::Pipeline
     NF::AI

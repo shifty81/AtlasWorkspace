@@ -273,68 +273,91 @@ private:
 
             Rect cardR{4.f, ay, kSidebarW - 8.f, 38.f};
 
+            // Determine running state so we can show an indicator and
+            // let a click on a running app stop it.
+            bool running = launchSvc && launchSvc->isRunning(desc.id);
+
             // Draw card background with hover tint BEFORE text so the
             // highlight does not overwrite the card content.
             bool hovered = cardR.contains(mouse.x, mouse.y);
             ui.drawRect(cardR, hovered ? m_wsTheme.hoverHighlight : kCardBg);
-            ui.drawRectOutline(cardR, kBorder, 1.f);
+            ui.drawRectOutline(cardR, running ? kGreen : kBorder, 1.f);
+
+            // Running status dot (6x6 filled rect in top-right corner)
+            if (running) {
+                ui.drawRect({cardR.x + cardR.w - 10.f, ay + 4.f, 6.f, 6.f}, kGreen);
+            }
 
             // App name
             ui.drawText(12.f, ay + 5.f, desc.name, kTextPrimary);
 
-            // Executable path (truncate to fit) — muted to indicate secondary info
-            std::string path = desc.executablePath;
-            if (path.size() > 24) path = path.substr(0, 21) + "...";
-            ui.drawText(12.f, ay + 20.f, path, kTextMuted);
+            // Executable path (truncate to fit); green when running
+            std::string exePath = desc.executablePath;
+            if (exePath.size() > 24) exePath = exePath.substr(0, 21) + "...";
+            ui.drawText(12.f, ay + 20.f, exePath, running ? kGreen : kTextMuted);
 
-            // Click detection only — hover highlight is already drawn above.
+            // Click: launch when stopped, stop when running.
             if (m_ctx.hitRegion(cardR, false)) {
-                NF_LOG_INFO("WorkspaceUI",
-                    std::string("Launching: ") + desc.name
-                    + "  (" + desc.executablePath + ")");
-
-                if (launchSvc) {
-                    // Build a minimal launch context.
-                    // TODO: populate workspaceRoot and projectPath from shell
-                    //       once project management is fully wired.
-                    WorkspaceLaunchContext ctx;
-                    ctx.workspaceRoot = ".";
-                    ctx.projectPath   = desc.isProjectScoped ? kStubProjectPath : ".";
-                    // Use counter suffix to ensure unique session IDs per launch
-                    ctx.sessionId     = "workspace-session-" + desc.name
-                                        + "-" + std::to_string(++m_launchCounter);
-                    ctx.mode          = WorkspaceLaunchMode::Hosted;
-                    auto result = launchSvc->launchApp(desc, ctx);
-                    if (result.succeeded()) {
-                        NF_LOG_INFO("WorkspaceUI",
-                            std::string("Launch OK: ") + desc.name
-                            + "  pid=" + std::to_string(result.pid));
-                        Notification n;
-                        n.title   = std::string("Launched: ") + desc.name;
-                        n.message = desc.executablePath;
-                        shell.shellContract().postNotification(n);
-                    } else {
-                        NF_LOG_WARN("WorkspaceUI",
-                            std::string("Launch failed: ") + desc.name
-                            + "  status=" + workspaceLaunchStatusName(result.status));
-                        // Queue an error for the main loop to display as a dialog.
-                        // Showing MessageBox directly here (inside WM_PAINT) would
-                        // create a nested message loop which is unsafe.
-                        if (m_pendingError.empty()) {
-                            m_pendingError.title   = "Launch Failed: " + desc.name;
-                            m_pendingError.message =
-                                "Could not launch " + desc.name + ".\n\n"
-                                + result.errorDetail + "\n\n"
-                                "Place the executable next to AtlasWorkspace.exe "
-                                "and try again.";
-                        }
-                    }
-                } else {
-                    // No service wired — report intent via shell contract
+                if (running && launchSvc) {
+                    NF_LOG_INFO("WorkspaceUI",
+                        std::string("Stopping: ") + desc.name);
+                    launchSvc->shutdownApp(desc.id);
                     Notification n;
-                    n.title   = std::string("Launch requested: ") + desc.name;
-                    n.message = "No launch service wired";
+                    n.title   = std::string("Stopped: ") + desc.name;
+                    n.message = desc.executablePath;
                     shell.shellContract().postNotification(n);
+                } else {
+                    NF_LOG_INFO("WorkspaceUI",
+                        std::string("Launching: ") + desc.name
+                        + "  (" + desc.executablePath + ")");
+
+                    if (launchSvc) {
+                        // Build launch context from the active project adapter so
+                        // child executables receive the correct project path.
+                        WorkspaceLaunchContext ctx;
+                        if (shell.hasProject() && shell.projectAdapter()) {
+                            const auto* adapter = shell.projectAdapter();
+                            auto roots = adapter->contentRoots();
+                            ctx.projectPath = roots.empty() ? "." : roots[0];
+                            auto lastSepPos = ctx.projectPath.find_last_of("/\\");
+                            ctx.workspaceRoot = (lastSepPos != std::string::npos)
+                                                ? ctx.projectPath.substr(0, lastSepPos) : ".";
+                        } else {
+                            ctx.workspaceRoot = ".";
+                            ctx.projectPath   = desc.isProjectScoped
+                                                ? kStubProjectPath : ".";
+                        }
+                        ctx.sessionId = "workspace-session-" + desc.name
+                                        + "-" + std::to_string(++m_launchCounter);
+                        ctx.mode = WorkspaceLaunchMode::Hosted;
+                        auto result = launchSvc->launchApp(desc, ctx);
+                        if (result.succeeded()) {
+                            NF_LOG_INFO("WorkspaceUI",
+                                std::string("Launch OK: ") + desc.name
+                                + "  pid=" + std::to_string(result.pid));
+                            Notification n;
+                            n.title   = std::string("Launched: ") + desc.name;
+                            n.message = desc.executablePath;
+                            shell.shellContract().postNotification(n);
+                        } else {
+                            NF_LOG_WARN("WorkspaceUI",
+                                std::string("Launch failed: ") + desc.name
+                                + "  status=" + workspaceLaunchStatusName(result.status));
+                            if (m_pendingError.empty()) {
+                                m_pendingError.title   = "Launch Failed: " + desc.name;
+                                m_pendingError.message =
+                                    "Could not launch " + desc.name + ".\n\n"
+                                    + result.errorDetail + "\n\n"
+                                    "Place the executable next to AtlasWorkspace.exe "
+                                    "and try again.";
+                            }
+                        }
+                    } else {
+                        Notification n;
+                        n.title   = std::string("Launch requested: ") + desc.name;
+                        n.message = "No launch service wired";
+                        shell.shellContract().postNotification(n);
+                    }
                 }
             }
 
@@ -587,9 +610,7 @@ private:
     std::array<DropMenu, 5> m_dropMenus;
     int m_openMenuIdx = -1;  // index of the currently open dropdown, -1 = none
 
-    // Placeholder project path used for project-scoped apps until the
-    // full project management workflow is implemented.
-    // TODO: replace with shell.projectAdapter()->projectPath() once wired.
+    // Fallback project path for project-scoped apps when no project is loaded.
     static constexpr const char* kStubProjectPath = "stub.atlas";
 };
 
