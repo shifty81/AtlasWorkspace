@@ -58,7 +58,6 @@ enum class WorkspaceAction : uint8_t {
     None,
     NewProject,     // open folder-browser dialog, create and load a new project
     OpenProject,    // open file-open dialog for .atlas files
-    LoadNovaForge,  // load the NovaForge game project from the repo tree
     Exit,           // request application exit
 };
 
@@ -168,7 +167,6 @@ private:
         };
         // Project menu
         m_dropMenus[1].items = {
-            {"Load NovaForge",   WorkspaceAction::LoadNovaForge, "", true},
             {"Close Project",    WorkspaceAction::None, "workspace.project.close",    false},
             {"", WorkspaceAction::None, "", false},  // separator
             {"Project Settings", WorkspaceAction::None, "workspace.project.settings", false},
