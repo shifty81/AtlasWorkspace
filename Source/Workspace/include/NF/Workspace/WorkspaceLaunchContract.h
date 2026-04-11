@@ -192,8 +192,7 @@ public:
     ~Win32LaunchService() override {
         // Close all open process handles on destruction.
         for (auto& entry : m_processes) {
-            if (entry.second.handle != INVALID_HANDLE_VALUE &&
-                entry.second.handle != nullptr) {
+            if (entry.second.handle != INVALID_HANDLE_VALUE) {
                 CloseHandle(entry.second.handle);
             }
         }
@@ -247,9 +246,14 @@ public:
             cmdLine += " " + arg;
 
         // Convert to wide string for Win32 API.
+        // MultiByteToWideChar returns the character count *including* the null
+        // terminator when cchMultiByte is -1, so allocate exactly that many
+        // wchar_t cells and then pop the embedded null before use.
         int wlen = MultiByteToWideChar(CP_UTF8, 0, cmdLine.c_str(), -1, nullptr, 0);
         std::wstring wCmd(static_cast<size_t>(wlen), L'\0');
         MultiByteToWideChar(CP_UTF8, 0, cmdLine.c_str(), -1, wCmd.data(), wlen);
+        // Remove the embedded null so wCmd.size() reflects the real length.
+        if (!wCmd.empty() && wCmd.back() == L'\0') wCmd.pop_back();
 
         STARTUPINFOW si{};
         si.cb = sizeof(si);
@@ -292,8 +296,7 @@ public:
     bool isRunning(WorkspaceAppId id) const override {
         auto it = m_processes.find(static_cast<uint16_t>(id));
         if (it == m_processes.end()) return false;
-        if (it->second.handle == INVALID_HANDLE_VALUE ||
-            it->second.handle == nullptr)   return false;
+        if (it->second.handle == INVALID_HANDLE_VALUE) return false;
         // Poll the process exit code — STILL_ACTIVE means it is alive.
         DWORD code = 0;
         if (!GetExitCodeProcess(it->second.handle, &code)) return false;
@@ -303,14 +306,15 @@ public:
     void shutdownApp(WorkspaceAppId id) override {
         auto it = m_processes.find(static_cast<uint16_t>(id));
         if (it == m_processes.end()) return;
-        if (it->second.handle == INVALID_HANDLE_VALUE ||
-            it->second.handle == nullptr)   return;
+        if (it->second.handle == INVALID_HANDLE_VALUE) return;
         // Request graceful termination.  WM_CLOSE is not available for
         // console/server processes, so TerminateProcess is used as the
         // portable fallback.  Child processes should handle CTRL_CLOSE_EVENT
         // for a cleaner shutdown path once IPC is wired.
         TerminateProcess(it->second.handle, 0);
-        WaitForSingleObject(it->second.handle, 2000);
+        // Allow up to kShutdownTimeoutMs for the process to fully exit before
+        // we release the handle.  This prevents zombie handle leaks on teardown.
+        WaitForSingleObject(it->second.handle, kShutdownTimeoutMs);
         CloseHandle(it->second.handle);
         it->second.handle = INVALID_HANDLE_VALUE;
         it->second.pid    = 0;
@@ -323,6 +327,10 @@ public:
     }
 
 private:
+    // Maximum milliseconds to wait for a child process to exit after
+    // TerminateProcess before closing its handle.
+    static constexpr DWORD kShutdownTimeoutMs = 2000;
+
     struct ProcessEntry {
         HANDLE   handle = INVALID_HANDLE_VALUE;
         uint32_t pid    = 0;
@@ -334,13 +342,11 @@ private:
         auto it = m_processes.find(static_cast<uint16_t>(id));
         if (it == m_processes.end()) return;
         DWORD code = STILL_ACTIVE;
-        if (it->second.handle != INVALID_HANDLE_VALUE &&
-            it->second.handle != nullptr) {
+        if (it->second.handle != INVALID_HANDLE_VALUE) {
             GetExitCodeProcess(it->second.handle, &code);
         }
         if (code != STILL_ACTIVE) {
-            if (it->second.handle != INVALID_HANDLE_VALUE &&
-                it->second.handle != nullptr) {
+            if (it->second.handle != INVALID_HANDLE_VALUE) {
                 CloseHandle(it->second.handle);
             }
             m_processes.erase(it);
