@@ -79,8 +79,9 @@ endif()
 option(ATLAS_BUILD_PROGRAMS "Build standalone child executables (NovaForgeEditor, NovaForgeGame, NovaForgeServer)" ON)
 
 if(ATLAS_BUILD_PROGRAMS)
-    # NovaForge game-specific modules (Game, World, Patch).
+    # NovaForge game-specific modules (EditorAdapter, Game, World, Patch).
     # These depend only on the Atlas engine subsystems already built above.
+    add_subdirectory(NovaForge/Source/EditorAdapter)
     add_subdirectory(NovaForge/Source/Game)
     add_subdirectory(NovaForge/Source/World)
     add_subdirectory(NovaForge/Source/Patch)
