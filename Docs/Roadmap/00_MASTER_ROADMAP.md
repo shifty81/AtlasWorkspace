@@ -1788,3 +1788,88 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Observer fires on addSnippet and removeSnippet ✓
 - 44 test cases pass (95 assertions) ✓
 - Total test suite: ~3593 tests passing ✓
+
+---
+
+## Phase 58 – Workspace Output Panel
+
+**Status: Done**
+
+- [x] Create `WorkspaceOutputPanel.h` — structured output panel for build output, command results, and tool messages
+  - [x] OutputSeverity enum (Info/Warning/Error/Debug/Trace) with `outputSeverityName()` helper
+  - [x] OutputEntry — id + channel + text + severity + timestampMs; `isValid()`; equality by id
+  - [x] OutputChannel — named channel (MAX_ENTRIES=1024); `addEntry` (evicts oldest on overflow); `clear`; `filterBySeverity`/`countBySeverity`; `lastEntry()`; `isValid()` (id + name)
+  - [x] OutputPanel — channel registry (MAX_CHANNELS=32); `addChannel`/`removeChannel`/`findChannel`/`hasChannel`; `write` shortcut with observer notify; `searchByText` (case-insensitive)/`searchBySeverity`; `totalEntries()`; observer callbacks (MAX_OBSERVERS=16); `clearAllEntries()`; `serialize()`/`deserialize()` with pipe escaping; `clear()`
+- [x] Add `Tests/Workspace/test_phase58_output_panel.cpp` — 38 test cases / 87 assertions:
+  - [x] OutputSeverity (1 test): all 5 name helpers
+  - [x] OutputEntry (4 tests): default invalid, valid, invalid without text, equality
+  - [x] OutputChannel (9 tests): default empty, invalid, addEntry valid/invalid, clear, filterBySeverity, countBySeverity, lastEntry, evicts oldest
+  - [x] OutputPanel (16 tests): default empty, addChannel/invalid/duplicate, removeChannel/unknown, write/unknown, searchByText/case-insensitive/empty, searchBySeverity, observer on write, clearObservers, clearAllEntries, serialize empty/round-trip/pipe, deserialize empty, clear
+  - [x] Integration (2 tests): multi-channel search, serialize/deserialize preserves data
+- [x] Wire `NF_Phase58Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- OutputChannel evicts oldest entry when MAX_ENTRIES exceeded ✓
+- OutputPanel.write() notifies observers ✓
+- OutputPanel.searchByText() is case-insensitive ✓
+- OutputPanel.clearAllEntries() preserves channels ✓
+- Serialize/deserialize handles pipe characters ✓
+- 38 test cases pass (87 assertions) ✓
+- Total test suite: ~3631 tests passing ✓
+
+---
+
+## Phase 59 – Workspace Property Inspector
+
+**Status: Done**
+
+- [x] Create `WorkspacePropertyInspector.h` — property grid/inspector for viewing and editing typed properties
+  - [x] PropertyType enum (String/Int/Float/Bool/Color/Vec2/Vec3/Enum/Custom) with `propertyTypeName()` helper
+  - [x] PropertyEntry — id + name + type + value + category + readOnly + description + enumOptions; `isValid()` (id + name); equality by id
+  - [x] PropertyCategory — named category (MAX_PROPERTIES=128); `addProperty`/`removeProperty`/`findProperty`/`findPropertyMut`/`containsProperty`; `collapsed` flag; `isValid()` (id + name); `clear()`
+  - [x] PropertyInspector — category registry (MAX_CATEGORIES=32); `addCategory`/`removeCategory`/`findCategory`/`hasCategory`; `addProperty`/`removeProperty` shortcuts; `setValue` (respects readOnly, notifies observers, no-op on same value)/`getValue`; `searchByName` (case-insensitive)/`filterByType`; `totalProperties()`; observer callbacks (MAX_OBSERVERS=16) with old/new value; `serialize()`/`deserialize()` with collapsed state; `clear()`
+- [x] Add `Tests/Workspace/test_phase59_property_inspector.cpp` — 42 test cases / 104 assertions:
+  - [x] PropertyType (1 test): all 9 name helpers
+  - [x] PropertyEntry (5 tests): default invalid, valid, invalid without name, equality, readOnly default
+  - [x] PropertyCategory (10 tests): default empty, invalid, addProperty/invalid/duplicate, removeProperty/unknown, findProperty, findPropertyMut, clear, collapsed default
+  - [x] PropertyInspector (18 tests): default empty, addCategory/invalid/duplicate, removeCategory/unknown, addProperty/unknown category, removeProperty, setValue/getValue, setValue readOnly, setValue unknown, setValue same value, getValue unknown, searchByName/empty, filterByType, observer on setValue, clearObservers, serialize empty/round-trip/pipe, deserialize empty, clear
+  - [x] Integration (2 tests): multi-category search, serialize/deserialize preserves categories
+- [x] Wire `NF_Phase59Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- PropertyEntry supports readOnly flag ✓
+- PropertyCategory supports collapsed state ✓
+- PropertyInspector.setValue() respects readOnly and notifies observers with old/new ✓
+- PropertyInspector.setValue() no-op on same value (no observer fire) ✓
+- searchByName() is case-insensitive ✓
+- Serialize/deserialize handles pipe characters and collapsed state ✓
+- 42 test cases pass (104 assertions) ✓
+- Total test suite: ~3673 tests passing ✓
+
+---
+
+## Phase 60 – Workspace File Watcher
+
+**Status: Done**
+
+- [x] Create `WorkspaceFileWatcher.h` — file system monitoring with watch registrations and event debouncing
+  - [x] FileEventType enum (Created/Modified/Deleted/Renamed) with `fileEventTypeName()` helper
+  - [x] FileEvent — path + type + timestampMs + oldPath (for Renamed); `isValid()` (path not empty); equality by path+type+timestamp
+  - [x] WatchEntry — id + path + recursive + enabled + filter; `isValid()` (id + path); equality by id
+  - [x] FileWatcher — watch registry (MAX_WATCHES=64); `addWatch`/`removeWatch`/`findWatch`/`hasWatch`/`enableWatch`; `pushEvent` with debouncing (MAX_EVENTS=512, evicts oldest); `pendingEvents()`/`consumeEvents()`/`processPending()` (notifies observers)/`clearPending()`; `filterByType()`/`countByType()`; observer callbacks (MAX_OBSERVERS=16); `serialize()`/`deserialize()` (watches only); `clear()`
+- [x] Add `Tests/Workspace/test_phase60_file_watcher.cpp` — 33 test cases / 78 assertions:
+  - [x] FileEventType (1 test): all 4 name helpers
+  - [x] FileEvent (4 tests): default invalid, valid, equality, rename with oldPath
+  - [x] WatchEntry (4 tests): default invalid, valid, equality, filter
+  - [x] FileWatcher (18 tests): default empty, addWatch/invalid/duplicate, removeWatch/unknown, enableWatch/unknown, pushEvent/invalid/debounce/different-type, consumeEvents, clearPending, filterByType, countByType, processPending, clearObservers, serialize empty/round-trip/pipe, deserialize empty, clear
+  - [x] Integration (2 tests): multi-watch workflow, serialize/deserialize preserves config
+- [x] Wire `NF_Phase60Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- FileWatcher debounces duplicate events (same path + same type) ✓
+- FileWatcher.processPending() consumes and notifies observers ✓
+- FileWatcher.enableWatch() toggles watch enabled state ✓
+- WatchEntry supports recursive and filter fields ✓
+- Serialize/deserialize handles pipe characters in paths ✓
+- 33 test cases pass (78 assertions) ✓
+- Total test suite: ~3706 tests passing ✓
