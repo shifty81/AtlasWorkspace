@@ -14,6 +14,9 @@
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
 #include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/IViewportSceneProvider.h"
+#include "NF/Workspace/ViewportHostContract.h"
+#include "NF/Workspace/WorkspaceViewportManager.h"
 #include <string>
 
 namespace NF {
@@ -52,7 +55,7 @@ struct SceneEditorStats {
 
 // ── SceneEditorTool ───────────────────────────────────────────────
 
-class SceneEditorTool final : public IHostedTool {
+class SceneEditorTool final : public IHostedTool, public IViewportSceneProvider {
 public:
     static constexpr const char* kToolId = "workspace.scene_editor";
 
@@ -71,6 +74,21 @@ public:
     void update(float dt) override;
 
     [[nodiscard]] HostedToolState state() const override { return m_state; }
+
+    // ── IHostedTool input hook ────────────────────────────────────
+    void onAttachInput(const InputSystem* input) override { m_input = input; }
+    void onDetachInput() override                        { m_input = nullptr; }
+
+    // ── IViewportSceneProvider ────────────────────────────────────
+    ViewportSceneState provideScene(ViewportHandle handle,
+                                    const ViewportSlot& slot) override;
+
+    // ── Viewport slot access ──────────────────────────────────────
+    [[nodiscard]] ViewportHandle viewportHandle() const { return m_viewportHandle; }
+
+    /// Attach the workspace viewport manager so this tool can request/release slots.
+    /// Call before activate() (e.g. from WorkspaceShell::initialize()).
+    void attachViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
 
     // ── Project adapter hooks ─────────────────────────────────────
     void onProjectLoaded(const std::string& projectId) override;
@@ -94,11 +112,18 @@ public:
     void setEntityCount(uint32_t count);
 
 private:
-    HostedToolDescriptor m_descriptor;
-    HostedToolState      m_state    = HostedToolState::Unloaded;
-    SceneEditMode        m_editMode = SceneEditMode::Select;
-    SceneEditorStats     m_stats;
-    std::string          m_activeProjectId;
+    HostedToolDescriptor     m_descriptor;
+    HostedToolState          m_state      = HostedToolState::Unloaded;
+    SceneEditMode            m_editMode   = SceneEditMode::Select;
+    SceneEditorStats         m_stats;
+    std::string              m_activeProjectId;
+
+    // Viewport slot owned by this tool while Active
+    ViewportHandle           m_viewportHandle = kInvalidViewportHandle;
+    WorkspaceViewportManager* m_viewportMgr  = nullptr;
+
+    // Input pointer injected via onAttachInput()
+    const InputSystem*       m_input          = nullptr;
 
     void buildDescriptor();
 };

@@ -9,6 +9,7 @@
 // See Docs/Canon/05_EDITOR_STRATEGY.md for the locked ~10-tool roster.
 // See ProjectSystemsTool.h for the host-tool ID namespace.
 
+#include "NF/Input/Input.h"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -114,6 +115,14 @@ public:
     // Subclasses may override to handle project adapter load/unload.
     virtual void onProjectLoaded(const std::string& /*projectId*/) {}
     virtual void onProjectUnloaded() {}
+
+    // ── Optional input access ─────────────────────────────────────
+    // Called by the workspace shell when a tool becomes active and an InputSystem
+    // is available.  The pointer is valid until onDetachInput() is called.
+    // Tools that need per-frame camera / gizmo input override these two hooks
+    // and cache the pointer.  Do NOT call delete on the pointer.
+    virtual void onAttachInput(const InputSystem* /*input*/) {}
+    virtual void onDetachInput() {}
 };
 
 } // namespace NF

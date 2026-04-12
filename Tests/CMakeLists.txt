@@ -877,3 +877,25 @@ target_link_libraries(NF_Phase64Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase64Tests)
+
+# Phase 65 — WorkspaceViewportManager
+add_executable(NF_Phase65Tests
+    Workspace/test_phase65_viewport_manager.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase65Tests PRIVATE
+    NF::Workspace NF::UI NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase65Tests)
+
+# Phase 66 — Viewport Wiring (end-to-end: shell → tool → surface → panel)
+add_executable(NF_Phase66Tests
+    Workspace/test_phase66_viewport_wiring.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase66Tests PRIVATE
+    NF::Editor NF::Workspace NF::UI NF::Core NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase66Tests)
