@@ -45,7 +45,7 @@ These are non-visual backend systems.
 
 ## Project Adapter Panels (NovaForge)
 
-These are project-specific panels hosted through the adapter contract.
+These panels live in `NovaForge/Source/Editor/include/NovaForge/Editor/` and are loaded via IGameProjectAdapter through ProjectSystemsTool. They do **not** live in workspace core.
 
 | Panel | Host Tool | State |
 |-------|-----------|-------|
@@ -58,3 +58,7 @@ These are project-specific panels hosted through the adapter contract.
 | Quest Panel | Project Systems | Planned |
 | Biome Panel | Project Systems | Planned |
 | Ecosystem Panel | Project Systems | Planned |
+| Trophy/Virtual Currency Panel | Project Systems | Planned |
+| Dungeon/Room Generator | Project Systems | Planned |
+| Season Pass Panel | Project Systems | Planned |
+| Reward System Panel | Project Systems | Planned |

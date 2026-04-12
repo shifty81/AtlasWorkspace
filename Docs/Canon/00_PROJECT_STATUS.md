@@ -13,7 +13,7 @@ Current Phase: **Phase 18 Complete — Workspace Undo/Redo Stack**
 - Structure coherent and consistent
 - Naming unified to AtlasAI canon (zero Arbiter remnants in active paths)
 - Docs aligned with current canon
-- Editor surface rationalized (~10 primary tool implementations)
+- Editor surface rationalized (up to 20 primary tools + unlimited project adapter tools via IGameProjectAdapter)
 - Backend strategy formalized (Phase 2 complete)
 - Workspace integration surfaces formally contracted (Phase 7)
 - Workspace-level event bus and notification system operational (Phase 12)
