@@ -7,6 +7,7 @@
 #include "NF/Input/Input.h"
 #include "NF/UI/UIBackend.h"
 #include "NF/Workspace/AtlasProjectFileLoader.h"
+#include "NF/Workspace/ProjectRegistry.h"
 #include "NovaForge/EditorAdapter/NovaForgeAdapter.h"
 #if defined(_WIN32)
 #  include "NF/Input/Win32InputAdapter.h"
