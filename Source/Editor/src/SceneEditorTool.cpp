@@ -196,6 +196,23 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
     // ── 3D Viewport panel ────────────────────────────────────────
     const char* viewHint = m_stats.isDirty ? "3D Viewport  [unsaved]" : "3D Viewport";
     ctx.drawPanel(ctx.x + hierW, ctx.y, viewW, ctx.h, viewHint);
+    // Grid overlay drawn below the 22 px header strip so the viewport is not
+    // just a dark rectangle.  Vertical and horizontal lines at 38 px intervals
+    // match the placeholder grid used elsewhere in the workspace.
+    {
+        const float vpx = ctx.x + hierW;
+        const float vpy = ctx.y + 22.f;
+        const float vph = ctx.h - 22.f;
+        for (float gx = vpx; gx < vpx + viewW; gx += 38.f)
+            ctx.ui.drawRect({gx, vpy, 1.f, vph}, 0x2D2D2DFF);
+        for (float gy = vpy; gy < vpy + vph; gy += 38.f)
+            ctx.ui.drawRect({vpx, gy, viewW, 1.f}, 0x2D2D2DFF);
+        if (m_stats.entityCount == 0) {
+            ctx.ui.drawText(vpx + 16.f, vpy + (vph - 14.f) * 0.5f,
+                            "No scene loaded — add entities to begin",
+                            ctx.kTextMuted);
+        }
+    }
     // Mode pill
     ctx.drawStatusPill(ctx.x + hierW + 8.f, ctx.y + 30.f,
                        sceneEditModeName(m_editMode), ctx.kAccentBlue);
