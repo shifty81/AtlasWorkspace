@@ -66,9 +66,9 @@ Atlas Workspace v1.0.
 | A | Truth and Cleanup Lock | 🔄 In Progress |
 | B | Real Project Load | ✅ Complete |
 | C | Panels Edit Real Data | ✅ Complete |
-| D | Runtime-Backed Viewport | 🔄 In Progress |
-| E | Shared PCG Preview Pipeline | 🔄 In Progress |
-| F | Play-In-Editor (PIE) | ⬚ Not Started |
+| D | Runtime-Backed Viewport | 🔄 In Progress (D.5 partial) |
+| E | Shared PCG Preview Pipeline | ✅ Complete |
+| F | Play-In-Editor (PIE) | 🔄 In Progress (F.1–F.4 contract layer done) |
 | G | Full Tool Wiring | ⬚ Not Started |
 | H | UX Completion | ⬚ Not Started |
 
@@ -129,8 +129,9 @@ Atlas Workspace v1.0.
 - [ ] Activate D3D11 backend as primary
 - [ ] Wire DirectWrite text rendering
 - 161 D completion tests (79 test cases, 155 assertions), all green (test_phase_d_completion.cpp)
+- D.5 partial: `createD3D11WithDirectWrite()` factory + contract tests (NF_PhaseD5Tests), real GPU init deferred
 
-## Phase E Progress (In Progress — E.1–E.4 core done)
+## Phase E Progress (Complete ✅)
 ### E.1 — Shared NovaForge PCG Core ✅
 - [x] `PCGRuleSet` — typed rule container (add/set/remove/reset/filter, dirty tracking)
 - [x] `PCGGeneratorService` — stateless deterministic generator (rules + seed → placements)
@@ -144,10 +145,41 @@ Atlas Workspace v1.0.
 - [x] `PCGPreviewService::setRuleValue()` + `resetRules()` with auto-regen
 - [x] Change callback (`setOnRegenerateCallback()`)
 - [x] Domain override (`setDomainOverride()`)
-- [ ] ProcGenRuleEditorV1 panel wiring + save-back to project data
+- [x] `ProcGenRuleEditorPanel` — bindDocument/editRule/resetRule/resetAll/save/revert/attachPreviewService
+- [x] Save-back: `save()` commits snapshot; `revert()` restores last-saved state
 
 ### E.4 — Asset PCG Metadata ✅
 - [x] `NovaForgeAssetPreview::AssetPCGMetadata` — placementTag/generationTags/scale/density
 - [x] `PCGPreviewService::populatePreviewWorld()` uses asset/placement tags for entity mesh tags
-- [ ] Event-driven trigger from asset PCG tag changes → preview update
-- 82 Phase E tests, 175 assertions, all green (test_phase_e.cpp)
+- [x] Event-driven: `setPlacementTagAndNotify()` / `addGenerationTagAndNotify()` / `setPCGDensityAndNotify()` etc. auto-trigger `forceRegenerate()`
+- [x] `attachPCGPreviewService()` / `pcgRegenTriggerCount()` — wired event loop
+- 82 Phase E core tests + 46 E-completion tests, all green
+
+## Phase F Progress (In Progress — F.1–F.4 contract layer complete)
+### F.1 — Embedded PIE Runtime ✅ (contract layer)
+- [x] `PIEService` — enter/exit/pause/resume/step/reset with full state machine
+- [x] `PIEState` (Stopped/Playing/Paused) + `PIEDiagnosticSeverity` + `PIEPerformanceCounters`
+- [x] `PIESessionRecord` — sessionId/durationMs/totalTicks/errorCount/events
+- [x] `pushDiagnostic()` / `diagnosticCount()` / `errorCount()` / `countBySeverity()`
+- [x] `tickFrame()` updates perf counters (no-op when not Playing)
+- [x] All lifecycle callbacks: onEnter/onExit/onPause/onResume/onStep/onReset/onDiagnostic
+- [ ] Runtime runs in real viewport panel (Phase G)
+
+### F.2 — PIE Input Mode ✅ (contract layer)
+- [x] `PIEInputRouter` — routeToGame/routeToEditor + mode query
+- [x] processKey/processMouseButton/processMouseMove dispatch to mode-correct sink
+- [x] `isExitKey()` — escape detection in game mode (configurable `exitKeyCode`)
+- [x] `modeSwitchCount` / `keyEventCount` / event counters; `onModeChange` callback
+- [ ] PIE toolbar buttons wired to PIEService (Phase H)
+
+### F.3 — External Game Launch ✅ (contract layer)
+- [x] `PIEExternalLaunch` — launch/terminate/simulateExit lifecycle
+- [x] `PIELaunchConfig` — executablePath/projectFilePath/args/buildConfiguration
+- [x] `pushStdoutLine()` / `onStdoutLine` — console output routing
+- [x] `onLaunched` / `onExited` callbacks; `launchCount` / `processId` / `lastExitCode`
+- [ ] Real process launch (CreateProcess/fork+exec) — platform-specific activation (Phase G)
+
+### F.4 — PIE Diagnostics ✅ (contract layer)
+- [x] Severity-filtered diagnostics, session history capture, onDiagnostic callback
+- [ ] Performance counters UI panel (Phase G/H)
+- All Phase F tests: 76 test cases, all green (test_phase_f.cpp)

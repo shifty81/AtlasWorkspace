@@ -12,6 +12,7 @@
 
 #include "NF/Workspace/IViewportSceneProvider.h"
 #include "NovaForge/EditorAdapter/NovaForgePreviewWorld.h"
+#include "NovaForge/EditorAdapter/PCGPreviewService.h"
 #include <cstdio>
 #include <string>
 #include <utility>
@@ -383,12 +384,81 @@ public:
 
     [[nodiscard]] const NovaForgePreviewWorld& previewWorld() const { return m_world; }
 
+    // ── E.4 — Event-driven PCG preview wiring ────────────────────────────
+    //
+    // Attach a PCGPreviewService so that any change to asset PCG tags
+    // (placementTag, generationTags, scale, density, exclusionGroup) causes
+    // an automatic preview regeneration in the attached service.
+    //
+    // The caller retains ownership of the service.
+
+    void attachPCGPreviewService(PCGPreviewService* service) {
+        m_pcgPreview = service;
+    }
+
+    void detachPCGPreviewService() { m_pcgPreview = nullptr; }
+
+    [[nodiscard]] bool hasPCGPreviewService() const { return m_pcgPreview != nullptr; }
+
+    // ── E.4 — PCG tag mutators with auto-trigger ──────────────────────────
+    //
+    // These wrappers call the existing setPlacementTag / addGenerationTag /
+    // removeGenerationTag / setPCGScaleRange / setPCGDensity / setPCGExclusionGroup
+    // and additionally trigger a forced PCG preview regeneration when a service
+    // is attached, providing the event-driven update loop required by E.4.
+
+    bool setPlacementTagAndNotify(const std::string& tag) {
+        if (!setPlacementTag(tag)) return false;
+        triggerPCGRegen();
+        return true;
+    }
+
+    bool addGenerationTagAndNotify(const std::string& tag) {
+        if (!addGenerationTag(tag)) return false;
+        triggerPCGRegen();
+        return true;
+    }
+
+    bool removeGenerationTagAndNotify(const std::string& tag) {
+        if (!removeGenerationTag(tag)) return false;
+        triggerPCGRegen();
+        return true;
+    }
+
+    bool setPCGScaleRangeAndNotify(float minScale, float maxScale) {
+        if (!setPCGScaleRange(minScale, maxScale)) return false;
+        triggerPCGRegen();
+        return true;
+    }
+
+    bool setPCGDensityAndNotify(float density) {
+        if (!setPCGDensity(density)) return false;
+        triggerPCGRegen();
+        return true;
+    }
+
+    bool setPCGExclusionGroupAndNotify(const std::string& group) {
+        if (!setPCGExclusionGroup(group)) return false;
+        triggerPCGRegen();
+        return true;
+    }
+
+    /// Number of times a PCG regeneration was triggered by a tag-change event.
+    [[nodiscard]] uint32_t pcgRegenTriggerCount() const { return m_pcgRegenTriggers; }
+
 private:
     AssetPreviewDescriptor m_descriptor;
     AssetPreviewDescriptor m_lastApplied;
     NovaForgePreviewWorld  m_world;
-    EntityId               m_previewEntity = kInvalidEntityId;
-    bool                   m_dirty         = false;
+    EntityId               m_previewEntity   = kInvalidEntityId;
+    bool                   m_dirty           = false;
+    PCGPreviewService*     m_pcgPreview      = nullptr;
+    uint32_t               m_pcgRegenTriggers = 0;
+
+    void triggerPCGRegen() {
+        ++m_pcgRegenTriggers;
+        if (m_pcgPreview) m_pcgPreview->forceRegenerate();
+    }
 
     void rebuildPreview() {
         m_world.clearEntities();
