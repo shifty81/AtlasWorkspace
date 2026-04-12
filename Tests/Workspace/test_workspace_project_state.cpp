@@ -40,10 +40,7 @@ public:
     bool initialize() override { ++m_initCount; return m_initOk; }
     void shutdown()   override { ++m_shutCount; }
 
-    [[nodiscard]] std::vector<HostedToolDescriptor> provideToolDescriptors() const override { return {}; }
-    [[nodiscard]] std::vector<SharedPanelDescriptor> providePanelDescriptors() const override { return {}; }
-    [[nodiscard]] std::vector<std::string>           provideContentRoots()    const override { return {}; }
-    [[nodiscard]] std::vector<std::string>           provideCommands()        const override { return {}; }
+    [[nodiscard]] std::vector<GameplaySystemPanelDescriptor> panelDescriptors() const override { return {}; }
 
     int  m_initCount = 0;
     int  m_shutCount = 0;
