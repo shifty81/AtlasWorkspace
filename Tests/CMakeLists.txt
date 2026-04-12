@@ -1144,3 +1144,69 @@ target_link_libraries(NF_PhaseHTests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_PhaseHTests)
+
+# S187 — ScriptGraphEditorV1, EventBusEditorV1, AssetBundleEditorV1
+add_executable(NF_EditorS187Tests
+    Editor/Legacy/test_s187_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS187Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS187Tests)
+
+# S188 — ClothSimEditorV1, PostProcessEditorV1, HeightmapEditorV1
+add_executable(NF_EditorS188Tests
+    Editor/Legacy/test_s188_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS188Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS188Tests)
+
+# S189 — SkeletonEditorV1, MorphTargetEditorV1, IKRigEditorV1
+add_executable(NF_EditorS189Tests
+    Editor/Legacy/test_s189_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS189Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS189Tests)
+
+# S190 — NavLinkEditorV1, SoundCueEditorV1, LensFlareEditorV1
+add_executable(NF_EditorS190Tests
+    Editor/Legacy/test_s190_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS190Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS190Tests)
+
+# S191 — WeaponEditorV1, InventoryItemEditorV1, AbilityEditorV1
+add_executable(NF_EditorS191Tests
+    Editor/Legacy/test_s191_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS191Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS191Tests)
+
+# S192 — DialogueNodeEditorV1, CutsceneEditorV1, LocalizationTableEditorV1
+add_executable(NF_EditorS192Tests
+    Editor/Legacy/test_s192_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS192Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS192Tests)

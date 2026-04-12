@@ -458,54 +458,56 @@ see regenerated results in the viewport immediately.
 
 ## Phase H — UX Completion
 
-**Status: Not Started**
+**Status: Complete**
 
 **Goal:** Workspace becomes stable and usable for daily development.
 
 ### Milestone H.1 — Preferences UI
-- [ ] Preferences window with category navigation
-- [ ] All 13+ registered preferences editable via UI
-- [ ] Project vs. user preference scoping visible
-- [ ] Import/export/reset settings
+- [x] Preferences window with category navigation
+- [x] All 13+ registered preferences editable via UI
+- [x] Project vs. user preference scoping visible
+- [x] Import/export/reset settings
 
 ### Milestone H.2 — Keybind UI
-- [ ] Keybinding editor panel
-- [ ] Per-tool and global shortcut display
-- [ ] Rebind via capture (press desired key combo)
-- [ ] Conflict detection and resolution
-- [ ] Reset to defaults
+- [x] Keybinding editor panel
+- [x] Per-tool and global shortcut display
+- [x] Rebind via capture (press desired key combo)
+- [x] Conflict detection and resolution
+- [x] Reset to defaults
 
 ### Milestone H.3 — Layout Persistence
-- [ ] Panel layout saves to disk on close
-- [ ] Layout restores on next open
-- [ ] Named layout presets (save/load/rename/delete)
-- [ ] Built-in layout presets (Default, Compact, Wide)
+- [x] Panel layout saves to disk on close
+- [x] Layout restores on next open
+- [x] Named layout presets (save/load/rename/delete)
+- [x] Built-in layout presets (Default, Compact, Wide)
 
 ### Milestone H.4 — Command Palette
-- [ ] Ctrl+P opens searchable command list
-- [ ] Commands filtered by current context (tool, panel, scope)
-- [ ] Recent commands section
-- [ ] Fuzzy search matching
+- [x] Ctrl+P opens searchable command list
+- [x] Commands filtered by current context (tool, panel, scope)
+- [x] Recent commands section
+- [x] Fuzzy search matching
 
 ### Milestone H.5 — Notification Center
-- [ ] Notification panel with history
-- [ ] Toast popups for important events
-- [ ] Severity filtering (info/warning/error/critical)
-- [ ] Click-to-navigate for actionable notifications
+- [x] Notification panel with history
+- [x] Toast popups for important events
+- [x] Severity filtering (info/warning/error/critical)
+- [x] Click-to-navigate for actionable notifications
 
 ### Milestone H.6 — Project Open Flow
-- [ ] Recent projects list on startup
-- [ ] File → Open Project flow with `.atlas` file picker
-- [ ] Project validation on open with error summary
-- [ ] New project wizard (create `.atlas` from template)
+- [x] Recent projects list on startup
+- [x] File → Open Project flow with `.atlas` file picker
+- [x] Project validation on open with error summary
+- [x] New project wizard (create `.atlas` from template)
 
-**Success Criteria:**
-- Preferences editable and persisted
-- Keybinds customizable and conflict-free
-- Panel layout survives restart
-- Command palette provides fast access to all commands
-- Notifications visible and actionable
-- Project open flow is clean and error-tolerant
+**Success Criteria:** ✅
+- Preferences editable and persisted ✅
+- Keybinds customizable and conflict-free ✅
+- Panel layout survives restart ✅
+- Command palette provides fast access to all commands ✅
+- Notifications visible and actionable ✅
+- Project open flow is clean and error-tolerant ✅
+
+- 82 new tests, 238 assertions, all green (test_phase_h.cpp)
 
 ---
 
