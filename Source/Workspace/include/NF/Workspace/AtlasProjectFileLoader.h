@@ -24,7 +24,9 @@
 //       registry.loadProject(m.adapterId);
 //   }
 
+#include "NF/Workspace/ProjectLoadContract.h"
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -57,12 +59,61 @@ struct AtlasProjectManifest {
     // assets section
     std::string assetsRoot;        // assets.root
 
+    // ── v2 manifest fields (new format) ─────────────────────────
+    std::string projectId;        // top-level "projectId"
+    int         projectVersion = 0; // top-level "projectVersion"
+
+    // roots section (v2)
+    std::string dataRoot;         // roots.data
+    std::string configRoot;       // roots.config
+    std::string schemasRoot;      // roots.schemas
+    std::string generatedRoot;    // roots.generated
+    std::string cacheRoot;        // roots.cache
+
+    // registries section (v2)
+    std::string registryAsset;    // registries.asset
+    std::string registryDocument; // registries.document
+    std::string registrySchema;   // registries.schema
+    std::string registryPCG;      // registries.pcg
+    std::string registryBuild;    // registries.build
+    std::string registryLaunch;   // registries.launch
+
+    // startup section (v2)
+    std::string startupLayout;    // startup.layout
+    std::string startupTool;      // startup.tool
+    std::string startupWorld;     // startup.world
+
+    // config section (v2)
+    std::string configProjectSettings;    // config.projectSettings
+    std::string configPIESettings;        // config.pieSettings
+    std::string configPCGPreviewDefaults; // config.pcgPreviewDefaults
+
     [[nodiscard]] bool isValid() const {
-        return !name.empty() && !version.empty();
+        if (name.empty()) return false;
+        // v1 requires a version string; v2 uses projectVersion integer or projectId
+        return !version.empty() || projectVersion > 0 || !projectId.empty();
     }
 
     [[nodiscard]] bool hasAdapter() const {
         return !adapterId.empty();
+    }
+};
+
+// ── ProjectBootstrapResult ────────────────────────────────────────────────
+// Produced by AtlasProjectFileLoader::bootstrap() after validating the manifest.
+// Carries the parsed manifest plus structured validation entries.
+
+struct ProjectBootstrapResult {
+    AtlasProjectManifest manifest;
+    std::vector<ProjectValidationEntry> validationEntries;
+    bool success = false;
+
+    [[nodiscard]] bool hasErrors() const {
+        for (const auto& e : validationEntries)
+            if (e.severity == ProjectValidationSeverity::Fatal ||
+                e.severity == ProjectValidationSeverity::Error)
+                return true;
+        return false;
     }
 };
 
@@ -160,14 +211,23 @@ public:
                 applyRuntime(key, value);
             } else if (currentSection == "assets") {
                 applyAssets(key, value);
+            } else if (currentSection == "roots") {
+                applyRoots(key, value);
+            } else if (currentSection == "registries") {
+                applyRegistries(key, value);
+            } else if (currentSection == "startup") {
+                applyStartup(key, value);
+            } else if (currentSection == "config") {
+                applyConfigSection(key, value);
             }
             // Other sections (buildProfiles, etc.) are ignored
         }
 
-        // Validate schema field
-        if (m_schemaValue != "atlas.project.v1") {
+        // Accept old format (schema field) OR new v2 format (projectId present)
+        bool validFormat = (m_schemaValue == "atlas.project.v1") || !m_manifest.projectId.empty();
+        if (!validFormat) {
             m_error = "schema field missing or not 'atlas.project.v1' (got '"
-                    + m_schemaValue + "') in " + sourceHint;
+                    + m_schemaValue + "') and no projectId found in " + sourceHint;
             return false;
         }
 
@@ -186,6 +246,73 @@ public:
     [[nodiscard]] const std::string&          sourcePath()  const { return m_sourcePath;  }
     [[nodiscard]] bool                        succeeded()   const { return m_error.empty() && m_manifest.isValid(); }
 
+    // Parse and validate a .atlas file. Returns a ProjectBootstrapResult with
+    // the manifest and any validation entries. When checkPathsOnDisk is true,
+    // verifies that contentRoot and assetsRoot paths exist on disk.
+    [[nodiscard]] ProjectBootstrapResult bootstrap(const std::string& path,
+                                                    bool checkPathsOnDisk = false) {
+        ProjectBootstrapResult result;
+
+        if (!loadFromFile(path)) {
+            result.validationEntries.push_back({
+                ProjectValidationSeverity::Fatal,
+                "parse_failure",
+                "Failed to parse .atlas file: " + (m_error.empty() ? path : m_error)
+            });
+            result.success = false;
+            return result;
+        }
+
+        result.manifest = m_manifest;
+
+        if (result.manifest.contentRoot.empty()) {
+            result.validationEntries.push_back({
+                ProjectValidationSeverity::Warning,
+                "empty_content_root",
+                "modules.content is empty in " + path
+            });
+        }
+
+        if (result.manifest.assetsRoot.empty()) {
+            result.validationEntries.push_back({
+                ProjectValidationSeverity::Warning,
+                "empty_assets_root",
+                "assets.root is empty in " + path
+            });
+        }
+
+        if (result.manifest.adapterId.empty()) {
+            result.validationEntries.push_back({
+                ProjectValidationSeverity::Error,
+                "missing_adapter_id",
+                "adapter field is missing or empty in " + path
+            });
+        }
+
+        if (checkPathsOnDisk) {
+            namespace fs = std::filesystem;
+            if (!result.manifest.contentRoot.empty() &&
+                !fs::exists(result.manifest.contentRoot)) {
+                result.validationEntries.push_back({
+                    ProjectValidationSeverity::Error,
+                    "missing_content_root",
+                    "contentRoot path does not exist on disk: " + result.manifest.contentRoot
+                });
+            }
+            if (!result.manifest.assetsRoot.empty() &&
+                !fs::exists(result.manifest.assetsRoot)) {
+                result.validationEntries.push_back({
+                    ProjectValidationSeverity::Error,
+                    "missing_assets_root",
+                    "assetsRoot path does not exist on disk: " + result.manifest.assetsRoot
+                });
+            }
+        }
+
+        result.success = !result.hasErrors();
+        return result;
+    }
+
 private:
     AtlasProjectManifest m_manifest;
     std::string          m_error;
@@ -195,11 +322,15 @@ private:
     // ── Field appliers ─────────────────────────────────────────────
 
     void applyTopLevel(const std::string& key, const std::string& value) {
-        if      (key == "schema")      m_schemaValue      = value;
-        else if (key == "name")        m_manifest.name        = value;
-        else if (key == "version")     m_manifest.version     = value;
-        else if (key == "description") m_manifest.description = value;
-        else if (key == "adapter")     m_manifest.adapterId   = value;
+        if      (key == "schema")        m_schemaValue          = value;
+        else if (key == "name")          m_manifest.name        = value;
+        else if (key == "version")       m_manifest.version     = value;
+        else if (key == "description")   m_manifest.description = value;
+        else if (key == "adapter")       m_manifest.adapterId   = value;
+        else if (key == "projectId")      { m_manifest.projectId = value; if (m_manifest.name.empty()) m_manifest.name = value; }
+        else if (key == "projectName")    { m_manifest.name = value; }
+        else if (key == "projectType")    { if (m_manifest.adapterId.empty()) m_manifest.adapterId = toLower(value); }
+        else if (key == "projectVersion") { m_manifest.projectVersion = parseIntOr(value, 0); }
     }
 
     void applyModules(const std::string& key, const std::string& value) {
@@ -216,6 +347,36 @@ private:
 
     void applyAssets(const std::string& key, const std::string& value) {
         if (key == "root") m_manifest.assetsRoot = value;
+    }
+
+    void applyRoots(const std::string& key, const std::string& value) {
+        if      (key == "content")   m_manifest.contentRoot   = value;
+        else if (key == "data")      m_manifest.dataRoot      = value;
+        else if (key == "config")    m_manifest.configRoot    = value;
+        else if (key == "schemas")   m_manifest.schemasRoot   = value;
+        else if (key == "generated") m_manifest.generatedRoot = value;
+        else if (key == "cache")     m_manifest.cacheRoot     = value;
+    }
+
+    void applyRegistries(const std::string& key, const std::string& value) {
+        if      (key == "asset")    m_manifest.registryAsset    = value;
+        else if (key == "document") m_manifest.registryDocument = value;
+        else if (key == "schema")   m_manifest.registrySchema   = value;
+        else if (key == "pcg")      m_manifest.registryPCG      = value;
+        else if (key == "build")    m_manifest.registryBuild    = value;
+        else if (key == "launch")   m_manifest.registryLaunch   = value;
+    }
+
+    void applyStartup(const std::string& key, const std::string& value) {
+        if      (key == "layout") m_manifest.startupLayout = value;
+        else if (key == "tool")   m_manifest.startupTool   = value;
+        else if (key == "world")  m_manifest.startupWorld  = value;
+    }
+
+    void applyConfigSection(const std::string& key, const std::string& value) {
+        if      (key == "projectSettings")    m_manifest.configProjectSettings    = value;
+        else if (key == "pieSettings")        m_manifest.configPIESettings        = value;
+        else if (key == "pcgPreviewDefaults") m_manifest.configPCGPreviewDefaults = value;
     }
 
     // ── JSON micro-parsers ─────────────────────────────────────────
@@ -296,6 +457,13 @@ private:
         try { return std::stoi(s); }
         catch (const std::invalid_argument&) { return fallback; }
         catch (const std::out_of_range&)     { return fallback; }
+    }
+
+    static std::string toLower(const std::string& s) {
+        std::string out = s;
+        for (auto& c : out)
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        return out;
     }
 };
 

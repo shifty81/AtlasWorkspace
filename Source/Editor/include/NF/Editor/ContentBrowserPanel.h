@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include "NF/Editor/EditorPanel.h"
 #include "NF/Editor/ContentBrowser.h"
+#include "NF/Workspace/AssetCatalog.h"
 
 namespace NF {
 
@@ -73,10 +74,14 @@ public:
     [[nodiscard]] ContentViewMode viewMode() const { return m_viewMode; }
     void setViewMode(ContentViewMode m) { m_viewMode = m; }
 
+    void setAssetCatalog(const NF::AssetCatalog* catalog) { m_assetCatalog = catalog; }
+    [[nodiscard]] const NF::AssetCatalog* assetCatalog() const { return m_assetCatalog; }
+
 private:
     std::string m_name = "ContentBrowser";
     ContentBrowser* m_browser = nullptr;
     ContentViewMode m_viewMode = ContentViewMode::Grid;
+    const NF::AssetCatalog* m_assetCatalog = nullptr;
 };
 
 // ── EditorToolbar ────────────────────────────────────────────────
