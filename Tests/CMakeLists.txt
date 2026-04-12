@@ -982,3 +982,20 @@ if(TARGET NF::NovaForgeAdapter)
     )
     catch_discover_tests(NF_PhaseBTests)
 endif()
+
+# Phase C — Panels Edit Real Data
+#   C.1: IDocumentPanel interface + DocumentPanelBase lifecycle
+#   C.2: Six NovaForge gameplay panels with real data schemas
+#   C.3: DocumentPropertyGrid schema-driven editing + validation
+#   C.4: DocumentSavePipeline — save/revert/validate with notification sink
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseCTests
+        Workspace/test_phase_c.cpp
+        catch_main.cpp
+    )
+    target_link_libraries(NF_PhaseCTests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseCTests)
+endif()
