@@ -1,27 +1,37 @@
 {
-  "atlas_project": {
-    "id": "novaforge",
-    "displayName": "NovaForge",
-    "type": "game_project",
-    "version": "0.1.0",
-    "description": "NovaForge — open-world voxel MMO built on the Atlas engine."
-  },
+  "schema": "atlas.project.v1",
+  "name": "NovaForge",
+  "version": "0.1.0",
+  "description": "NovaForge — open-world voxel MMO built on the Atlas engine.",
   "adapter": "novaforge",
-  "contentRoots": [
-    "Content",
-    "Data"
+  "capabilities": [
+    "Rendering3D",
+    "Physics3D",
+    "UI",
+    "Networking",
+    "AI",
+    "Animation",
+    "VoxelEditor",
+    "TerrainEditor",
+    "Blueprints"
   ],
-  "configRoot": "Config",
-  "saveRoot": "Saved",
-  "logRoot": "Saved/Logs",
-  "phases": [
-    "Phase0_Bootstrap",
-    "Phase1_DevWorldOnly",
-    "Phase2_VoxelRuntimeOnly",
-    "Phase3_FirstInteractionLoopOnly",
-    "Phase4_VoxelMeshRendering",
-    "Phase5_MovementFPSCamera",
-    "Phase6_MultiplayerFoundation"
-  ],
-  "openInstructions": "Open this file with AtlasWorkspace.exe via Project → Load NovaForge, or File → Open Project."
+  "modules": {
+    "worldGraph": "worlds/devworld.worldgraph",
+    "ai": true,
+    "content": "Content/"
+  },
+  "runtime": {
+    "entryWorld": "worlds/devworld.worldgraph",
+    "tickRate": 30,
+    "maxPlayers": 64
+  },
+  "assets": {
+    "root": "Content"
+  },
+  "buildProfiles": {
+    "Client": ["Render", "UI", "Input", "Networking"],
+    "Server": ["Sim", "Net", "AI"],
+    "Editor": ["All"],
+    "Tool":   ["UI", "Data"]
+  }
 }

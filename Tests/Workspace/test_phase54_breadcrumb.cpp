@@ -218,7 +218,7 @@ TEST_CASE("BreadcrumbHistory: push clears forward history", "[breadcrumb][histor
 
     hist.push(t1);
     hist.push(t2);
-    hist.back(); // go back to t1
+    (void)hist.back(); // go back to t1
     hist.push(t3); // branch from t1 — clears t2 forward entry
     REQUIRE_FALSE(hist.canForward());
 }

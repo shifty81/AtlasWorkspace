@@ -6,12 +6,16 @@
 #include "NF/Editor/Editor.h"
 #include "NF/Input/Input.h"
 #include "NF/UI/UIBackend.h"
+#include "NF/Workspace/AtlasProjectFileLoader.h"
+#include "NovaForge/EditorAdapter/NovaForgeAdapter.h"
 #if defined(_WIN32)
 #  include "NF/Input/Win32InputAdapter.h"
 #  include "NF/UI/GDIBackend.h"
 #  include <windows.h>
 #endif
 #include <chrono>
+#include <filesystem>
+#include <string>
 
 #if defined(_WIN32)
 static NF::EditorApp* g_editor    = nullptr;
@@ -58,6 +62,67 @@ int main(int argc, char* argv[]) {
     NF::coreInit();
     NF_LOG_INFO("Main", "=== NovaForge Editor ===");
     NF_LOG_INFO("Main", std::string("Version: ") + NF::NF_VERSION_STRING);
+
+    // ── Parse CLI arguments ──────────────────────────────────────
+    // Accept --project=<path> from the WorkspaceLaunchContext argument vector.
+    // If not provided, search for NovaForge.atlas next to the executable.
+    std::string atlasFilePath;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        const std::string prefix = "--project=";
+        if (arg.rfind(prefix, 0) == 0) {
+            atlasFilePath = arg.substr(prefix.size());
+            break;
+        }
+    }
+
+    if (atlasFilePath.empty()) {
+        // Auto-discover: look for NovaForge.atlas relative to the executable.
+        std::string execDir;
+        if (argc > 0) {
+            std::filesystem::path execPath(argv[0]);
+            execDir = execPath.parent_path().string();
+        }
+        // Walk up from the executable directory until we find NovaForge.atlas
+        // (handles both in-source and out-of-source build layouts).
+        auto tryPath = [&](const std::string& dir) {
+            auto candidate = std::filesystem::path(dir) / "NovaForge.atlas";
+            if (std::filesystem::exists(candidate))
+                atlasFilePath = candidate.string();
+        };
+        if (!execDir.empty()) {
+            tryPath(execDir);
+            // Also try common build-relative positions
+            if (atlasFilePath.empty()) tryPath(execDir + "/../..");
+            if (atlasFilePath.empty()) tryPath(execDir + "/../../..");
+        }
+    }
+
+    // ── Register the NovaForge adapter factory ───────────────────
+    // The registry is used when the editor loads a project from an .atlas file.
+    NF::ProjectRegistry projectRegistry;
+    projectRegistry.initialize();
+    projectRegistry.registerProject("novaforge", []() {
+        return std::make_unique<NovaForge::NovaForgeAdapter>();
+    });
+
+    // ── Load project from .atlas file ────────────────────────────
+    if (!atlasFilePath.empty()) {
+        NF_LOG_INFO("Main", "Loading project from: " + atlasFilePath);
+        auto contract = projectRegistry.loadProjectFromAtlasFile(atlasFilePath);
+        if (contract.isLoaded()) {
+            NF_LOG_INFO("Main", "Project loaded: " + contract.projectDisplayName
+                + " (adapter: " + contract.projectId + ")");
+        } else {
+            NF_LOG_WARN("Main", "Project load failed for: " + atlasFilePath);
+            for (const auto& e : contract.validationEntries) {
+                NF_LOG_WARN("Main", std::string("[") + NF::validationSeverityName(e.severity)
+                    + "] " + e.code + ": " + e.message);
+            }
+        }
+    } else {
+        NF_LOG_INFO("Main", "No .atlas file found — starting without a project.");
+    }
 
     NF::EditorApp editor;
     std::string execPath = (argc > 0) ? argv[0] : ".";

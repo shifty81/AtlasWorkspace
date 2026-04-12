@@ -80,6 +80,7 @@ if(NF_STANDALONE)
 endif()
 
 # ── NovaForge game modules ────────────────────────────────────────
+add_subdirectory(Source/EditorAdapter)
 add_subdirectory(Source/Game)
 add_subdirectory(Source/World)
 add_subdirectory(Source/Patch)
