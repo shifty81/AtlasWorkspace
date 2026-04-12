@@ -1,6 +1,8 @@
-# Master Roadmap
+# Master Roadmap (Legacy Archive)
 
-This is the execution ladder. Every line is tied to a real milestone. No brainstorm clutter.
+> ⚠️ **ARCHIVED** — This is the legacy roadmap covering Phases 0–71 (infrastructure build-out).
+> These phases are complete and preserved here for historical reference only.
+> The active roadmap is [`00_MASTER_ROADMAP.md`](00_MASTER_ROADMAP.md) (Phases A–H).
 
 ---
 
