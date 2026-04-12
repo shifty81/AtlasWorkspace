@@ -768,12 +768,12 @@ TEST_CASE("D.3 AssetPreview: apply on no-asset returns false", "[phase_d][d3][as
     REQUIRE_FALSE(preview.apply());
 }
 
-TEST_CASE("D.3 AssetPreview: properties() returns 13 entries", "[phase_d][d3][asset_preview]") {
+TEST_CASE("D.3 AssetPreview: properties() returns 20 entries", "[phase_d][d3][asset_preview]") {
     NovaForgeAssetPreview preview;
     AssetPreviewDescriptor desc;
     desc.assetPath = "Assets/X.nfa";
     preview.bindAsset(desc);
-    REQUIRE(preview.properties().size() == 13);
+    REQUIRE(preview.properties().size() == 20);
 }
 
 TEST_CASE("D.3 AssetPreview: properties() contains assetPath", "[phase_d][d3][asset_preview]") {

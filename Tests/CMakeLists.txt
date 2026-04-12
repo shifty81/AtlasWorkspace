@@ -1020,3 +1020,39 @@ if(TARGET NF::NovaForgeAdapter)
     )
     catch_discover_tests(NF_PhaseDTests)
 endif()
+
+# Phase D Completion — D.3 extended (collider/socket/anchor/PCG tag metadata) + D.4 (MaterialPreview)
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseDCompletionTests
+        Workspace/test_phase_d_completion.cpp
+        catch_main.cpp
+    )
+    target_include_directories(NF_PhaseDCompletionTests PRIVATE
+        ${CMAKE_SOURCE_DIR}/NovaForge/Source/EditorAdapter/include
+    )
+    target_link_libraries(NF_PhaseDCompletionTests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseDCompletionTests)
+endif()
+
+# Phase E — Shared PCG Preview Pipeline
+#   E.1: PCGRuleSet + PCGDeterministicSeedContext + PCGGeneratorService
+#   E.2: PCGPreviewService (binding, regen, seed, stats)
+#   E.3: Rule editing via PCGPreviewService (auto-regen, callbacks, domain override)
+#   E.4: populatePreviewWorld — NovaForgePreviewWorld from PCG placements
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseETests
+        Workspace/test_phase_e.cpp
+        catch_main.cpp
+    )
+    target_include_directories(NF_PhaseETests PRIVATE
+        ${CMAKE_SOURCE_DIR}/NovaForge/Source/EditorAdapter/include
+    )
+    target_link_libraries(NF_PhaseETests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseETests)
+endif()

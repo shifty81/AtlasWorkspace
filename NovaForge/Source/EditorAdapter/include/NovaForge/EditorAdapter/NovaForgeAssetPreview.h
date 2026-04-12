@@ -8,7 +8,7 @@
 // attachment metadata are editable. Changes are tracked as dirty and can be
 // applied (committed) or reverted.
 //
-// Phase D.3 — Asset Preview Viewport
+// Phase D.3 — Asset Preview Viewport (collider/socket/anchor + PCG tag metadata)
 
 #include "NF/Workspace/IViewportSceneProvider.h"
 #include "NovaForge/EditorAdapter/NovaForgePreviewWorld.h"
@@ -19,6 +19,67 @@
 
 namespace NovaForge {
 
+// ── ColliderDescriptor ────────────────────────────────────────────────────────
+
+enum class ColliderShape : uint8_t {
+    Box,
+    Sphere,
+    Capsule,
+    ConvexHull,
+    TriangleMesh,
+};
+
+inline const char* colliderShapeName(ColliderShape s) {
+    switch (s) {
+        case ColliderShape::Box:          return "Box";
+        case ColliderShape::Sphere:       return "Sphere";
+        case ColliderShape::Capsule:      return "Capsule";
+        case ColliderShape::ConvexHull:   return "ConvexHull";
+        case ColliderShape::TriangleMesh: return "TriangleMesh";
+    }
+    return "Unknown";
+}
+
+struct ColliderDescriptor {
+    ColliderShape shape    = ColliderShape::Box;
+    PreviewVec3   extents  = {1.f, 1.f, 1.f}; ///< half-extents for Box; radius,height,0 for Capsule
+    float         radius   = 0.5f;             ///< sphere/capsule radius
+    bool          isTrigger = false;
+    std::string   tag;                          ///< optional physics tag
+};
+
+// ── SocketDescriptor ──────────────────────────────────────────────────────────
+// Named attachment socket on the asset (e.g., weapon mount, engine hardpoint).
+
+struct SocketDescriptor {
+    std::string      name;
+    PreviewTransform localTransform; ///< offset from asset root
+    std::string      socketType;     ///< semantic type e.g. "weapon", "engine", "cargo"
+};
+
+// ── AnchorDescriptor ──────────────────────────────────────────────────────────
+// Named positional anchor for docking/placement (e.g., dock approach point).
+
+struct AnchorDescriptor {
+    std::string      name;
+    PreviewTransform localTransform;
+    std::string      anchorType;     ///< e.g. "dock", "spawn", "interact"
+};
+
+// ── AssetPCGMetadata ──────────────────────────────────────────────────────────
+// PCG placement tags and generation constraints attached to the asset.
+
+struct AssetPCGMetadata {
+    std::string              placementTag;    ///< tag used by PCG rules to select this asset
+    std::vector<std::string> generationTags; ///< additional tags controlling how asset is placed
+    float                    minScale  = 0.8f;
+    float                    maxScale  = 1.2f;
+    float                    density   = 1.0f;
+    bool                     allowRotation = true;
+    bool                     alignToNormal = false;
+    std::string              exclusionGroup; ///< assets in the same group don't overlap
+};
+
 // ── AssetPreviewDescriptor ────────────────────────────────────────────────────
 
 struct AssetPreviewDescriptor {
@@ -27,6 +88,12 @@ struct AssetPreviewDescriptor {
     std::string      materialTag;
     std::string      attachmentTag;
     PreviewTransform transform;
+
+    // D.3 extension: collider, sockets, anchors, PCG metadata
+    ColliderDescriptor             collider;
+    std::vector<SocketDescriptor>  sockets;
+    std::vector<AnchorDescriptor>  anchors;
+    AssetPCGMetadata               pcgMetadata;
 };
 
 // ── NovaForgeAssetPreview ─────────────────────────────────────────────────────
@@ -68,7 +135,7 @@ public:
 
     [[nodiscard]] const AssetPreviewDescriptor& descriptor() const { return m_descriptor; }
 
-    // ── Editable fields ───────────────────────────────────────────────────
+    // ── Editable fields — mesh / material / attachment ────────────────────
 
     bool setTransform(const PreviewTransform& t) {
         if (!hasAsset()) return false;
@@ -100,6 +167,159 @@ public:
         m_dirty = true;
         return true;
     }
+
+    // ── Editable fields — collider ────────────────────────────────────────
+
+    bool setCollider(const ColliderDescriptor& c) {
+        if (!hasAsset()) return false;
+        m_descriptor.collider = c;
+        m_dirty = true;
+        return true;
+    }
+
+    bool setColliderShape(ColliderShape shape) {
+        if (!hasAsset()) return false;
+        m_descriptor.collider.shape = shape;
+        m_dirty = true;
+        return true;
+    }
+
+    bool setColliderExtents(const PreviewVec3& extents) {
+        if (!hasAsset()) return false;
+        m_descriptor.collider.extents = extents;
+        m_dirty = true;
+        return true;
+    }
+
+    bool setColliderIsTrigger(bool trigger) {
+        if (!hasAsset()) return false;
+        m_descriptor.collider.isTrigger = trigger;
+        m_dirty = true;
+        return true;
+    }
+
+    bool setColliderTag(const std::string& tag) {
+        if (!hasAsset()) return false;
+        m_descriptor.collider.tag = tag;
+        m_dirty = true;
+        return true;
+    }
+
+    [[nodiscard]] const ColliderDescriptor& collider() const { return m_descriptor.collider; }
+
+    // ── Editable fields — sockets ─────────────────────────────────────────
+
+    bool addSocket(const SocketDescriptor& socket) {
+        if (!hasAsset()) return false;
+        m_descriptor.sockets.push_back(socket);
+        m_dirty = true;
+        return true;
+    }
+
+    bool removeSocket(const std::string& name) {
+        if (!hasAsset()) return false;
+        auto& v = m_descriptor.sockets;
+        for (auto it = v.begin(); it != v.end(); ++it) {
+            if (it->name == name) { v.erase(it); m_dirty = true; return true; }
+        }
+        return false;
+    }
+
+    bool setSocketTransform(const std::string& name, const PreviewTransform& t) {
+        if (!hasAsset()) return false;
+        for (auto& s : m_descriptor.sockets) {
+            if (s.name == name) { s.localTransform = t; m_dirty = true; return true; }
+        }
+        return false;
+    }
+
+    [[nodiscard]] const std::vector<SocketDescriptor>& sockets() const { return m_descriptor.sockets; }
+    [[nodiscard]] uint32_t socketCount() const { return static_cast<uint32_t>(m_descriptor.sockets.size()); }
+
+    // ── Editable fields — anchors ─────────────────────────────────────────
+
+    bool addAnchor(const AnchorDescriptor& anchor) {
+        if (!hasAsset()) return false;
+        m_descriptor.anchors.push_back(anchor);
+        m_dirty = true;
+        return true;
+    }
+
+    bool removeAnchor(const std::string& name) {
+        if (!hasAsset()) return false;
+        auto& v = m_descriptor.anchors;
+        for (auto it = v.begin(); it != v.end(); ++it) {
+            if (it->name == name) { v.erase(it); m_dirty = true; return true; }
+        }
+        return false;
+    }
+
+    bool setAnchorTransform(const std::string& name, const PreviewTransform& t) {
+        if (!hasAsset()) return false;
+        for (auto& a : m_descriptor.anchors) {
+            if (a.name == name) { a.localTransform = t; m_dirty = true; return true; }
+        }
+        return false;
+    }
+
+    [[nodiscard]] const std::vector<AnchorDescriptor>& anchors() const { return m_descriptor.anchors; }
+    [[nodiscard]] uint32_t anchorCount() const { return static_cast<uint32_t>(m_descriptor.anchors.size()); }
+
+    // ── Editable fields — PCG metadata ────────────────────────────────────
+
+    bool setPCGMetadata(const AssetPCGMetadata& meta) {
+        if (!hasAsset()) return false;
+        m_descriptor.pcgMetadata = meta;
+        m_dirty = true;
+        return true;
+    }
+
+    bool setPlacementTag(const std::string& tag) {
+        if (!hasAsset()) return false;
+        m_descriptor.pcgMetadata.placementTag = tag;
+        m_dirty = true;
+        return true;
+    }
+
+    bool addGenerationTag(const std::string& tag) {
+        if (!hasAsset()) return false;
+        m_descriptor.pcgMetadata.generationTags.push_back(tag);
+        m_dirty = true;
+        return true;
+    }
+
+    bool removeGenerationTag(const std::string& tag) {
+        if (!hasAsset()) return false;
+        auto& v = m_descriptor.pcgMetadata.generationTags;
+        for (auto it = v.begin(); it != v.end(); ++it) {
+            if (*it == tag) { v.erase(it); m_dirty = true; return true; }
+        }
+        return false;
+    }
+
+    bool setPCGScaleRange(float minScale, float maxScale) {
+        if (!hasAsset() || minScale > maxScale) return false;
+        m_descriptor.pcgMetadata.minScale = minScale;
+        m_descriptor.pcgMetadata.maxScale = maxScale;
+        m_dirty = true;
+        return true;
+    }
+
+    bool setPCGDensity(float density) {
+        if (!hasAsset() || density < 0.f) return false;
+        m_descriptor.pcgMetadata.density = density;
+        m_dirty = true;
+        return true;
+    }
+
+    bool setPCGExclusionGroup(const std::string& group) {
+        if (!hasAsset()) return false;
+        m_descriptor.pcgMetadata.exclusionGroup = group;
+        m_dirty = true;
+        return true;
+    }
+
+    [[nodiscard]] const AssetPCGMetadata& pcgMetadata() const { return m_descriptor.pcgMetadata; }
 
     // ── Dirty tracking ────────────────────────────────────────────────────
 
@@ -134,21 +354,29 @@ public:
             return buf;
         };
 
-        return {
-            {"assetPath",     m_descriptor.assetPath},
-            {"meshTag",       m_descriptor.meshTag},
-            {"materialTag",   m_descriptor.materialTag},
-            {"attachmentTag", m_descriptor.attachmentTag},
-            {"position.x",   fmtF(m_descriptor.transform.position.x)},
-            {"position.y",   fmtF(m_descriptor.transform.position.y)},
-            {"position.z",   fmtF(m_descriptor.transform.position.z)},
-            {"rotation.x",   fmtF(m_descriptor.transform.rotation.x)},
-            {"rotation.y",   fmtF(m_descriptor.transform.rotation.y)},
-            {"rotation.z",   fmtF(m_descriptor.transform.rotation.z)},
-            {"scale.x",      fmtF(m_descriptor.transform.scale.x)},
-            {"scale.y",      fmtF(m_descriptor.transform.scale.y)},
-            {"scale.z",      fmtF(m_descriptor.transform.scale.z)},
+        std::vector<std::pair<std::string, std::string>> props = {
+            {"assetPath",           m_descriptor.assetPath},
+            {"meshTag",             m_descriptor.meshTag},
+            {"materialTag",         m_descriptor.materialTag},
+            {"attachmentTag",       m_descriptor.attachmentTag},
+            {"position.x",         fmtF(m_descriptor.transform.position.x)},
+            {"position.y",         fmtF(m_descriptor.transform.position.y)},
+            {"position.z",         fmtF(m_descriptor.transform.position.z)},
+            {"rotation.x",         fmtF(m_descriptor.transform.rotation.x)},
+            {"rotation.y",         fmtF(m_descriptor.transform.rotation.y)},
+            {"rotation.z",         fmtF(m_descriptor.transform.rotation.z)},
+            {"scale.x",            fmtF(m_descriptor.transform.scale.x)},
+            {"scale.y",            fmtF(m_descriptor.transform.scale.y)},
+            {"scale.z",            fmtF(m_descriptor.transform.scale.z)},
+            {"collider.shape",     colliderShapeName(m_descriptor.collider.shape)},
+            {"collider.isTrigger", m_descriptor.collider.isTrigger ? "true" : "false"},
+            {"collider.tag",       m_descriptor.collider.tag},
+            {"pcg.placementTag",   m_descriptor.pcgMetadata.placementTag},
+            {"pcg.minScale",       fmtF(m_descriptor.pcgMetadata.minScale)},
+            {"pcg.maxScale",       fmtF(m_descriptor.pcgMetadata.maxScale)},
+            {"pcg.density",        fmtF(m_descriptor.pcgMetadata.density)},
         };
+        return props;
     }
 
     // ── Preview world access ──────────────────────────────────────────────
@@ -173,5 +401,6 @@ private:
         }
     }
 };
+
 
 } // namespace NovaForge

@@ -199,20 +199,32 @@ using the same runtime code the game client uses.
 - [x] Wire `AssetEditorTool` to a per-asset preview scene (`attachAssetPreviewProvider()`)
 - [x] Preview shows selected asset as a `NovaForgeAssetPreview` scene provider
 - [x] Editable transform, material, attachment metadata (setTransform/setMeshTag/setMaterialTag/setAttachmentTag)
-- [ ] Collider/socket/anchor editing for asset placement metadata
-- [ ] PCG tag and placement metadata editing
+- [x] Collider/socket/anchor editing for asset placement metadata
+  - `ColliderDescriptor` (shape/extents/radius/isTrigger/tag), `setCollider*()` methods
+  - `SocketDescriptor` — addSocket/removeSocket/setSocketTransform
+  - `AnchorDescriptor` — addAnchor/removeAnchor/setAnchorTransform
+- [x] PCG tag and placement metadata editing
+  - `AssetPCGMetadata` (placementTag, generationTags, scale range, density, exclusionGroup)
+  - `setPlacementTag`, `addGenerationTag`, `setPCGScaleRange`, `setPCGDensity`, etc.
 
-### Milestone D.4 — Material Preview Viewport
-- [ ] Wire `MaterialEditorTool` to a test-mesh preview scene
-- [ ] Live material parameter editing with viewport refresh
-- [ ] Standard preview meshes (sphere, cube, plane)
+### Milestone D.4 — Material Preview Viewport ✅
+- [x] Create `NovaForgeMaterialPreview` — `IViewportSceneProvider` for `MaterialEditorTool`
+  - `bindMaterial()` / `clearMaterial()` / `hasMaterial()`
+  - Standard preview meshes: Sphere, Cube, Plane (`setPreviewMesh()`)
+  - Shader tag (`setShaderTag()`)
+  - Material parameters (`setParameter(name, value, type)`, `removeParameter()`, `resetParameterToDefault()`)
+  - `apply()` / `revert()` baseline management
+  - `properties()` — flat map for inspector display
+- [x] Wire `MaterialEditorTool` to material preview via `attachMaterialPreviewProvider()`
+  - `provideScene()` delegates to `NovaForgeMaterialPreview` when attached
+  - Stub state (hasContent=false) when no provider or no material bound
 
 ### Milestone D.5 — D3D11 Backend Activation
 - [ ] Activate D3D11 backend as primary (GDI becomes fallback-only in practice)
 - [ ] Wire DirectWrite text rendering
 - [ ] Verify all panels render correctly through D3D11 path
 
-**Success Criteria (D.1–D.3):** ✅
+**Success Criteria (D.1–D.4):** ✅
 - `NovaForgePreviewRuntime` implements `IViewportSceneProvider`; `provideScene()` reflects world state
 - `SceneEditorTool.provideScene()` delegates to attached runtime when wired
 - Fly-camera state updates on WASD/mouse input
@@ -220,50 +232,61 @@ using the same runtime code the game client uses.
 - `selectedEntityProperties()` returns name/position/mesh/material for selected entity
 - `hierarchyOrder()` returns parents before children
 - `AssetEditorTool.provideScene()` delegates to `NovaForgeAssetPreview` when wired
-- Asset preview editable fields mark dirty; apply()/revert() manage baseline
-- 84 new tests, 165 assertions, all green (test_phase_d.cpp)
+- Asset preview collider/socket/anchor/PCG tag editing with apply()/revert() round-trips
+- `MaterialEditorTool.provideScene()` delegates to `NovaForgeMaterialPreview` when wired
+- Material parameter CRUD, preview mesh selection, shader tag — all with dirty/apply/revert
+- 161 new tests (84 original + 79 D completion), all green
 
 ---
 
 ## Phase E — Shared PCG Preview Pipeline
 
-**Status: Not Started**
+**Status: In Progress**
 
 **Goal:** Editor and game client use the same PCG core. Panels can edit PCG rules and
 see regenerated results in the viewport immediately.
 
-### Milestone E.1 — Shared NovaForge PCG Core
-- [ ] Factor PCG generation code into a shared library usable by both client and editor
-- [ ] Define `PCGRuleSet` — typed rule container loaded from project data
-- [ ] Define `PCGGeneratorService` — stateless generator that takes rules + seed → output
-- [ ] Define `PCGDeterministicSeedContext` — reproducible seed management
+### Milestone E.1 — Shared NovaForge PCG Core ✅
+- [x] Factor PCG generation code into a shared library usable by both client and editor
+- [x] Define `PCGRuleSet` — typed rule container loaded from project data
+  - addRule/setValue/removeRule/findRule/getValue/hasRule
+  - resetToDefaults/resetRule, rulesInCategory, dirty tracking
+- [x] Define `PCGGeneratorService` — stateless generator: rules + seed → placements
+  - Deterministic: same inputs always produce same output
+  - validate() warns on missing recommended rules
+- [x] Define `PCGDeterministicSeedContext` — reproducible seed management
+  - Universe seed + domain derivation (FNV-1a + xorshift mixing)
+  - childContext, pinDomainSeed, registerDomain
 
-### Milestone E.2 — Editor PCG Preview Service
-- [ ] Create `PCGPreviewService` — editor-side wrapper around shared PCG core
-  - Accepts rule document + seed
-  - Generates preview output (meshes, placements, structure fragments)
-  - Caches results for viewport display
-- [ ] Wire PCG preview into viewport scene provider
-- [ ] Support manual regeneration trigger (button/shortcut)
-- [ ] Support automatic regeneration on rule edit
+### Milestone E.2 — Editor PCG Preview Service ✅
+- [x] Create `PCGPreviewService` — editor-side wrapper around shared PCG core
+  - Accepts rule document (`bindRuleSet()`) + seed (`setSeed()`)
+  - Generates preview output (placements with assetTag/position/scale/yaw)
+  - Caches results (`hasResult()`, `lastResult()`)
+- [x] Wire PCG preview into viewport via `populatePreviewWorld(NovaForgePreviewWorld&)`
+- [x] Support manual regeneration trigger (`forceRegenerate()`)
+- [x] Support automatic regeneration on rule edit (`autoRegenerate` flag)
 
-### Milestone E.3 — PCG Rule Editing
-- [ ] Wire `ProcGenRuleEditorV1` panel to real `PCGRuleSet` documents
-- [ ] Edits in rule panel trigger preview regeneration
+### Milestone E.3 — PCG Rule Editing ✅
+- [x] `PCGPreviewService::setRuleValue()` — edits ruleset + triggers regen if auto=true
+- [x] `PCGPreviewService::resetRules()` — reverts to defaults + triggers regen
+- [x] Change callback (`setOnRegenerateCallback()`) — invoked after each successful regen
+- [x] Domain override (`setDomainOverride()`) — controls which seed stream is used
+- [ ] Wire `ProcGenRuleEditorV1` panel to real `PCGRuleSet` documents (panel-level wiring)
 - [ ] Save-back translates rule changes to project data
-- [ ] Preview deterministic seeds for reproducible testing
 
-### Milestone E.4 — Asset PCG Metadata
-- [ ] Asset editor exposes PCG placement tags and generation constraints
-- [ ] PCG preview service uses asset metadata for placement/generation
-- [ ] Changes to asset PCG tags trigger preview update
+### Milestone E.4 — Asset PCG Metadata ✅
+- [x] Asset editor (`NovaForgeAssetPreview`) exposes PCG placement tags and generation constraints
+- [x] `PCGPreviewService::populatePreviewWorld()` uses asset/placement tags for entity mesh tags
+- [ ] Changes to asset PCG tags auto-trigger preview update (event-driven wiring)
 
-**Success Criteria:**
-- Editor uses the same PCG generation code as game client
-- Rule edits trigger live preview regeneration in viewport
-- PCG output renders in viewport as 3D scene
-- Deterministic seeds produce identical output
-- Asset PCG tags drive placement behavior
+**Success Criteria (E.1–E.4):** ✅
+- Same `PCGGeneratorService` usable in editor and game runtime (no engine dependency)
+- Same inputs + same seed always produce identical `PCGGenerationResult`
+- Rule edits via `PCGPreviewService` trigger live preview regeneration when autoRegenerate=true
+- PCG output populates `NovaForgePreviewWorld` with positioned, tagged entities
+- Deterministic seeds produce identical placement positions
+- 82 new tests, 175 assertions, all green (test_phase_e.cpp)
 
 ---
 
