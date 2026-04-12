@@ -58,8 +58,8 @@ public:
 #if defined(_WIN32)
         if (m_memDC && m_dib)
             SelectObject(m_memDC, m_dib);
-        m_bound = true;
 #endif
+        m_bound = true;
         ++m_bindCount;
     }
 

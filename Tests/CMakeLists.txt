@@ -899,3 +899,14 @@ target_link_libraries(NF_Phase66Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase66Tests)
+
+# Phase 67 — WorkspaceAssetBrowser
+add_executable(NF_Phase67Tests
+    Workspace/test_phase67_asset_browser.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase67Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase67Tests)
