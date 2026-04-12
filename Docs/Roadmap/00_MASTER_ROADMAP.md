@@ -1585,3 +1585,60 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - QuickOpenManager.notifySubmit() fires all observers independently of the session ✓
 - 48 test cases pass (124 assertions) ✓
 - Total test suite: ~3306 tests passing ✓
+
+---
+
+## Phase 51 – Workspace Keymap System
+
+**Status: Done**
+
+- [x] Create `WorkspaceKeymap.h` — layered keyboard-shortcut configuration
+  - [x] KeyModifiers — bitmask (Ctrl/Shift/Alt/Meta); `toString()` produces "Ctrl+Shift+" etc.; equality; `none()` guard
+  - [x] KeyChord — key string + modifiers; `isValid()` (non-empty key); `toString()` → "Ctrl+S"; equality on both parts
+  - [x] KeyAction — id + chord + description + context (tool/panel id or "" for global); `isValid()` (id + chord.isValid()); equality by id
+  - [x] KeymapLayer — id + name + priority + enabled flag; `addAction`/`removeAction`/`findAction`/`findByChord` (context-aware: action context="" matches any, query context="" is wildcard); MAX_ACTIONS=128; `setEnabled`/`clear`
+  - [x] KeymapManager — ordered layer stack (sorted descending by priority so highest wins first); permanent `"default"` layer (priority=0, not removable); `addLayer`/`removeLayer`/`findLayer`/`hasLayer`/`setLayerEnabled`; `registerAction`/`unregisterAction` (on default layer); `lookup(chord, context)` → first match across enabled layers; `lookupAll(chord, context)` → all matches; `findAction(id)` → any layer; observer callbacks (MAX_OBSERVERS=16); `serialize()` / `deserialize()` — tab-delimited text; `clear()` resets to empty default layer
+- [x] Add `Tests/Workspace/test_phase51_keymap.cpp` — 46 test cases / 115 assertions:
+  - [x] KeyModifiers (4): default none, single flags, combined, equality
+  - [x] KeyChord (4): default invalid, key only, with modifiers, equality
+  - [x] KeyAction (4): default invalid, no chord key, valid, equality by id
+  - [x] KeymapLayer (11): default empty, addAction, invalid rejected, duplicate rejected, removeAction, remove unknown, findAction, findByChord, context filter, setEnabled, clear
+  - [x] KeymapManager (19): default default layer, addLayer, duplicate rejected, empty id rejected, removeLayer, cannot remove default, remove unknown, registerAction, unregisterAction, findAction all layers, lookup highest priority, lookup nullptr no match, disabled layer skipped, lookupAll all matches, observer on register, observer on addLayer, observer on setEnabled, clearObservers, serialize round-trip, deserialize empty, clear resets
+  - [x] Integration (2): multi-layer priority resolution with contexts, full serialize/deserialize preserves layers
+- [x] Wire `NF_Phase51Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- KeymapLayer.findByChord() correctly applies context filter ✓
+- KeymapManager.lookup() resolves highest-priority enabled layer ✓
+- Disabled layers are skipped; default layer is always present ✓
+- Serialize/deserialize round-trip preserves all action fields ✓
+- 46 test cases pass (115 assertions) ✓
+- Total test suite: ~3352 tests passing ✓
+
+---
+
+## Phase 52 – Workspace Window State
+
+**Status: Done**
+
+- [x] Create `WorkspaceWindowState.h` — persistent window geometry and monitor-aware restore
+  - [x] WindowBounds — x/y/width/height + isMaximized + isMinimized; `isValid()` (w>0, h>0); `contains(px,py)` (center-inclusive, right/bottom exclusive); equality
+  - [x] MonitorInfo — id + name + bounds + scaleFactor + isPrimary; `isValid()` (non-empty id + valid bounds)
+  - [x] WindowStateEntry — windowId + bounds + monitorId + workspaceId + lastSavedMs; `isValid()` (non-empty id + valid bounds)
+  - [x] WindowStateManager — monitor registry (MAX_MONITORS=8): `addMonitor`/`removeMonitor`/`findMonitor`/`primaryMonitor()` (enforces single primary; adding a second primary clears the first); entry store (MAX_ENTRIES=64): `save`/`restore`/`remove`/`has`; `isOnMonitor(entry,monitorId)` (tests center point against work area); `monitorForEntry()` (returns containing monitor or primary as fallback); observer callbacks (MAX_OBSERVERS=16); `serialize()`/`deserialize()` tab-delimited; `clear()`
+- [x] Add `Tests/Workspace/test_phase52_window_state.cpp` — 38 test cases / 88 assertions:
+  - [x] WindowBounds (6): default invalid, valid, zero dim invalid, contains point, equality, maximized flag
+  - [x] MonitorInfo (2): default invalid, valid
+  - [x] WindowStateEntry (3): default invalid, valid, no id
+  - [x] WindowStateManager (24): default empty, addMonitor, invalid rejected, duplicate rejected, only one primary, removeMonitor, remove unknown, save, invalid save, save updates existing, restore, restore unknown, remove, remove unknown, isOnMonitor true, isOnMonitor false, monitorForEntry fallback to primary, observer on save, observer on remove, clearObservers, serialize empty, serialize round-trip, deserialize empty, deserialize clears existing, clear
+  - [x] Integration (2): multi-monitor layout save and restore, orphaned window fallback to primary
+- [x] Wire `NF_Phase52Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- addMonitor() with isPrimary=true clears existing primary flag ✓
+- isOnMonitor() correctly tests center-point containment ✓
+- monitorForEntry() falls back to primary when no monitor contains the window ✓
+- save() upserts (creates or updates) without duplicating entries ✓
+- serialize/deserialize round-trip is lossless ✓
+- 38 test cases pass (88 assertions) ✓
+- Total test suite: ~3390 tests passing ✓

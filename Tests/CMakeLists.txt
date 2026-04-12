@@ -723,3 +723,25 @@ target_link_libraries(NF_Phase50Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase50Tests)
+
+# Phase 51 — WorkspaceKeymap
+add_executable(NF_Phase51Tests
+    Workspace/test_phase51_keymap.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase51Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase51Tests)
+
+# Phase 52 — WorkspaceWindowState
+add_executable(NF_Phase52Tests
+    Workspace/test_phase52_window_state.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase52Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase52Tests)
