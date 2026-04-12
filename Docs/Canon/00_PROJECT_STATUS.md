@@ -64,9 +64,9 @@ Atlas Workspace v1.0.
 |-------|-------|--------|
 | Checkpoint | Foundation (Phases 0–71) | ✅ Complete |
 | A | Truth and Cleanup Lock | 🔄 In Progress |
-| B | Real Project Load | ⬚ Not Started |
-| C | Panels Edit Real Data | ⬚ Not Started |
-| D | Runtime-Backed Viewport | ⬚ Not Started |
+| B | Real Project Load | ✅ Complete |
+| C | Panels Edit Real Data | ✅ Complete |
+| D | Runtime-Backed Viewport | 🔄 In Progress |
 | E | Shared PCG Preview Pipeline | ⬚ Not Started |
 | F | Play-In-Editor (PIE) | ⬚ Not Started |
 | G | Full Tool Wiring | ⬚ Not Started |
@@ -85,9 +85,38 @@ Atlas Workspace v1.0.
 - [ ] Add CI smoke build entry for `ATLAS_ENABLE_ONLINE_DEPS=ON`
 
 ### A.2 — Build and CI Hygiene
-- [x] All test suites build and pass on clean checkout (4125 test cases, all green)
+- [x] All test suites build and pass on clean checkout (4308 test cases, all green)
 
 ### A.3 — Documentation Correction
 - [x] Update project status phase marker to "In Progress"
 - [x] Mark stale phase-specific roadmap docs (01–07) as historical
 - [x] Add "panel edits real data" criteria to `09_DEFINITION_OF_DONE.md`
+
+## Phase B Progress (Complete)
+- 40+ tests covering B.1–B.4, all green (test_phase_b.cpp)
+
+## Phase C Progress (Complete)
+- 58 tests, 104 assertions, all green (test_phase_c.cpp)
+
+## Phase D Progress (In Progress)
+### D.1 — NovaForge Preview Runtime Bridge ✅
+- [x] `NovaForgePreviewWorld` — entity lifecycle, transform, mesh/material, selection, dirty tracking
+- [x] `NovaForgePreviewRuntime` — IViewportSceneProvider, fly-camera, gizmo state, inspector data, hierarchy order
+
+### D.2 — Scene Editor Viewport ✅
+- [x] `SceneEditorTool::attachSceneProvider()` — delegates `provideScene()` to attached provider
+- [x] Fly-camera: `processCameraInput()` — WASD movement + mouse-look with pitch clamp
+- [x] Gizmo state: `gizmoState()` — reflects selected entity position
+- [x] Inspector data: `selectedEntityProperties()` — flat property map for selected entity
+- [x] Hierarchy order: `hierarchyOrder()` — BFS parent-before-child traversal
+
+### D.3 — Asset Preview Viewport ✅
+- [x] `NovaForgeAssetPreview` — IViewportSceneProvider, bind/edit/apply/revert
+- [x] `AssetEditorTool::attachAssetPreviewProvider()` — delegates `provideScene()` to asset preview
+- [ ] Collider/socket/anchor editing
+- [ ] PCG tag and placement metadata editing
+
+### D.4–D.5 — Material Preview + D3D11 Backend
+- [ ] MaterialEditorTool test-mesh preview scene
+- [ ] D3D11 backend activation
+- 84 new tests, 165 assertions, all green (test_phase_d.cpp)

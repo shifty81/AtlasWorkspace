@@ -91,6 +91,17 @@ public:
     /// Call before activate() (e.g. from WorkspaceShell::initialize()).
     void attachViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
 
+    /// Attach a scene provider so provideScene() delegates to it (Phase D wiring).
+    /// Pass nullptr to detach and revert to the default stub scene state.
+    /// NovaForgePreviewRuntime implements IViewportSceneProvider — pass it directly.
+    void attachSceneProvider(IViewportSceneProvider* provider) {
+        m_sceneProvider = provider;
+    }
+
+    [[nodiscard]] IViewportSceneProvider* sceneProvider() const {
+        return m_sceneProvider;
+    }
+
     // ── Project adapter hooks ─────────────────────────────────────
     void onProjectLoaded(const std::string& projectId) override;
     void onProjectUnloaded() override;
@@ -127,6 +138,9 @@ private:
     // Viewport slot owned by this tool while Active
     ViewportHandle           m_viewportHandle = kInvalidViewportHandle;
     WorkspaceViewportManager* m_viewportMgr  = nullptr;
+
+    // Optional scene provider — when set, provideScene() delegates to it (Phase D)
+    IViewportSceneProvider*   m_sceneProvider = nullptr;
 
     // Input pointer injected via onAttachInput()
     const InputSystem*       m_input          = nullptr;

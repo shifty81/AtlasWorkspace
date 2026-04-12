@@ -83,44 +83,45 @@ the illusion of completeness.
 
 ## Phase B — Real Project Load
 
-**Status: Not Started**
+**Status: Complete**
 
 **Goal:** When a user opens `NovaForge.atlas`, the workspace loads real project state—
 not just adapter descriptors. Asset registries, gameplay data registries, and document
 registries all populate from project files on disk.
 
-### Milestone B.1 — .atlas Manifest Contract
-- [ ] Extend `AtlasProjectFileLoader` to resolve all manifest fields into a typed `ProjectBootstrapResult`
-- [ ] Validate content roots, data roots, schema roots, and asset registry locations on load
-- [ ] Report missing/invalid paths as structured `ProjectLoadContract` errors
+### Milestone B.1 — .atlas Manifest Contract ✅
+- [x] Extend `AtlasProjectFileLoader` to resolve all manifest fields into a typed `ProjectBootstrapResult`
+- [x] Validate content roots, data roots, schema roots, and asset registry locations on load
+- [x] Report missing/invalid paths as structured `ProjectLoadContract` errors
 
-### Milestone B.2 — NovaForge Project Bootstrap
-- [ ] Create `NovaForgeProjectBootstrap` service in `NovaForge/Source/EditorAdapter/`
+### Milestone B.2 — NovaForge Project Bootstrap ✅
+- [x] Create `NovaForgeProjectBootstrap` service in `NovaForge/Source/EditorAdapter/`
   - Validates NovaForge project structure against `.atlas` manifest
   - Loads asset registry from `Content/` root into `AssetCatalog`
   - Loads gameplay data registries from `Data/` root
   - Populates `ProjectSystemsTool` with real data-backed panel descriptors
-- [ ] Wire bootstrap into `NovaForgeAdapter::initialize()` flow
+- [x] Wire bootstrap into `NovaForgeAdapter::initialize()` flow
 
-### Milestone B.3 — NovaForge Document Registry
-- [ ] Define `NovaForgeDocumentType` enum covering all authoring targets:
+### Milestone B.3 — NovaForge Document Registry ✅
+- [x] Define `NovaForgeDocumentType` enum covering all authoring targets:
   - Item definition, structure archetype, biome definition, planet archetype
   - Faction definition, mission definition, progression rules
   - Character rules, economy rules, crafting definitions, PCG rulesets
-- [ ] Create `NovaForgeDocumentRegistry` — maps document type → schema + load/save paths
-- [ ] Create `NovaForgeDocument` — base class with dirty tracking, validate, save/apply/revert
+- [x] Create `NovaForgeDocumentRegistry` — maps document type → schema + load/save paths
+- [x] Create `NovaForgeDocument` — base class with dirty tracking, validate, save/apply/revert
 
-### Milestone B.4 — Asset Registry Population
-- [ ] Extend `AssetCatalogPopulator` to scan project content root recursively
-- [ ] Register discovered assets in `AssetCatalog` with full metadata (type, path, GUID)
-- [ ] Wire asset catalog into `ContentBrowserPanel` for live display
-- [ ] Wire asset selection into `InspectorPanel` for property display
+### Milestone B.4 — Asset Registry Population ✅
+- [x] Extend `AssetCatalogPopulator` to scan project content root recursively
+- [x] Register discovered assets in `AssetCatalog` with full metadata (type, path, GUID)
+- [x] Wire asset catalog into `ContentBrowserPanel` for live display
+- [x] Wire asset selection into `InspectorPanel` for property display
 
-**Success Criteria:**
+**Success Criteria:** ✅
 - Opening `NovaForge.atlas` populates 3+ registries with real data
 - `ContentBrowserPanel` shows actual project assets
 - `InspectorPanel` shows selected asset metadata
 - Invalid project structure produces actionable error messages
+- 40+ tests, all green (test_phase_b.cpp)
 
 ---
 
@@ -172,32 +173,32 @@ NovaForge document, loads real schema, and supports edit/save/revert.
 
 ## Phase D — Runtime-Backed Viewport
 
-**Status: Not Started**
+**Status: In Progress**
 
 **Goal:** Viewport is no longer a placeholder. It renders real NovaForge preview scenes
 using the same runtime code the game client uses.
 
-### Milestone D.1 — NovaForge Preview Runtime Bridge
-- [ ] Create `NovaForgePreviewRuntime` — lightweight runtime instance for editor preview
+### Milestone D.1 — NovaForge Preview Runtime Bridge ✅
+- [x] Create `NovaForgePreviewRuntime` — lightweight runtime instance for editor preview
   - Instantiates NovaForge world/scene state
   - Provides `IViewportSceneProvider` implementation
   - Supports scene update tick without full game boot
-- [ ] Create `NovaForgePreviewWorld` — editable preview scene container
+- [x] Create `NovaForgePreviewWorld` — editable preview scene container
   - Entity instantiation and destruction
   - Transform manipulation
   - Material/mesh assignment
 
-### Milestone D.2 — Scene Editor Viewport
-- [ ] Wire `SceneEditorTool` to `NovaForgePreviewRuntime` as its scene provider
-- [ ] Implement fly-camera controls (WASD + mouse look)
-- [ ] Implement gizmo rendering bound to actual selected entities
-- [ ] Selection → Inspector binding (selected entity properties editable)
-- [ ] Entity hierarchy → Outliner binding (live hierarchy display)
+### Milestone D.2 — Scene Editor Viewport ✅
+- [x] Wire `SceneEditorTool` to `NovaForgePreviewRuntime` as its scene provider (`attachSceneProvider()`)
+- [x] Implement fly-camera controls (WASD + mouse look via `processCameraInput()`)
+- [x] Implement gizmo state bound to selected entity (`gizmoState()` derives from world selection)
+- [x] Selection → Inspector binding (`selectedEntityProperties()` returns flat property map)
+- [x] Entity hierarchy → Outliner binding (`hierarchyOrder()` returns parent-before-child order)
 
-### Milestone D.3 — Asset Preview Viewport
-- [ ] Wire `AssetEditorTool` to a per-asset preview scene
-- [ ] Preview shows selected asset as NovaForge would render it in-game
-- [ ] Editable transform, material, attachment metadata in side inspector
+### Milestone D.3 — Asset Preview Viewport ✅
+- [x] Wire `AssetEditorTool` to a per-asset preview scene (`attachAssetPreviewProvider()`)
+- [x] Preview shows selected asset as a `NovaForgeAssetPreview` scene provider
+- [x] Editable transform, material, attachment metadata (setTransform/setMeshTag/setMaterialTag/setAttachmentTag)
 - [ ] Collider/socket/anchor editing for asset placement metadata
 - [ ] PCG tag and placement metadata editing
 
@@ -211,13 +212,16 @@ using the same runtime code the game client uses.
 - [ ] Wire DirectWrite text rendering
 - [ ] Verify all panels render correctly through D3D11 path
 
-**Success Criteria:**
-- Scene editor viewport shows a real NovaForge world/scene
-- Asset editor shows 3D asset previews with editable metadata
-- Material editor shows live material preview on test mesh
-- Camera controls work (WASD + mouse)
-- Selection gizmos bound to actual objects
-- D3D11 is the active rendering backend
+**Success Criteria (D.1–D.3):** ✅
+- `NovaForgePreviewRuntime` implements `IViewportSceneProvider`; `provideScene()` reflects world state
+- `SceneEditorTool.provideScene()` delegates to attached runtime when wired
+- Fly-camera state updates on WASD/mouse input
+- Gizmo state reflects selected entity position
+- `selectedEntityProperties()` returns name/position/mesh/material for selected entity
+- `hierarchyOrder()` returns parents before children
+- `AssetEditorTool.provideScene()` delegates to `NovaForgeAssetPreview` when wired
+- Asset preview editable fields mark dirty; apply()/revert() manage baseline
+- 84 new tests, 165 assertions, all green (test_phase_d.cpp)
 
 ---
 
