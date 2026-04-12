@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase 71 Complete — Audit Patches 7/9/11/12**
+Current Phase: **Phase A — Truth and Cleanup Lock** (Not Started)
 
 ## Build Status
 
@@ -11,57 +11,72 @@ Current Phase: **Phase 71 Complete — Audit Patches 7/9/11/12**
 
 ## Repo Condition
 
-- Structure coherent and consistent
-- Naming unified to AtlasAI canon (zero Arbiter remnants in active paths)
-- Docs aligned with current canon
-- Editor surface rationalized (up to 20 primary tools + unlimited project adapter tools via IGameProjectAdapter)
-- Backend strategy formalized (Phase 2 complete)
-- Workspace integration surfaces formally contracted (Phase 7)
-- Workspace-level event bus and notification system operational (Phase 12)
-- EditorApp marked as deprecated legacy path; WorkspaceShell is canonical
-- AssetCatalogPopulator provides extension-based classification and catalog population
-- SettingsStore and LayoutPersistenceManager wired into WorkspaceShell lifecycle
-- Architecture documentation complete (6 docs in Docs/Architecture/)
+### What Works (Real, Tested, Wired)
+
+- **Infrastructure contracts:** WorkspaceShell, ToolRegistry, PanelRegistry, ProjectRegistry
+- **UI rendering pipeline:** DrawList → DrawListDispatcher → UIRenderer → GDIBackend (Windows)
+- **Panel chrome:** 8 core panels render labeled UI layouts with placeholder content
+- **8 hosted tools:** SceneEditor, AssetEditor, MaterialEditor, AnimationEditor, DataEditor, VisualLogic, BuildTool, AtlasAI — all registered and render tool views
+- **Command system:** CommandRegistry, CommandHistory, ActionMap, ShortcutRouter — infrastructure exists with 3 stub commands (Save, Command Palette, Build)
+- **Event system:** WorkspaceEventBus, NotificationBus, WorkspaceEventQueue — all functional
+- **Project loading:** .atlas file parsing, NovaForgeAdapter selection, panel descriptor registration
+- **Asset catalog:** AssetCatalogPopulator with 50+ extension classification, catalog population
+- **Settings/preferences:** SettingsStore (3-layer), PreferenceRegistry, PreferenceController
+- **Undo/redo:** UndoStack, UndoManager, UndoTransaction
+- **Persistence:** WorkspaceProjectFile, ProjectSerializer, AssetCatalogSerializer, SettingsStore serialization
+- **Session management:** SessionManager, SessionHistory
+- **Search:** SearchEngine, SearchIndex
+- **Scripting:** ScriptEngine, AutomationTask
+- **Plugin system:** PluginRegistry, PluginSandbox
+- **Diagnostics:** DiagnosticCollector, TelemetryCollector
+- **Naming:** AtlasAI canon complete — zero Arbiter references in active paths
+- **Viewport contracts:** ViewportHostContract, ViewportHostRegistry, ViewportFrameLoop
+- **NovaForge panel factories:** 6 panels instantiable via ProjectSystemsTool
+
+### What Does NOT Work (Stubs, Shells, Not Wired)
+
+- **Viewport rendering:** Shows placeholder grid, not a real scene. No 3D rendering.
+- **Panel content:** All panels display chrome (titles, fake rows) but edit nothing real.
+- **NovaForge panels:** Have `projectRoot` and `ready` flag, but no schemas, no data, no save targets.
+- **Project load depth:** Loading .atlas selects the adapter and registers descriptors, but does not load asset registries, gameplay data, or documents.
+- **PCG pipeline → editor:** Pipeline exists as file-based event system but is completely disconnected from viewport and panels.
+- **D3D11 backend:** Architecturally complete headers but not executing — GDI is still the active renderer.
+- **Play-In-Editor:** Does not exist. No embedded runtime, no PIE lifecycle.
+- **Preferences UI:** Infrastructure exists but no user-facing preferences window.
+- **Keybind UI:** No keybinding editor panel. Shortcuts are hardcoded stubs.
+- **Command palette:** Ctrl+P defined but handler is empty.
+- **Layout persistence to disk:** LayoutPersistenceManager exists but not wired to actual disk I/O.
+- **Real document editing:** No document model. No dirty tracking in practice. No save/apply path from panels.
+
+## Honest Summary
+
+The repository has excellent infrastructure — contracts, registries, event buses,
+serialization, undo/redo, and a clean module architecture. But the editor does not
+yet edit anything. Panels render chrome. The viewport shows a placeholder. Projects
+load as adapter labels. PCG is disconnected. There is no play mode.
+
+The new roadmap (Phases A–H) addresses all of these gaps with a clear end goal:
+Atlas Workspace v1.0.
 
 ## Phase Summary
 
 | Phase | Title | Status |
 |-------|-------|--------|
-| 0 | Canon Reset and Consolidation | ✅ Done |
-| 1 | Workspace Core Stabilization | ✅ Done |
-| 2 | AtlasUI Backend Strategy | ✅ Done |
-| 3 | Editor Consolidation | ✅ Done |
-| 4 | AtlasAI and Codex Integration | ✅ Done |
-| 5 | Hosted Project Support | ✅ Done |
-| 6 | Build, Patch, and Release Pipeline | ✅ Done |
-| 7 | Workspace Integration Surfaces | ✅ Done |
-| 8 | Runtime Wiring and First Real Tool Loop | ✅ Done |
-| 9 | Asset Pipeline and Content Routing | ✅ Done |
-| 10 | Project Persistence and Serialization | ✅ Done |
-| 11 | Command Bus and Action System | ✅ Done |
-| 12 | Event Bus and Workspace Notifications | ✅ Done |
-| 13 | Workspace Preferences and Configuration | ✅ Done |
-| 14 | Workspace Plugin System | ✅ Done |
-| 15 | Workspace Diagnostics and Telemetry | ✅ Done |
-| 16 | Workspace Scripting and Automation | ✅ Done |
-| 17 | Workspace Search and Indexing | ✅ Done |
-| 18 | Workspace Undo/Redo Stack | ✅ Done |
-| 64 | Viewport Rendering Contracts | ✅ Done |
-| 65 | Viewport Manager | ✅ Done |
-| 66 | Viewport Wiring (End-to-End) | ✅ Done |
-| 67 | Workspace Asset Browser | ✅ Done |
-| 68 | TextInput Typed-Text Wiring (Audit Patch 4) | ✅ Done |
-| 69 | Tool Render Contract (Audit Patch 5) | ✅ Done |
-| 70 | NovaForge Panel Factories (Audit Patch 6) | ✅ Done |
-| 71 | Audit Patches 7/9/11/12 | ✅ Done |
-
-## Active Problems
-
-None critical. Minor open items:
-- GDI backend is still the active rendering path; D3D11 targeted but not yet executing
-- EditorApp retained for backward-compatible tests; deprecated in favor of WorkspaceShell
+| Checkpoint | Foundation (Phases 0–71) | ✅ Complete |
+| A | Truth and Cleanup Lock | ⬚ Not Started |
+| B | Real Project Load | ⬚ Not Started |
+| C | Panels Edit Real Data | ⬚ Not Started |
+| D | Runtime-Backed Viewport | ⬚ Not Started |
+| E | Shared PCG Preview Pipeline | ⬚ Not Started |
+| F | Play-In-Editor (PIE) | ⬚ Not Started |
+| G | Full Tool Wiring | ⬚ Not Started |
+| H | UX Completion | ⬚ Not Started |
 
 ## Next Milestone
 
-Continue stabilization work per the audit patch manifest.
-Priority areas: viewport runtime cleanup, layout persistence wiring to disk.
+Phase A — Truth and Cleanup Lock:
+- Archive forwarding shims
+- Remove stale EditorApp references
+- Rename ArbiterReasoner.cpp
+- Slim main.cpp
+- Correct documentation to reflect reality
