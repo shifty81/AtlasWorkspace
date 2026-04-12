@@ -18,12 +18,13 @@ Bring the repo into a clean, normalized, canonical state before any feature expa
 - [ ] Verify `vcpkg.json` contains only live dependencies
 
 ### Naming Cleanup
-- [ ] Rename active-path Arbiter references to AtlasAI
-- [ ] Rename `Atlas/Workspace/Arbiter/` → `Atlas/Workspace/AtlasAI/`
-- [ ] Clean Arbiter references in Source/Pipeline/
-- [ ] Clean Arbiter references in Tests/Pipeline/
-- [ ] Clean Arbiter references in Source/Editor/
-- [ ] Remove stale Atlas Suite, MasterRepo naming from docs
+- [x] Rename active-path Arbiter references to AtlasAI
+- [x] Rename `Atlas/Workspace/Arbiter/` → `Atlas/Workspace/AtlasAI/`
+- [x] Clean Arbiter references in Source/Pipeline/
+- [x] Clean Arbiter references in Tests/Pipeline/
+- [x] Clean Arbiter references in Source/Editor/
+- [x] Absorb SwissAgent into AtlasAI broker (SwissAgentAdapter removed, AtlasAIAdapter unified)
+- [x] Remove stale Atlas Suite, MasterRepo naming from docs
 
 ### Documentation Reset
 - [x] Rewrite README.md

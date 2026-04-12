@@ -179,10 +179,8 @@ private:
 class ToolOrchestrator {
 public:
     ToolOrchestrator() {
-        m_swissAgent.setName("SwissAgent");
-        m_swissAgent.setExecutablePath("Atlas/Workspace/SwissAgent/cli.py");
-        m_arbiter.setName("AtlasAI");
-        m_arbiter.setExecutablePath("Atlas/Workspace/AtlasAI/atlas_ai_cli.py");
+        m_atlasAI.setName("AtlasAI");
+        m_atlasAI.setExecutablePath("Atlas/Workspace/AtlasAI/atlas_ai_cli.py");
         m_contractScanner.setName("ContractScanner");
         m_contractScanner.setExecutablePath("tools/contract_scanner");
         m_replayMinimizer.setName("ReplayMinimizer");
@@ -191,8 +189,7 @@ public:
 
     bool startAll() {
         bool ok = true;
-        ok &= m_swissAgent.start();
-        ok &= m_arbiter.start();
+        ok &= m_atlasAI.start();
         ok &= m_contractScanner.start();
         ok &= m_replayMinimizer.start();
         return ok;
@@ -200,24 +197,21 @@ public:
 
     bool stopAll() {
         bool ok = true;
-        ok &= m_swissAgent.stop();
-        ok &= m_arbiter.stop();
+        ok &= m_atlasAI.stop();
         ok &= m_contractScanner.stop();
         ok &= m_replayMinimizer.stop();
         return ok;
     }
 
     StandaloneToolRunner* runner(const std::string& name) {
-        if (name == "SwissAgent") return &m_swissAgent;
-        if (name == "AtlasAI") return &m_arbiter;
+        if (name == "AtlasAI") return &m_atlasAI;
         if (name == "ContractScanner") return &m_contractScanner;
         if (name == "ReplayMinimizer") return &m_replayMinimizer;
         return nullptr;
     }
 
     const StandaloneToolRunner* runner(const std::string& name) const {
-        if (name == "SwissAgent") return &m_swissAgent;
-        if (name == "AtlasAI") return &m_arbiter;
+        if (name == "AtlasAI") return &m_atlasAI;
         if (name == "ContractScanner") return &m_contractScanner;
         if (name == "ReplayMinimizer") return &m_replayMinimizer;
         return nullptr;
@@ -225,30 +219,27 @@ public:
 
     [[nodiscard]] size_t runningCount() const {
         size_t c = 0;
-        if (m_swissAgent.isAlive()) ++c;
-        if (m_arbiter.isAlive()) ++c;
+        if (m_atlasAI.isAlive()) ++c;
         if (m_contractScanner.isAlive()) ++c;
         if (m_replayMinimizer.isAlive()) ++c;
         return c;
     }
 
     [[nodiscard]] size_t totalEventsHandled() const {
-        return m_swissAgent.eventsHandled() + m_arbiter.eventsHandled() +
+        return m_atlasAI.eventsHandled() +
                m_contractScanner.eventsHandled() + m_replayMinimizer.eventsHandled();
     }
 
     void tickAll(float dt) {
-        m_swissAgent.tickUptime(dt);
-        m_arbiter.tickUptime(dt);
+        m_atlasAI.tickUptime(dt);
         m_contractScanner.tickUptime(dt);
         m_replayMinimizer.tickUptime(dt);
     }
 
-    static constexpr size_t kToolCount = 4;
+    static constexpr size_t kToolCount = 3;
 
 private:
-    StandaloneToolRunner m_swissAgent;
-    StandaloneToolRunner m_arbiter;
+    StandaloneToolRunner m_atlasAI;
     StandaloneToolRunner m_contractScanner;
     StandaloneToolRunner m_replayMinimizer;
 };
@@ -258,7 +249,6 @@ public:
     void init(const ToolEcosystemConfig& config = {}) {
         m_config = config;
         m_monitor.setConfig(config);
-        m_monitor.addRunner(m_orchestrator.runner("SwissAgent"));
         m_monitor.addRunner(m_orchestrator.runner("AtlasAI"));
         m_monitor.addRunner(m_orchestrator.runner("ContractScanner"));
         m_monitor.addRunner(m_orchestrator.runner("ReplayMinimizer"));
@@ -296,7 +286,7 @@ public:
 
 private:
     void autoRestartCrashed() {
-        for (const char* name : {"SwissAgent", "AtlasAI", "ContractScanner", "ReplayMinimizer"}) {
+        for (const char* name : {"AtlasAI", "ContractScanner", "ReplayMinimizer"}) {
             auto* r = m_orchestrator.runner(name);
             if (r && r->status() == ToolStatus::Crashed) {
                 r->start();

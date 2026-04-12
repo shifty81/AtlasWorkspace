@@ -73,7 +73,7 @@ TEST_CASE("ChangeEvent toJson contains all five fields", "[Pipeline][ChangeEvent
 
 TEST_CASE("ChangeEvent fromJson round-trip", "[Pipeline][ChangeEvent]") {
     NF::ChangeEvent original;
-    original.tool      = "SwissAgent";
+    original.tool      = "AtlasAI";
     original.eventType = NF::ChangeEventType::WorldChanged;
     original.path      = "worlds/sector01.json";
     original.timestamp = 9999LL;
@@ -81,7 +81,7 @@ TEST_CASE("ChangeEvent fromJson round-trip", "[Pipeline][ChangeEvent]") {
 
     NF::ChangeEvent parsed;
     REQUIRE(NF::ChangeEvent::fromJson(original.toJson(), parsed));
-    REQUIRE(parsed.tool              == "SwissAgent");
+    REQUIRE(parsed.tool              == "AtlasAI");
     REQUIRE(parsed.eventType         == NF::ChangeEventType::WorldChanged);
     REQUIRE(parsed.path              == "worlds/sector01.json");
     REQUIRE(parsed.timestamp         == 9999LL);

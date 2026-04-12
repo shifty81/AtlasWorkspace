@@ -6,11 +6,11 @@ debugging assistance, code suggestions, and automated tool orchestration.
 
 ## Existing Implementation
 - `AtlasAI/` — canonical AI location at repo root
-- `AtlasAI/Atlas_Arbiter/` — rule-based reasoning
-- `AtlasAI/Atlas_SwissAgent/` — multi-tool agent
+- `AtlasAI/Atlas_Arbiter/` — rule-based reasoning (historical; archived)
+- `AtlasAI/Atlas_SwissAgent/` — multi-tool agent (historical; archived, absorbed into AtlasAI)
 - `NF::WorkspaceBroker` — AI session management (Pipeline module)
-- `NF::ArbiterReasoner` — declarative rule engine (Pipeline module)
-- Pipeline tool adapters (BlenderGen, ContractScanner, ReplayMinimizer, SwissAgent, Arbiter)
+- `NF::AtlasAIReasoner` — declarative rule engine (Pipeline module)
+- Pipeline tool adapters (BlenderGen, ContractScanner, ReplayMinimizer, AtlasAI)
 
 ## Broker Capabilities
 | Feature | Status | Notes |

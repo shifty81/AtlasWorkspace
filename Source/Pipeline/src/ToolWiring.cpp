@@ -112,50 +112,36 @@ bool ReplayMinimizerAdapter::handleEvent(const ChangeEvent& event,
     return true;
 }
 
-// ── SwissAgentAdapter ─────────────────────────────────────────────────────
-
-const char* SwissAgentAdapter::name() const noexcept {
-    return "SwissAgent";
-}
-
-bool SwissAgentAdapter::acceptsEvent(ChangeEventType type) const noexcept {
-    // SwissAgent observes all event types for AI analysis.
-    return type != ChangeEventType::Unknown;
-}
-
-bool SwissAgentAdapter::handleEvent(const ChangeEvent& event,
-                                    const PipelineDirectories& dirs) {
-    if (!acceptsEvent(event.eventType)) return false;
-
-    // Log the event for AI analysis and emit an AIAnalysis response.
-    std::string meta = "analyzed_event=" +
-                       std::string(changeEventTypeName(event.eventType)) +
-                       ";source_tool=" + event.tool;
-    emitEvent(ChangeEventType::AIAnalysis,
-              event.path, meta, dirs);
-    ++m_handledCount;
-    return true;
-}
-
 // ── AtlasAIAdapter ────────────────────────────────────────────────────────
+// Unified AI broker: absorbs the former SwissAgent broad-observer role.
+// Accepts all non-Unknown event types and emits an AIAnalysis response for
+// each, with specialised reasoning metadata for ContractIssue and WorldChanged.
 
 const char* AtlasAIAdapter::name() const noexcept {
     return "AtlasAI";
 }
 
 bool AtlasAIAdapter::acceptsEvent(ChangeEventType type) const noexcept {
-    return type == ChangeEventType::ContractIssue ||
-           type == ChangeEventType::WorldChanged;
+    return type != ChangeEventType::Unknown;
 }
 
 bool AtlasAIAdapter::handleEvent(const ChangeEvent& event,
                                  const PipelineDirectories& dirs) {
     if (!acceptsEvent(event.eventType)) return false;
 
-    // Evaluate the event against the rule engine and emit an AI analysis.
-    std::string meta = "reasoning=" +
-                       std::string(changeEventTypeName(event.eventType)) +
-                       ";subject=" + event.path;
+    std::string meta;
+    if (event.eventType == ChangeEventType::ContractIssue ||
+        event.eventType == ChangeEventType::WorldChanged) {
+        // Specialised reasoning for contract/world events.
+        meta = "reasoning=" +
+               std::string(changeEventTypeName(event.eventType)) +
+               ";subject=" + event.path;
+    } else {
+        // Broad-spectrum analysis for all other event types.
+        meta = "analyzed_event=" +
+               std::string(changeEventTypeName(event.eventType)) +
+               ";source_tool=" + event.tool;
+    }
     emitEvent(ChangeEventType::AIAnalysis,
               event.path, meta, dirs);
     ++m_handledCount;

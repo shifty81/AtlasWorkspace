@@ -5,7 +5,7 @@ Use this checklist to audit the repo for missing features and direction drift.
 ## A. Direction and naming
 - [ ] AtlasUI is named and treated as the canonical tooling UI framework
 - [ ] Old ImGui references are removed or clearly archived/deferred
-- [ ] Old Arbiter naming is replaced by AtlasAI where intended
+- [x] Old Arbiter naming is replaced by AtlasAI where intended (SwissAgent also absorbed into AtlasAI)
 - [ ] Workspace naming is consistent and user-facing naming is not drifting
 - [ ] Legacy experimental tool names do not appear as active canonical paths
 

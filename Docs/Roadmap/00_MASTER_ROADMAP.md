@@ -75,7 +75,7 @@ the illusion of completeness.
 
 **Success Criteria:** ✅
 - Zero forwarding shims between Editor↔Workspace (37 archived to Deprecated/)
-- All naming violations resolved (ArbiterReasoner → AtlasAIReasoner)
+- All naming violations resolved (ArbiterReasoner → AtlasAIReasoner; SwissAgent absorbed into AtlasAI)
 - Status docs accurately describe stub vs. wired state
 - Build passes on clean checkout (4125 tests green)
 

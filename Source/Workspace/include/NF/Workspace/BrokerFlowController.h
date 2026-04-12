@@ -178,7 +178,7 @@ public:
     void attachToWatcher(PipelineWatcher& watcher,
                          const PipelineDirectories& dirs) {
         watcher.subscribe([this, dirs](const ChangeEvent& event) {
-            if (event.tool == "AtlasAI" || event.tool == "SwissAgent") return;
+            if (event.tool == "AtlasAI") return;
             processEvent(event, dirs);
         });
     }

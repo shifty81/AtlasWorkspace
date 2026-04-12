@@ -318,7 +318,7 @@ TEST_CASE("WorkspaceBroker attaches to PipelineWatcher and processes events", "[
     REQUIRE(broker.eventCountForPath("assets/barrel.glb") >= 1);
 }
 
-TEST_CASE("WorkspaceBroker skips SwissAgent events to avoid feedback loops", "[Pipeline][WorkspaceBroker]") {
+TEST_CASE("WorkspaceBroker skips AtlasAI events to avoid feedback loops", "[Pipeline][WorkspaceBroker]") {
     auto dirs = makeTempPipeline("broker_noloop");
     NF::WorkspaceBroker broker;
     auto id = broker.createSession("TestProject");
@@ -326,9 +326,9 @@ TEST_CASE("WorkspaceBroker skips SwissAgent events to avoid feedback loops", "[P
     NF::PipelineWatcher watcher(dirs.changes);
     broker.attachToWatcher(watcher, id, dirs);
 
-    // Write a SwissAgent event (should be skipped).
+    // Write an AtlasAI event (should be skipped — broker's own output).
     NF::ChangeEvent ev;
-    ev.tool      = "SwissAgent";
+    ev.tool      = "AtlasAI";
     ev.eventType = NF::ChangeEventType::AIAnalysis;
     ev.path      = "analysis/result.json";
     ev.timestamp = 6000LL;
@@ -348,7 +348,7 @@ TEST_CASE("WorkspaceBroker end-to-end with ToolRegistry", "[Pipeline][WorkspaceB
     // Set up registry with all tools.
     NF::ToolRegistry registry;
     registry.registerTool(std::make_unique<NF::BlenderGenAdapter>());
-    registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
+    registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
     registry.attach(watcher, dirs);
@@ -367,6 +367,6 @@ TEST_CASE("WorkspaceBroker end-to-end with ToolRegistry", "[Pipeline][WorkspaceB
 
     // Both the registry and broker should have processed the event.
     REQUIRE(registry.tool(0)->handledCount() >= 1);  // BlenderGenAdapter
-    REQUIRE(registry.tool(1)->handledCount() >= 1);  // SwissAgentAdapter
+    REQUIRE(registry.tool(1)->handledCount() >= 1);  // AtlasAIAdapter
     REQUIRE(broker.totalAnalyses() >= 1);
 }
