@@ -1127,3 +1127,20 @@ target_link_libraries(NF_PhaseGTests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_PhaseGTests)
+
+# Phase H — UX Completion (H.1–H.6)
+#   H.1: PreferencesUIController — category nav, editable settings, import/export/reset, scope
+#   H.2: KeybindEditorController — rebind capture, conflict detection, reset-to-defaults
+#   H.3: LayoutPersistenceController — named presets, built-in presets, auto-save on close
+#   H.4: CommandPaletteController — open/close/toggle, fuzzy search, recent commands, navigation
+#   H.5: NotificationCenterController — history, toast popups, severity filter, click-to-navigate
+#   H.6: ProjectOpenFlowController — recent projects, file open flow, validation, new project wizard
+add_executable(NF_PhaseHTests
+    Workspace/test_phase_h.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_PhaseHTests PRIVATE
+    NF::Editor NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_PhaseHTests)

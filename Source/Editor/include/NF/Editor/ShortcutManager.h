@@ -101,6 +101,8 @@ public:
         return c;
     }
 
+    [[nodiscard]] const std::vector<ShortcutBinding>& bindings() const { return m_bindings; }
+
 private:
     std::string                  m_name;
     std::vector<ShortcutBinding> m_bindings;

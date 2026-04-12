@@ -332,12 +332,56 @@ private:
                 ay += 34.f;
             }
 
-            // Separator between Tools and Apps sections
+            // Separator between Tools and Project Systems sections
             ui.drawRect({8.f, ay + 4.f, kSidebarW - 16.f, 1.f}, kBorder);
             ay += 14.f;
         }
 
-        // ── Section 2: Launch Apps (external executables) ─────────────
+        // ── Section 2: Project-specific gameplay panels ───────────────
+        if (shell.hasProject() && shell.projectSystemsTool().panelCount() > 0) {
+            ui.drawText(8.f, ay, "PROJECT SYSTEMS", kTextSecondary);
+            ui.drawRect({8.f, ay + 14.f, kSidebarW - 16.f, 1.f}, kBorder);
+            ay += 20.f;
+
+            for (const auto& panelDesc : shell.projectSystemsTool().panels()) {
+                if (!panelDesc.enabled) continue;
+                if (ay + 34.f > y + h - 4.f) break;
+
+                bool active  = (m_activeProjectPanelId == panelDesc.id);
+                Rect cardR{4.f, ay, kSidebarW - 8.f, 30.f};
+                bool hovered = cardR.contains(mouse.x, mouse.y);
+
+                uint32_t bg = active  ? kAccentDark
+                            : (hovered ? m_wsTheme.hoverHighlight : 0x252525FF);
+                ui.drawRect(cardR, bg);
+                ui.drawRectOutline(cardR, active ? kAccentBlue : kBorder, 1.f);
+                ui.drawRect({4.f, ay, 3.f, 30.f}, active ? kAccentBlue : 0x404040FF);
+
+                std::string lbl = panelDesc.displayName;
+                if (lbl.size() > 16) lbl = lbl.substr(0, 13) + "...";
+                ui.drawText(12.f, ay + 8.f, lbl,
+                            active ? kTextPrimary : kTextSecondary);
+
+                if (active)
+                    ui.drawText(kSidebarW - 14.f, ay + 8.f, "*", kAccentBlue);
+
+                if (m_ctx.hitRegion(cardR, false)) {
+                    if (active) {
+                        m_activeProjectPanelId.clear();
+                    } else {
+                        m_activeProjectPanelId = panelDesc.id;
+                        shell.toolRegistry().deactivateTool();
+                    }
+                }
+
+                ay += 34.f;
+            }
+
+            ui.drawRect({8.f, ay + 4.f, kSidebarW - 16.f, 1.f}, kBorder);
+            ay += 14.f;
+        }
+
+        // ── Section 3: Launch Apps (external executables) ─────────────
         ui.drawText(8.f, ay, "LAUNCH TOOL", kTextSecondary);
         ui.drawRect({8.f, ay + 14.f, kSidebarW - 16.f, 1.f}, kBorder);
         ay += 20.f;
@@ -457,9 +501,13 @@ private:
         ui.drawRect({x, y, w, h}, kBackground);
 
         if (!shell.hasProject()) {
+            m_activeProjectPanelId.clear();
             renderWelcomeScreen(ui, x, y, w, h, mouse);
         } else if (shell.toolRegistry().activeTool() != nullptr) {
+            m_activeProjectPanelId.clear();
             renderActiveToolView(ui, x, y, w, h, shell, mouse);
+        } else if (!m_activeProjectPanelId.empty()) {
+            renderProjectPanelView(ui, x, y, w, h, shell, mouse);
         } else {
             renderProjectDashboard(ui, x, y, w, h, shell, mouse);
         }
@@ -759,6 +807,84 @@ private:
         if (m_ctx.hitRegion(backR, false)) {
             NF_LOG_INFO("WorkspaceUI", "Tool deactivated: back to dashboard");
             shell.toolRegistry().deactivateTool();
+        }
+        m_ctx.end();
+    }
+
+    // ── Project Systems panel view ────────────────────────────────
+    // Renders the full-screen content view for a selected project gameplay panel
+    // (e.g. Economy, Inventory Rules) when one is chosen from the PROJECT SYSTEMS
+    // sidebar section.
+    void renderProjectPanelView(UIRenderer& ui, float x, float y, float w, float h,
+                                WorkspaceShell& shell, const UIMouseState& mouse)
+    {
+        const GameplaySystemPanelDescriptor* desc =
+            shell.projectSystemsTool().findPanel(m_activeProjectPanelId);
+        if (!desc) { m_activeProjectPanelId.clear(); return; }
+
+        static constexpr float kHeaderH = 38.f;
+        static constexpr float kBottomH = 130.f;
+        const float kContentH = h - kHeaderH - kBottomH;
+
+        // ── Header bar ────────────────────────────────────────────────
+        ui.drawRect({x, y, w, kHeaderH}, kSurface);
+        ui.drawRect({x, y + kHeaderH - 1.f, w, 1.f}, kBorder);
+        ui.drawRect({x, y, 3.f, kHeaderH}, kAccentBlue);
+        ui.drawText(x + 14.f, y + 11.f, desc->displayName, kTextPrimary);
+
+        if (shell.projectAdapter()) {
+            float nameW = static_cast<float>(desc->displayName.size()) * 8.f + 14.f;
+            ui.drawText(x + nameW, y + 11.f,
+                        "  /  " + shell.projectAdapter()->projectDisplayName(),
+                        kTextSecondary);
+        }
+
+        // Back button
+        static constexpr float kBackW = 96.f;
+        Rect backR{x + w - kBackW - 8.f, y + (kHeaderH - 22.f) * 0.5f, kBackW, 22.f};
+        bool backHov = backR.contains(mouse.x, mouse.y);
+        ui.drawRect(backR, backHov ? kButtonBg : kCardBg);
+        ui.drawRectOutline(backR, kBorder, 1.f);
+        ui.drawText(backR.x + 8.f, backR.y + 4.f, "< Dashboard", kTextSecondary);
+
+        // ── Content area ──────────────────────────────────────────────
+        float cy = y + kHeaderH;
+        ui.drawRect({x, cy, w, kContentH}, kBackground);
+
+        IEditorPanel* panel = shell.projectSystemsTool().getOrCreatePanel(desc->id);
+        if (!panel) {
+            ui.drawText(x + 16.f, cy + 20.f, "Panel unavailable.", kTextMuted);
+        } else {
+            float rx = x + 24.f;
+            float ry = cy + 20.f;
+
+            ui.drawText(rx, ry, panel->panelTitle(), kTextPrimary);
+            ry += 22.f;
+            ui.drawText(rx, ry, "Category: " + desc->category, kTextSecondary);
+            ry += 18.f;
+            ui.drawText(rx, ry,
+                        panel->isReady() ? "Status: Ready" : "Status: Loading...",
+                        panel->isReady() ? kGreen : kTextMuted);
+            ry += 28.f;
+            ui.drawRect({x + 12.f, ry, w - 24.f, 1.f}, kBorder);
+            ry += 14.f;
+            ui.drawText(rx, ry,
+                        "Open NovaForge Editor to author content for this system.",
+                        kTextMuted);
+            ry += 18.f;
+            ui.drawText(rx, ry,
+                        "Changes are reflected in the game at runtime.",
+                        kTextMuted);
+        }
+
+        // ── Bottom strip ───────────────────────────────────────────────
+        renderBottomStrip(ui, x, cy + kContentH, w, kBottomH, shell);
+
+        // ── Back button click ──────────────────────────────────────────
+        m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+        if (m_ctx.hitRegion(backR, false)) {
+            NF_LOG_INFO("WorkspaceUI", "Project panel closed: back to dashboard");
+            m_activeProjectPanelId.clear();
         }
         m_ctx.end();
     }
@@ -1380,6 +1506,10 @@ private:
     int m_assetSelectedItem   = -1;
     int m_dataSelectedRow     = -1;
     int m_logicSelectedNode   = -1;
+
+    // Active project gameplay panel (PROJECT SYSTEMS sidebar selection).
+    // Empty string = none selected (shows project dashboard).
+    std::string m_activeProjectPanelId;
 
     // ── Atlas AI chat state ───────────────────────────────────────
     struct AIChatEntry { bool isUser; std::string text; };
