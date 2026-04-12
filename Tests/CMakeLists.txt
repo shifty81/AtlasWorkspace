@@ -833,3 +833,36 @@ target_link_libraries(NF_Phase60Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase60Tests)
+
+# Phase 61 — WorkspaceChangelog
+add_executable(NF_Phase61Tests
+    Workspace/test_phase61_changelog.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase61Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase61Tests)
+
+# Phase 62 — WorkspaceVariableStore
+add_executable(NF_Phase62Tests
+    Workspace/test_phase62_variable_store.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase62Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase62Tests)
+
+# Phase 63 — WorkspaceCommandPalette
+add_executable(NF_Phase63Tests
+    Workspace/test_phase63_command_palette.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase63Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase63Tests)

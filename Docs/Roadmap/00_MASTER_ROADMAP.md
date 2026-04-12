@@ -1873,3 +1873,86 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Serialize/deserialize handles pipe characters in paths ✓
 - 33 test cases pass (78 assertions) ✓
 - Total test suite: ~3706 tests passing ✓
+
+---
+
+## Phase 61 – Workspace Changelog
+
+**Status: Done**
+
+- [x] Create `WorkspaceChangelog.h` — versioned change records with categories, severity, filtering, and search
+  - [x] ChangeCategory enum (Feature/Bugfix/Breaking/Deprecated/Internal/Security) with `changeCategoryName()` helper
+  - [x] ChangeSeverity enum (Patch/Minor/Major/Critical) with `changeSeverityName()` helper
+  - [x] ChangeEntry — id + version + summary + detail + category + severity + timestampMs; `isValid()` (id + summary); equality by id
+  - [x] ChangeVersion — semantic version string + releaseDate + notes + entries (MAX_ENTRIES=256); `addEntry`/`removeEntry`/`findEntry`; `filterByCategory`/`filterBySeverity`/`countByCategory`; `isValid()` (version not empty); `clear()`
+  - [x] Changelog — version registry (MAX_VERSIONS=128); `addVersion`/`removeVersion`/`findVersion`/`hasVersion`; `addEntry` shortcut with observer notify; `searchByText` (case-insensitive on summary+detail)/`filterByCategory`/`filterBySeverity`; `totalEntries()`; observer callbacks (MAX_OBSERVERS=16); `serialize()`/`deserialize()` with pipe escaping; `clear()`
+- [x] Add `Tests/Workspace/test_phase61_changelog.cpp` — 36 test cases / 87 assertions:
+  - [x] ChangeCategory/ChangeSeverity (2 tests): all 6+4 name helpers
+  - [x] ChangeEntry (4 tests): default invalid, valid, invalid without summary, equality
+  - [x] ChangeVersion (11 tests): default empty, invalid, addEntry/invalid/duplicate, removeEntry/unknown, findEntry, filterByCategory, filterBySeverity, countByCategory, clear
+  - [x] Changelog (15 tests): default empty, addVersion/invalid/duplicate, removeVersion/unknown, addEntry/unknown, searchByText/case-insensitive/empty, filterByCategory, filterBySeverity, observer, clearObservers, serialize empty/round-trip/pipe, deserialize empty, clear
+  - [x] Integration (2 tests): multi-version search, serialize/deserialize multi-version
+- [x] Wire `NF_Phase61Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ChangeVersion.filterByCategory() and filterBySeverity() work across entries ✓
+- Changelog.addEntry() notifies observers ✓
+- Changelog.searchByText() is case-insensitive across summary and detail ✓
+- Serialize/deserialize handles pipe characters ✓
+- 36 test cases pass (87 assertions) ✓
+- Total test suite: ~3742 tests passing ✓
+
+---
+
+## Phase 62 – Workspace Variable Store
+
+**Status: Done**
+
+- [x] Create `WorkspaceVariableStore.h` — typed key-value variable storage with scopes, observers, and serialization
+  - [x] VariableType enum (String/Int/Float/Bool/Custom) with `variableTypeName()` helper
+  - [x] Variable — key + type + value + scope + readOnly + description; `isValid()` (key not empty); equality by key+scope
+  - [x] VariableScope — id + name + persistent; `set` (upsert, respects readOnly); `setReadOnly`/`remove` (blocked if readOnly); `find`/`findMut`/`get`/`contains`/`filterByType`; MAX_VARS=512; `clear()`; `isValid()` (id + name)
+  - [x] VariableStore — scope registry (MAX_SCOPES=64); `addScope`/`removeScope`/`findScope`/`hasScope`; `set`/`get`/`remove`/`contains` shortcuts; `searchByKey` (case-insensitive); `totalVariables()`; observer callbacks with scopeId+key+oldVal+newVal (MAX_OBSERVERS=16); `serialize()`/`deserialize()` with pipe escaping; `clear()`
+- [x] Add `Tests/Workspace/test_phase62_variable_store.cpp` — 40 test cases / 96 assertions:
+  - [x] VariableType (1 test): all 5 name helpers
+  - [x] Variable (4 tests): default invalid, valid, equality, readOnly default
+  - [x] VariableScope (12 tests): default empty, invalid, set/get, set updates, set invalid, set readOnly, setReadOnly/unknown, remove/unknown/readOnly, filterByType, clear
+  - [x] VariableStore (17 tests): default empty, addScope/invalid/duplicate, removeScope/unknown, set/get, set unknown, set readOnly, get unknown, remove, contains, searchByKey/empty, observer new/update, clearObservers, serialize empty/round-trip/pipe, deserialize empty, clear
+  - [x] Integration (2 tests): multi-scope, serialize/deserialize preserves data
+- [x] Wire `NF_Phase62Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- VariableScope.set() respects readOnly flag on update ✓
+- VariableScope.remove() blocked when readOnly ✓
+- VariableStore observer fires with scopeId + key + old/new values ✓
+- VariableStore.searchByKey() is case-insensitive ✓
+- Serialize/deserialize handles pipe characters and persistent flag ✓
+- 40 test cases pass (96 assertions) ✓
+- Total test suite: ~3782 tests passing ✓
+
+---
+
+## Phase 63 – Workspace Command Palette
+
+**Status: Done**
+
+- [x] Create `WorkspaceCommandPalette.h` — searchable command registry with categories, shortcuts, history, and execution
+  - [x] CommandCategory enum (General/Tool/Edit/View/Build/Navigate/Debug/Plugin) with `commandCategoryName()` helper
+  - [x] CommandEntry — id + label + category + shortcut + description + enabled + handler(→bool); `isValid()` (id + label + handler); equality by id
+  - [x] CommandHistory — ring buffer (MAX_HISTORY=64); `push` (deduplicates to front); `contains`/`mostRecent`/`count`/`empty`/`entries`; `clear()`
+  - [x] CommandPalette — command registry (MAX_COMMANDS=512); `registerCommand`/`unregisterCommand`/`find`/`findMut`/`hasCommand`/`setEnabled`; `execute` (checks enabled, calls handler, records history, notifies observers); `searchByLabel` (case-insensitive on label+description)/`filterByCategory`/`findByShortcut`; history access; observer callbacks with commandId+succeeded (MAX_OBSERVERS=16); `serialize()` (metadata only)/`deserializeMetadata()` (updates existing commands, no handler restore); `clear()`
+- [x] Add `Tests/Workspace/test_phase63_command_palette.cpp` — 48 test cases / 106 assertions:
+  - [x] CommandCategory (1 test): all 8 name helpers
+  - [x] CommandEntry (6 tests): default invalid, valid, invalid without label/handler, equality, enabled default
+  - [x] CommandHistory (7 tests): default empty, push/mostRecent, deduplicates to top, empty push no-op, contains, clear, MAX_HISTORY limit
+  - [x] CommandPalette (26 tests): default empty, register/invalid/duplicate, unregister/unknown, setEnabled/unknown, execute success/failure/unknown/disabled, searchByLabel/case-insensitive/empty, filterByCategory, findByShortcut/not-found, observer success/failure, clearObservers, serialize empty/round-trip/pipe, deserializeMetadata empty, clear
+  - [x] Integration (2 tests): full workflow with history dedup, serialize/deserialize metadata update
+- [x] Wire `NF_Phase63Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- CommandHistory deduplicates repeated commands (moves to front) ✓
+- CommandPalette.execute() skips disabled commands and does not record in history ✓
+- CommandPalette.searchByLabel() is case-insensitive ✓
+- serialize()/deserializeMetadata() round-trip updates label/shortcut/category/enabled ✓
+- 48 test cases pass (106 assertions) ✓
+- Total test suite: ~3830 tests passing ✓
