@@ -29,6 +29,7 @@
 #include "NF/Workspace/ConsoleCommandBus.h"
 #include "NF/Workspace/SelectionService.h"
 #include "NF/Workspace/EditorEventBus.h"
+#include "NF/Workspace/WorkspaceViewportManager.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -184,6 +185,9 @@ public:
     [[nodiscard]] EditorEventBus&            eventBus()            { return m_eventBus;         }
     [[nodiscard]] const EditorEventBus&      eventBus()      const { return m_eventBus;         }
 
+    [[nodiscard]] WorkspaceViewportManager&       viewportManager()       { return m_viewportManager; }
+    [[nodiscard]] const WorkspaceViewportManager& viewportManager() const { return m_viewportManager; }
+
     [[nodiscard]] ShellPhase phase() const { return m_phase; }
 
 private:
@@ -232,6 +236,7 @@ private:
     ConsoleCommandBus         m_commandBus;
     SelectionService          m_selectionService;
     EditorEventBus            m_eventBus;
+    WorkspaceViewportManager  m_viewportManager;
 
     std::vector<ToolFactory>  m_toolFactories;   // pending factories (before init)
     std::unique_ptr<IGameProjectAdapter> m_projectAdapter;

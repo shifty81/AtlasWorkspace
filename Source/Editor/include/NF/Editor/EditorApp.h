@@ -44,6 +44,8 @@
 #include "NF/Editor/AssetImporters.h"
 #include "NF/Editor/BlenderImporter.h"
 #include "NF/Editor/WorkspacePanelHost.h"
+#include "NF/Workspace/WorkspaceViewportBridge.h"
+#include "NF/Workspace/WorkspaceViewportManager.h"
 
 namespace NF {
 
@@ -618,7 +620,14 @@ public:
             panel->render(m_ui, bounds, m_theme);
         }
 
-        // AtlasUI panels — render on top of legacy panels using proper widgets
+        // AtlasUI panels — render on top of legacy panels using proper widgets.
+        // First run the viewport frame loop so colorAttachment IDs are ready.
+        if (m_viewportMgr) {
+            m_viewportMgr->clearGizmos();
+            auto results = m_viewportMgr->renderFrame();
+            WorkspaceViewportBridge::forwardFrameResults(
+                &m_workspacePanelHost.viewport(), results);
+        }
         m_workspacePanelHost.renderPanels(m_dockLayout);
 
         // ── Panel border outlines ─────────────────────────────────
@@ -867,6 +876,11 @@ public:
     // AtlasUI workspace panel host accessor
     [[nodiscard]] WorkspacePanelHost& workspacePanelHost() { return m_workspacePanelHost; }
     [[nodiscard]] const WorkspacePanelHost& workspacePanelHost() const { return m_workspacePanelHost; }
+
+    // Viewport manager — injected from outside (typically WorkspaceShell::viewportManager()).
+    // When set, renderAll() drives the frame loop and forwards results to the viewport panel.
+    void setViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
+    [[nodiscard]] WorkspaceViewportManager* viewportManager() const { return m_viewportMgr; }
 
     // M2/S1 accessors
     EntityPlacementTool& entityPlacementTool() { return m_entityPlacement; }
@@ -1239,6 +1253,10 @@ private:
 
     // AtlasUI workspace panel host (owns the 8 core AtlasUI panels)
     WorkspacePanelHost m_workspacePanelHost;
+
+    // Viewport manager pointer — injected via setViewportManager().
+    // Not owned; lifetime managed by WorkspaceShell.
+    WorkspaceViewportManager* m_viewportMgr = nullptr;
 
     // ── Menu / toolbar interaction state ────────────────────────
     int  m_openMenuCategoryIdx = -1; // -1 = no open dropdown

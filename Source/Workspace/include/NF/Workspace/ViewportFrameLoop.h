@@ -17,6 +17,7 @@
 #include "NF/Workspace/ViewportHostContract.h"
 #include "NF/Workspace/IViewportSurface.h"
 #include "NF/Workspace/IViewportSceneProvider.h"
+#include "NF/Workspace/GizmoRenderer.h"
 #include <vector>
 
 namespace NF {
@@ -48,12 +49,19 @@ public:
     void setSceneRegistry(ViewportSceneProviderRegistry* r) { m_sceneReg = r; }
     void setSurfaceRegistry(ViewportSurfaceRegistry* r)     { m_surfaceReg = r; }
 
+    /// Optional: attach a GizmoRenderer to composite gizmo overlays after
+    /// each scene pass.  When set, renderFrame() calls
+    /// gizmoRenderer->renderToSurface() for every slot that was rendered.
+    void setGizmoRenderer(GizmoRenderer* r) { m_gizmoRenderer = r; }
+
     [[nodiscard]] ViewportHostRegistry*            viewportRegistry() const { return m_viewportReg; }
     [[nodiscard]] ViewportSceneProviderRegistry*   sceneRegistry()    const { return m_sceneReg; }
     [[nodiscard]] ViewportSurfaceRegistry*         surfaceRegistry()  const { return m_surfaceReg; }
+    [[nodiscard]] GizmoRenderer*                   gizmoRenderer()    const { return m_gizmoRenderer; }
 
     /// Execute one frame.
     /// Iterates all active slots, calls scene providers, bind/unbind surfaces,
+    /// composites the gizmo overlay (if a GizmoRenderer is attached),
     /// increments frameCount, and returns one result per active slot.
     std::vector<ViewportFrameResult> renderFrame() {
         ++m_stats.frameNumber;
@@ -83,13 +91,18 @@ public:
                         // Real render backends inject draw calls between bind/unbind.
                         // The frame loop itself is backend-agnostic.
                         surface->unbind();
+
+                        // Step 3 — composite gizmo overlay onto the surface
+                        if (m_gizmoRenderer)
+                            m_gizmoRenderer->renderToSurface(*surface, slot.handle);
+
                         result.colorAttachmentId = surface->colorAttachment();
                         result.rendered = true;
                     }
                 }
             }
 
-            // Step 3 — notify registry that a frame was processed
+            // Step 4 — notify registry that a frame was processed
             m_viewportReg->onFrameRendered(slot.handle);
 
             if (result.rendered) ++m_stats.renderedSlots;
@@ -109,9 +122,10 @@ public:
     }
 
 private:
-    ViewportHostRegistry*          m_viewportReg = nullptr;
-    ViewportSceneProviderRegistry* m_sceneReg    = nullptr;
-    ViewportSurfaceRegistry*       m_surfaceReg  = nullptr;
+    ViewportHostRegistry*          m_viewportReg   = nullptr;
+    ViewportSceneProviderRegistry* m_sceneReg      = nullptr;
+    ViewportSurfaceRegistry*       m_surfaceReg    = nullptr;
+    GizmoRenderer*                 m_gizmoRenderer = nullptr;
     ViewportFrameStats             m_stats;
 };
 

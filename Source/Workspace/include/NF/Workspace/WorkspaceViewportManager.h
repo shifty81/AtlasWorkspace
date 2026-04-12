@@ -39,6 +39,7 @@ public:
         m_frameLoop.setViewportRegistry(&m_viewportReg);
         m_frameLoop.setSceneRegistry(&m_sceneReg);
         m_frameLoop.setSurfaceRegistry(&m_surfaceReg);
+        m_frameLoop.setGizmoRenderer(&m_gizmoRenderer);
     }
 
     // ── Slot lifecycle ────────────────────────────────────────────────────────
