@@ -1,0 +1,35 @@
+# Naming Canon
+
+> Canonical reference: `Docs/Canon/03_NAMING_CANON.md`
+
+This document mirrors the naming canon for Architecture-directory consumers.
+
+## Core Names
+
+| Name | Meaning |
+|------|---------|
+| AtlasWorkspace | The development host platform executable and repo |
+| AtlasUI | The native C++ UI framework (widgets, theme, draw lists) |
+| AtlasAI | The AI broker system (formerly Arbiter + SwissAgent) |
+| NovaForge | The hosted game project (adapter-loaded, logically detachable) |
+| WorkspaceShell | Composition root — owns registries, managers, services |
+| IHostedTool | Interface for primary workspace tools |
+| IGameProjectAdapter | Interface for project plugin loading |
+| ISharedPanel | Interface for reusable workspace panels |
+
+## Retired Names
+
+| Old Name | Replacement | Notes |
+|----------|-------------|-------|
+| Arbiter | AtlasAI | Active-path references migrated; historical preserved in Archive |
+| SwissAgent | AtlasAI | Unified under AtlasAI umbrella |
+| EditorApp | WorkspaceShell+WorkspaceRenderer | Legacy dual-runtime path deprecated |
+| NF_Editor (standalone) | NF::Workspace + NF::Editor | Split into OS layer and tool layer |
+
+## Namespace Conventions
+
+- `NF::` — root namespace for all workspace modules
+- `NF::Workspace` — OS-like host layer (shell, registries, services)
+- `NF::Editor` — primary tool implementations
+- `NF::UI` — AtlasUI widget and rendering system
+- `NovaForge::` — project-specific code (adapter, panels, game systems)
