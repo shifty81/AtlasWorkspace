@@ -4,6 +4,29 @@
 
 namespace NF {
 
+// ── Scene Render Mode ────────────────────────────────────────────
+// Per-slot render mode propagated from ViewportRenderMode down to the
+// Renderer so shader permutations / rasterizer state can be selected.
+
+enum class SceneRenderMode : uint8_t {
+    Lit,       // PBR / standard lighting (default)
+    Unlit,     // full albedo, no lighting
+    Wireframe, // geometry outline only
+    Normals,   // visualise vertex normals as colour
+    Overdraw,  // visualise overdraw cost (additive blend)
+};
+
+inline const char* sceneRenderModeName(SceneRenderMode m) {
+    switch (m) {
+    case SceneRenderMode::Lit:       return "Lit";
+    case SceneRenderMode::Unlit:     return "Unlit";
+    case SceneRenderMode::Wireframe: return "Wireframe";
+    case SceneRenderMode::Normals:   return "Normals";
+    case SceneRenderMode::Overdraw:  return "Overdraw";
+    }
+    return "Unknown";
+}
+
 // ── Vertex Data ──────────────────────────────────────────────────
 
 struct Vertex {
@@ -130,6 +153,7 @@ struct RenderCommand {
     const Material* material = nullptr;
     Mat4 transform = Mat4::identity();
     float sortKey = 0.f;
+    SceneRenderMode renderMode = SceneRenderMode::Lit; // per-command render mode
 };
 
 // ── Render Queue ─────────────────────────────────────────────────
@@ -211,6 +235,11 @@ public:
     void setCamera(const Camera& cam) { m_camera = cam; }
     [[nodiscard]] const Camera& camera() const { return m_camera; }
 
+    // Per-frame render mode — applied to all submitted commands that do not
+    // specify their own mode (i.e. commands that retain the default Lit mode).
+    void setRenderMode(SceneRenderMode mode) { m_renderMode = mode; }
+    [[nodiscard]] SceneRenderMode renderMode() const { return m_renderMode; }
+
     [[nodiscard]] int width() const { return m_width; }
     [[nodiscard]] int height() const { return m_height; }
     [[nodiscard]] float aspect() const {
@@ -224,6 +253,7 @@ private:
     Camera m_camera;
     RenderQueue m_queue;
     size_t m_drawCallCount = 0;
+    SceneRenderMode m_renderMode = SceneRenderMode::Lit;
 };
 
 // ── Light Types (G2) ────────────────────────────────────────────

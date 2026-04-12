@@ -33,6 +33,7 @@ struct IPaintContext {
     virtual void drawRect(const NF::Rect& rect, Color color) = 0;
     virtual void fillRect(const NF::Rect& rect, Color color) = 0;
     virtual void drawText(const NF::Rect& rect, std::string_view text, FontId font, Color color) = 0;
+    virtual void drawImage(const NF::Rect& rect, uint32_t textureId, Color tint) = 0;
     virtual void pushClip(const NF::Rect& rect) = 0;
     virtual void popClip() = 0;
     [[nodiscard]] virtual DrawList& drawList() = 0;

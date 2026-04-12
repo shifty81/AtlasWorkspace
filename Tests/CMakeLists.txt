@@ -800,3 +800,80 @@ target_link_libraries(NF_Phase57Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase57Tests)
+
+# Phase 58 — WorkspaceOutputPanel
+add_executable(NF_Phase58Tests
+    Workspace/test_phase58_output_panel.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase58Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase58Tests)
+
+# Phase 59 — WorkspacePropertyInspector
+add_executable(NF_Phase59Tests
+    Workspace/test_phase59_property_inspector.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase59Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase59Tests)
+
+# Phase 60 — WorkspaceFileWatcher
+add_executable(NF_Phase60Tests
+    Workspace/test_phase60_file_watcher.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase60Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase60Tests)
+
+# Phase 61 — WorkspaceChangelog
+add_executable(NF_Phase61Tests
+    Workspace/test_phase61_changelog.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase61Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase61Tests)
+
+# Phase 62 — WorkspaceVariableStore
+add_executable(NF_Phase62Tests
+    Workspace/test_phase62_variable_store.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase62Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase62Tests)
+
+# Phase 63 — WorkspaceCommandPalette
+add_executable(NF_Phase63Tests
+    Workspace/test_phase63_command_palette.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase63Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase63Tests)
+
+# Phase 64 — Viewport Rendering Implementation
+add_executable(NF_Phase64Tests
+    Workspace/test_phase64_viewport_rendering.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase64Tests PRIVATE
+    NF::Workspace NF::UI NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase64Tests)

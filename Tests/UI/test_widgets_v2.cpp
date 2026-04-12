@@ -34,6 +34,9 @@ struct TestPaintCtx : IPaintContext {
     void drawText(const NF::Rect& r, std::string_view t, FontId f, Color c) override {
         dl.push(DrawTextCmd{r, std::string(t), f, c});
     }
+    void drawImage(const NF::Rect& r, uint32_t textureId, Color tint) override {
+        dl.push(DrawImageCmd{r, textureId, tint});
+    }
     void pushClip(const NF::Rect&) override {}
     void popClip() override {}
     DrawList& drawList() override { return dl; }
