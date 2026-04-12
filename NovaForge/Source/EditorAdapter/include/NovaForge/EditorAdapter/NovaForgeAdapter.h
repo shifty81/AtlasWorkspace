@@ -19,7 +19,15 @@ public:
     /// Construct with the absolute path to the NovaForge project root directory.
     /// This is the directory that contains NovaForge.atlas / novaforge.project.json.
     explicit NovaForgeAdapter(std::string projectRoot)
-        : m_projectRoot(std::move(projectRoot)) {}
+        : m_projectRoot(std::move(projectRoot)) {
+        // Pre-compute absolute content roots once so contentRoots() is allocation-free.
+        namespace fs = std::filesystem;
+        fs::path root(m_projectRoot);
+        m_contentRoots = {
+            (root / "Content").string(),
+            (root / "Data").string(),
+        };
+    }
 
     std::string projectId() const override { return "novaforge"; }
     std::string projectDisplayName() const override { return "NovaForge"; }
@@ -41,12 +49,7 @@ public:
     }
 
     std::vector<std::string> contentRoots() const override {
-        namespace fs = std::filesystem;
-        fs::path root(m_projectRoot);
-        return {
-            (root / "Content").string(),
-            (root / "Data").string(),
-        };
+        return m_contentRoots;
     }
 
     std::vector<std::string> customCommands() const override {
@@ -60,6 +63,7 @@ public:
 
 private:
     std::string m_projectRoot;
+    std::vector<std::string> m_contentRoots;
     std::vector<NF::GameplaySystemPanelDescriptor> m_panels;
 
     static std::vector<NF::GameplaySystemPanelDescriptor> buildPanelDescriptors() {

@@ -7,7 +7,7 @@
 //
 // Usage (called once per frame, outside WM_PAINT):
 //
-//   shell.inputRouter().beginFrame(inputSystem.state(), inputSystem.isKeyDown(KeyCode::Mouse1));
+//   shell.inputRouter().beginFrame(inputSystem.state());
 //
 // Usage (inside WM_PAINT / render path):
 //
@@ -44,9 +44,10 @@ enum class InputFocusTarget : uint8_t {
 class InputRouter {
 public:
     // Call once per frame BEFORE rendering, from the main loop.
-    // |state| is the InputSystem frame snapshot.
-    // |currLeftDown| is the raw left-button state this frame (from isKeyDown).
-    void beginFrame(const InputState& state, bool currLeftDown) {
+    // |state| is the InputSystem frame snapshot.  Mouse button state and typed
+    // text are extracted from |state| directly — no extra parameters needed.
+    void beginFrame(const InputState& state) {
+        const bool currLeftDown = state.keys[static_cast<size_t>(KeyCode::Mouse1)];
         m_mouse.x           = state.mouse.x;
         m_mouse.y           = state.mouse.y;
         m_mouse.scrollDelta = state.mouse.scrollDelta;

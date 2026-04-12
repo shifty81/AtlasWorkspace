@@ -250,12 +250,10 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
         if (g_shell && g_renderer && g_ui && g_gdiBackend && g_inputSystem) {
-            // Route input through the shell's InputRouter.  beginFrame() updates
-            // the cached UIMouseState (with correct edge-transition flags) and
-            // the shell owns the prevLeftDown tracking internally.
-            g_shell->inputRouter().beginFrame(
-                g_inputSystem->state(),
-                g_inputSystem->isKeyDown(NF::KeyCode::Mouse1));
+            // Route input through the shell's InputRouter.  beginFrame() extracts
+            // mouse position, button edge transitions, scroll, and typed text from
+            // the InputSystem snapshot.  The shell owns the prevLeftDown tracking.
+            g_shell->inputRouter().beginFrame(g_inputSystem->state());
 
             const NF::UIMouseState& mouse = g_shell->inputRouter().mouseState();
 
