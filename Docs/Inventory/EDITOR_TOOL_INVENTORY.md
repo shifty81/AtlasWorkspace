@@ -1,6 +1,6 @@
 # Editor Tool Inventory
 
-323 headers in `Source/Editor/include/NF/Editor/`. Target: ~10 primary tools + shared panels/services.
+323 headers in `Source/Editor/include/NF/Editor/`. Target: up to 20 primary tools + project adapter tools (unlimited).
 
 ## Classification Key
 
@@ -44,24 +44,30 @@
 
 | Header | Current | Target | Action |
 |--------|---------|--------|--------|
-| AnimationEditor.h | Tool | Tool | Keep |
+| AnimationEditorTool.h | Tool | Tool | Keep |
 | AnimBlueprintEditor.h | Tool | Tool | Keep |
-| MaterialEditor.h | Tool | Tool | Keep |
+| MaterialEditorTool.h | Tool | Tool | Keep |
 | ShaderGraphEditor.h | Tool | Tool | Keep |
-| DataTableEditor.h | Tool | Tool | Keep |
+| DataEditorTool.h | Tool | Tool | Keep |
 | PackagingEditor.h | Tool | Tool | Keep |
 | BuildPipelineEditorV1.h | Tool | Tool | Keep |
-| HUDEditor.h | Tool | Tool | Keep |
-| UIDesignEditor.h | Tool | Tool | Keep |
+| UIEditorTool.h | Tool | Tool | Keep (rename from HUDEditor) |
 | TimelineEditor.h | Tool | Tool | Keep |
 | TextureEditor.h | Tool | Tool | Keep |
 | StaticMeshEditor.h | Tool | Tool | Keep |
 | PrefabEditor.h | Tool | Tool | Keep |
-| TerrainEditor.h | Tool | Tool | Keep |
-| ParticleEditor.h | Tool | Tool | Keep |
-| AudioMixerEditor.h | Tool | Tool | Keep |
 | GraphEditorPanel.h | Tool | Tool | Keep |
 | LogicGraph.h | Tool | Tool | Keep |
+| ParticleEditorTool.h | Tool | Tool | Keep |
+| AudioEditorTool.h | Tool | Tool | Keep |
+| PhysicsEditorTool.h | Tool | Tool | Keep (stub needed) |
+| TerrainEditorTool.h | Tool | Tool | Keep (promote from Scene/) |
+| CinematicEditorTool.h | Tool | Tool | Keep (promote from Animation/) |
+| ProfilerTool.h | Tool | Tool | Keep (stub needed) |
+| VersionControlTool.h | Tool | Tool | Keep (promote from service) |
+| ScriptingConsoleTool.h | Tool | Tool | Keep (promote from ScriptingConsole.h) |
+| SettingsTool.h | Tool | Tool | Keep (stub needed) |
+| WorkspaceBrowserTool.h | Tool | Tool | Keep (stub needed) |
 
 ## Convert to Shared Panels
 
@@ -149,26 +155,28 @@
 | RepoSurfaceV1.h | Service | Service | Service |
 | TypographySystem.h | Service | Service | Service |
 
-## Move to NovaForge Adapter (Project-Specific)
+## Move to Project Adapter (NovaForge or other project)
+
+> These headers belong in `NovaForge/Source/Editor/include/NovaForge/Editor/` (or equivalent per-project path), **not** in workspace core. They load into the workspace shell through `ProjectSystemsTool` + `IGameProjectAdapter` and do not count against the 20-tool roster cap.
 
 | Header | Current | Target | Action |
 |--------|---------|--------|--------|
-| GameEconomyEditor.h | Tool | NovaForge Panel | Adapter |
-| InventoryEditor.h | Tool | NovaForge Panel | Adapter |
-| ItemShopEditor.h | Tool | NovaForge Panel | Adapter |
-| DailyQuestEditor.h | Tool | NovaForge Panel | Adapter |
-| AchievementEditor.h | Tool | NovaForge Panel | Adapter |
-| CharacterCreatorEditor.h | Tool | NovaForge Panel | Adapter |
-| QuestEditor.h | Tool | NovaForge Panel | Adapter |
-| ProgressionEditor.h | Tool | NovaForge Panel | Adapter |
-| CostumeEditor.h | Tool | NovaForge Panel | Adapter |
-| VirtualCurrencyEditor.h | Tool | NovaForge Panel | Adapter |
-| TrophyEditor.h | Tool | NovaForge Panel | Adapter |
-| SeasonPassEditor.h | Tool | NovaForge Panel | Adapter |
-| RewardSystemEditor.h | Tool | NovaForge Panel | Adapter |
-| BiomeEditor.h | Tool | NovaForge Panel | Adapter |
-| EcosystemEditor.h | Tool | NovaForge Panel | Adapter |
-| DungeonGenerator.h | Tool | NovaForge Panel | Adapter |
+| GameEconomyEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| InventoryEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| ItemShopEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| DailyQuestEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| AchievementEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| CharacterCreatorEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| QuestEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| ProgressionEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| CostumeEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| VirtualCurrencyEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| TrophyEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| SeasonPassEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| RewardSystemEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| BiomeEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| EcosystemEditor.h | Tool | NovaForge/Source/Editor/ | Adapter |
+| DungeonGenerator.h | Tool | NovaForge/Source/Editor/ | Adapter |
 
 ## Archive / Defer
 

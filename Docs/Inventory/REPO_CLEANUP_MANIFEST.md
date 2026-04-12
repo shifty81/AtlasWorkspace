@@ -100,3 +100,17 @@
 | edit | AtlasAI/README.md | ✅ Done |
 | edit | AtlasAI/ATLAS_AI_OVERVIEW.md | ✅ Done (historical, kept as-is) |
 | edit | Atlas/Workspace/README.md | ✅ Done |
+
+## Pass 10: Roster Expansion + Overspray Archive + Adapter Header Moves (Done)
+
+| Action | Path | Status |
+|--------|------|--------|
+| edit | Docs/Canon/05_EDITOR_STRATEGY.md (20-tool roster + adapter model) | ✅ Done |
+| edit | Docs/Inventory/EDITOR_TOOL_INVENTORY.md (20-tool target, 10 new tools, rename adapter section) | ✅ Done |
+| edit | Docs/Roadmap/04_EDITOR_CONSOLIDATION.md (Phase 3b, 11 new tools in table, adapter model section) | ✅ Done |
+| edit | Docs/Canon/00_PROJECT_STATUS.md (update editor surface line) | ✅ Done |
+| edit | Docs/Inventory/PANEL_AND_SERVICE_MATRIX.md (adapter path note, 4 new adapter panels) | ✅ Done |
+| add | Archive/Legacy/Editor_Overspray/README.md | ✅ Done |
+| archive | 49 overspray headers → Archive/Legacy/Editor_Overspray/ | ✅ Done |
+| add | NovaForge/Source/Editor/include/NovaForge/Editor/README.md | ✅ Done |
+| move | 16 adapter headers → NovaForge/Source/Editor/include/NovaForge/Editor/ | ✅ Done |

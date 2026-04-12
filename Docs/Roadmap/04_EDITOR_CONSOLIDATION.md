@@ -1,9 +1,8 @@
 # Editor Consolidation
 
-**Phase 3 of the Master Roadmap — DONE**
+**Phase 3 complete. Phase 3b — Roster Expansion (active)**
 
-> ⚠️ STOP: No new V1 stub headers. No new S-story test expansions.
-> Stories S4–S189 are archived. Phase 3 is complete.
+> ⚠️ Phase 3 (S4–S189 story stubs) is archived. Phase 3b expands the primary tool roster from ~10 to 20 and formalizes the project adapter model.
 
 ## Purpose
 
@@ -63,6 +62,17 @@ its shared panels, and register with WorkspaceShell via ToolRegistry.
 | BuildTool | workspace.build_tool | [x] Done |
 | AtlasAITool | workspace.atlasai | [x] Done |
 | ProjectSystemsTool | workspace.project_systems | [x] Exists (adapter host) |
+| ParticleEditorTool | workspace.particle_editor | [ ] Planned |
+| AudioEditorTool | workspace.audio_editor | [ ] Planned |
+| PhysicsEditorTool | workspace.physics_editor | [ ] Stub needed |
+| TerrainEditorTool | workspace.terrain_editor | [ ] Planned (promote from Scene/) |
+| CinematicEditorTool | workspace.cinematic_editor | [ ] Planned (promote from Animation/) |
+| ProfilerTool | workspace.profiler | [ ] Stub needed |
+| VersionControlTool | workspace.version_control | [ ] Planned (promote from service) |
+| ScriptingConsoleTool | workspace.scripting_console | [ ] Planned (promote from ScriptingConsole.h) |
+| SettingsTool | workspace.settings | [ ] Stub needed |
+| UIEditorTool | workspace.ui_editor | [ ] Planned (rename from HUDEditor) |
+| WorkspaceBrowserTool | workspace.browser | [ ] Stub needed |
 
 ### Shared Panel Extraction
 Convert these from standalone headers to registered shared panels in PanelRegistry:
@@ -113,3 +123,32 @@ Source/Editor/        ← Tool implementations (NF::Editor)
     ProjectSystems/ adapter-hosted sub-panels
     Legacy/         archived V1 stubs and project-specific editors
 ```
+
+### Adapter Tool Model
+
+Game-specific authoring tools belong in the **project's own Source/Editor/** directory, not in workspace core. They are loaded into the workspace shell at runtime through `ProjectSystemsTool` + `IGameProjectAdapter`.
+
+```
+NovaForge/Source/Editor/include/NovaForge/Editor/
+  GameEconomyEditor.h
+  InventoryEditor.h
+  ItemShopEditor.h
+  QuestEditor.h
+  DailyQuestEditor.h
+  ProgressionEditor.h
+  CharacterCreatorEditor.h
+  CostumeEditor.h
+  BiomeEditor.h
+  EcosystemEditor.h
+  DungeonGenerator.h
+  TrophyEditor.h
+  VirtualCurrencyEditor.h
+  SeasonPassEditor.h
+  RewardSystemEditor.h
+  AchievementEditor.h
+```
+
+**Rules:**
+- Adapter tools do **not** count against the 20-tool roster cap
+- `IGameProjectAdapter.h`, `IHostedTool.h`, and `ProjectSystemsTool.h` must always remain in workspace core
+- Each project registers its adapter via `WorkspaceShell::setGameProjectAdapter()`
