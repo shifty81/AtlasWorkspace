@@ -767,3 +767,36 @@ target_link_libraries(NF_Phase54Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase54Tests)
+
+# Phase 55 — WorkspaceFavorites
+add_executable(NF_Phase55Tests
+    Workspace/test_phase55_favorites.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase55Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase55Tests)
+
+# Phase 56 — WorkspaceTaskQueue
+add_executable(NF_Phase56Tests
+    Workspace/test_phase56_task_queue.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase56Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase56Tests)
+
+# Phase 57 — WorkspaceSnippetLibrary
+add_executable(NF_Phase57Tests
+    Workspace/test_phase57_snippet_library.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase57Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase57Tests)
