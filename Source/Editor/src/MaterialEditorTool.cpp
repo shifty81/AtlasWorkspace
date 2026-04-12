@@ -4,6 +4,8 @@
 // Manages material and shader-graph authoring within AtlasWorkspace.
 
 #include "NF/Editor/MaterialEditorTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
+#include <cstdio>
 
 namespace NF {
 
@@ -102,6 +104,46 @@ void MaterialEditorTool::setTextureSlotCount(uint32_t count) {
 
 void MaterialEditorTool::setOpenAssetPath(const std::string& path) {
     m_openAssetPath = path;
+}
+
+void MaterialEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
+    // Three-column layout: Material Graph (35%) | Viewport Preview (40%) | Properties (25%)
+    const float graphW   = ctx.w * 0.35f;
+    const float previewW = ctx.w * 0.40f;
+    const float propW    = ctx.w - graphW - previewW;
+
+    // ── Material Graph ────────────────────────────────────────────
+    ctx.drawPanel(ctx.x, ctx.y, graphW, ctx.h, "Material Graph");
+    {
+        char nodeBuf[32];
+        std::snprintf(nodeBuf, sizeof(nodeBuf), "%u nodes", m_stats.nodeCount);
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, nodeBuf, ctx.kTextSecond);
+        char texBuf[32];
+        std::snprintf(texBuf, sizeof(texBuf), "%u texture slots", m_stats.textureSlotCount);
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 48.f, texBuf, ctx.kTextSecond);
+        if (m_stats.isDirty) {
+            ctx.drawStatusPill(ctx.x + 8.f, ctx.y + 70.f, "unsaved", ctx.kRed);
+        }
+    }
+
+    // ── Viewport Preview ──────────────────────────────────────────
+    const char* assetLabel = m_openAssetPath.empty() ? "No material open" : nullptr;
+    ctx.drawPanel(ctx.x + graphW, ctx.y, previewW, ctx.h, "Viewport Preview", assetLabel);
+    if (!m_openAssetPath.empty()) {
+        std::string label = "Asset: " + m_openAssetPath;
+        if (label.size() > 40) label = label.substr(0, 37) + "...";
+        ctx.ui.drawText(ctx.x + graphW + 8.f, ctx.y + 30.f, label, ctx.kTextSecond);
+    }
+
+    // ── Properties panel ──────────────────────────────────────────
+    ctx.drawPanel(ctx.x + graphW + previewW, ctx.y, propW, ctx.h, "Properties");
+    ctx.ui.drawText(ctx.x + graphW + previewW + 8.f, ctx.y + 30.f,
+                    "Material Parameters", ctx.kTextSecond);
+    ctx.drawStatRow(ctx.x + graphW + previewW + 8.f, ctx.y + 50.f, "Nodes:", "");
+    {
+        char nb[16]; std::snprintf(nb, sizeof(nb), "%u", m_stats.nodeCount);
+        ctx.ui.drawText(ctx.x + graphW + previewW + 118.f, ctx.y + 50.f, nb, ctx.kTextPrimary);
+    }
 }
 
 } // namespace NF

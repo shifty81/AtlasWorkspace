@@ -13,6 +13,7 @@
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
 #include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
 #include <string>
 
 namespace NF {
@@ -85,6 +86,10 @@ public:
     void setPendingSuggestionCount(uint32_t count);
     void setCodexSnippetCount(uint32_t count);
     void clearSession();
+
+    // ── Render contract ───────────────────────────────────────────
+    // Renders: Session | Chat/Codex/Suggestions | Context — three-column layout.
+    void renderToolView(const ToolViewRenderContext& ctx) const override;
 
 private:
     HostedToolDescriptor m_descriptor;

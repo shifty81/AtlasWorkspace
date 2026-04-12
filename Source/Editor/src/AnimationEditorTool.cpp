@@ -4,6 +4,8 @@
 // Manages animation clip and sequencer authoring within AtlasWorkspace.
 
 #include "NF/Editor/AnimationEditorTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
+#include <cstdio>
 
 namespace NF {
 
@@ -120,6 +122,55 @@ void AnimationEditorTool::setFrameCount(uint32_t count) {
 
 void AnimationEditorTool::setSelectedBoneCount(uint32_t count) {
     m_stats.selectedBoneCount = count;
+}
+
+void AnimationEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
+    // Three-column layout: Skeleton/Clips (20%) | Timeline (55%) | Clip Properties (25%)
+    const float skelW     = ctx.w * 0.20f;
+    const float timelineW = ctx.w * 0.55f;
+    const float propW     = ctx.w - skelW - timelineW;
+
+    // ── Skeleton / Clips panel ────────────────────────────────────
+    ctx.drawPanel(ctx.x, ctx.y, skelW, ctx.h, "Skeleton / Clips");
+    {
+        char boneBuf[32];
+        std::snprintf(boneBuf, sizeof(boneBuf), "%u bones sel.", m_stats.selectedBoneCount);
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, boneBuf, ctx.kTextSecond);
+    }
+
+    // ── Timeline panel ────────────────────────────────────────────
+    ctx.drawPanel(ctx.x + skelW, ctx.y, timelineW, ctx.h, "Timeline");
+    // Mode pill
+    ctx.drawStatusPill(ctx.x + skelW + 8.f, ctx.y + 30.f,
+                       animationEditModeName(m_editMode), ctx.kAccentBlue);
+    // Playback state
+    if (m_stats.isPlaying) {
+        ctx.drawStatusPill(ctx.x + skelW + 80.f, ctx.y + 30.f, "PLAYING", ctx.kGreen);
+    }
+    if (m_stats.isRecording) {
+        ctx.drawStatusPill(ctx.x + skelW + 150.f, ctx.y + 30.f, "REC", ctx.kRed);
+    }
+    {
+        char frameBuf[48];
+        std::snprintf(frameBuf, sizeof(frameBuf), "%.0f ms  |  %u keyframes",
+                      m_stats.clipDurationMs, m_stats.frameCount);
+        ctx.ui.drawText(ctx.x + skelW + 8.f, ctx.y + 54.f, frameBuf, ctx.kTextSecond);
+    }
+
+    // ── Clip Properties panel ─────────────────────────────────────
+    ctx.drawPanel(ctx.x + skelW + timelineW, ctx.y, propW, ctx.h, "Clip Properties");
+    {
+        char durBuf[32];
+        std::snprintf(durBuf, sizeof(durBuf), "%.1f ms", m_stats.clipDurationMs);
+        ctx.drawStatRow(ctx.x + skelW + timelineW + 8.f, ctx.y + 30.f, "Duration:", durBuf);
+        char fcBuf[16];
+        std::snprintf(fcBuf, sizeof(fcBuf), "%u", m_stats.frameCount);
+        ctx.drawStatRow(ctx.x + skelW + timelineW + 8.f, ctx.y + 48.f, "Frames:", fcBuf);
+    }
+    if (m_stats.isDirty) {
+        ctx.ui.drawText(ctx.x + skelW + timelineW + 8.f, ctx.y + ctx.h - 20.f,
+                        "* unsaved", ctx.kRed);
+    }
 }
 
 } // namespace NF

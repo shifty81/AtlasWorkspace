@@ -13,6 +13,7 @@
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
 #include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
 #include <string>
 
 namespace NF {
@@ -83,6 +84,10 @@ public:
 
     [[nodiscard]] const std::string& openAssetPath() const { return m_openAssetPath; }
     void                             setOpenAssetPath(const std::string& path);
+
+    // ── Render contract ───────────────────────────────────────────
+    // Renders: Material Graph | Viewport Preview | Properties — three-column layout.
+    void renderToolView(const ToolViewRenderContext& ctx) const override;
 
 private:
     HostedToolDescriptor  m_descriptor;

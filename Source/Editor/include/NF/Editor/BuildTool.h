@@ -13,6 +13,7 @@
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
 #include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
 #include <string>
 
 namespace NF {
@@ -87,6 +88,10 @@ public:
 
     [[nodiscard]] const std::string& activeTarget() const { return m_activeTarget; }
     void                             setActiveTarget(const std::string& target);
+
+    // ── Render contract ───────────────────────────────────────────
+    // Renders: Build Config | Build Log | Metrics — three-column layout.
+    void renderToolView(const ToolViewRenderContext& ctx) const override;
 
 private:
     HostedToolDescriptor m_descriptor;

@@ -5,6 +5,8 @@
 // workflow within the AtlasWorkspace.
 
 #include "NF/Editor/AssetEditorTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
+#include <cstdio>
 
 namespace NF {
 
@@ -113,6 +115,39 @@ void AssetEditorTool::setTotalAssetCount(uint32_t count) {
 
 void AssetEditorTool::setFilteredAssetCount(uint32_t count) {
     m_stats.filteredAssetCount = count;
+}
+
+void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
+    // Three-column layout: Content Browser (55%) | Preview (25%) | Inspector (20%)
+    const float browserW = ctx.w * 0.55f;
+    const float previewW = ctx.w * 0.25f;
+    const float inspW    = ctx.w - browserW - previewW;
+
+    // ── Content Browser ───────────────────────────────────────────
+    ctx.drawPanel(ctx.x, ctx.y, browserW, ctx.h, "Content Browser");
+    // Filter mode pill
+    ctx.drawStatusPill(ctx.x + 8.f, ctx.y + 30.f,
+                       assetFilterModeName(m_filterMode), ctx.kAccentBlue);
+    // Asset counts
+    {
+        char buf[48];
+        std::snprintf(buf, sizeof(buf), "%u / %u assets",
+                      m_stats.filteredAssetCount, m_stats.totalAssetCount);
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 54.f, buf, ctx.kTextSecond);
+    }
+    if (m_stats.isDirty) {
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + ctx.h - 20.f,
+                        "* pending import", ctx.kRed);
+    }
+
+    // ── Preview panel ─────────────────────────────────────────────
+    const char* previewHint = m_stats.totalAssetCount > 0 ? nullptr : "No asset selected";
+    ctx.drawPanel(ctx.x + browserW, ctx.y, previewW, ctx.h, "Preview", previewHint);
+
+    // ── Inspector panel ───────────────────────────────────────────
+    ctx.drawPanel(ctx.x + browserW + previewW, ctx.y, inspW, ctx.h, "Inspector");
+    ctx.ui.drawText(ctx.x + browserW + previewW + 8.f, ctx.y + 30.f,
+                    "Asset Properties", ctx.kTextSecond);
 }
 
 } // namespace NF

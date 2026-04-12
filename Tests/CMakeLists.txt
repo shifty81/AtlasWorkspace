@@ -922,3 +922,16 @@ target_link_libraries(NF_Phase68Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase68Tests)
+
+# Phase 69 — Tool Render Contract (Audit Patch 5)
+#   ToolViewRenderContext, IHostedTool::renderToolView virtual,
+#   per-tool panel layout backed by live runtime state.
+add_executable(NF_Phase69Tests
+    Editor/test_phase69_tool_render_contract.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase69Tests PRIVATE
+    NF::Editor NF::Workspace NF::UI NF::Core NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase69Tests)
