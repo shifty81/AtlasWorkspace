@@ -42,6 +42,7 @@
 #include "NF/UI/UI.h"
 #include "NF/UI/UIWidgets.h"
 #include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/WorkspaceActivityBar.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
 #include <array>
 #include <cstring>
@@ -261,13 +262,66 @@ private:
         // Right border
         ui.drawRect({kSidebarW - 1.f, y, 1.f, h}, kBorder);
 
-        // Section header
-        ui.drawText(8.f, y + 8.f, "LAUNCH TOOL", kTextSecondary);
-        ui.drawRect({8.f, y + 22.f, kSidebarW - 16.f, 1.f}, kBorder);
-
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+        float ay = y + 8.f;
 
-        float ay = y + 30.f;
+        // ── Section 1: Registered Tools (in-process IHostedTool) ──────
+        if (!shell.toolRegistry().empty()) {
+            ui.drawText(8.f, ay, "TOOLS", kTextSecondary);
+            ui.drawRect({8.f, ay + 14.f, kSidebarW - 16.f, 1.f}, kBorder);
+            ay += 20.f;
+
+            const std::string& activeId = shell.toolRegistry().activeToolId();
+            for (const auto* desc : shell.toolRegistry().allDescriptors()) {
+                if (ay + 34.f > y + h - 4.f) break;
+
+                bool active  = (desc->toolId == activeId);
+                Rect cardR{4.f, ay, kSidebarW - 8.f, 30.f};
+                bool hovered = cardR.contains(mouse.x, mouse.y);
+
+                // Background — active tint / hover tint / default
+                uint32_t bg = active  ? kAccentDark
+                            : (hovered ? m_wsTheme.hoverHighlight : 0x252525FF);
+                ui.drawRect(cardR, bg);
+                ui.drawRectOutline(cardR, active ? kAccentBlue : kBorder, 1.f);
+                // Left accent stripe
+                ui.drawRect({4.f, ay, 3.f, 30.f}, active ? kAccentBlue : 0x404040FF);
+
+                // Tool label (truncate to sidebar width)
+                std::string lbl = desc->displayName;
+                if (lbl.size() > 16) lbl = lbl.substr(0, 13) + "...";
+                ui.drawText(12.f, ay + 8.f, lbl, active ? kTextPrimary : kTextSecondary);
+
+                // "✓" for active
+                if (active)
+                    ui.drawText(kSidebarW - 14.f, ay + 8.f, "*", kAccentBlue);
+
+                // Click: activate when inactive, deactivate when active
+                if (m_ctx.hitRegion(cardR, false)) {
+                    if (active) {
+                        NF_LOG_INFO("WorkspaceUI",
+                            std::string("ActivityBar: deactivating ") + desc->toolId);
+                        shell.toolRegistry().deactivateTool();
+                    } else {
+                        NF_LOG_INFO("WorkspaceUI",
+                            std::string("ActivityBar: activating ") + desc->toolId);
+                        shell.toolRegistry().activateTool(desc->toolId);
+                    }
+                }
+
+                ay += 34.f;
+            }
+
+            // Separator between Tools and Apps sections
+            ui.drawRect({8.f, ay + 4.f, kSidebarW - 16.f, 1.f}, kBorder);
+            ay += 14.f;
+        }
+
+        // ── Section 2: Launch Apps (external executables) ─────────────
+        ui.drawText(8.f, ay, "LAUNCH TOOL", kTextSecondary);
+        ui.drawRect({8.f, ay + 14.f, kSidebarW - 16.f, 1.f}, kBorder);
+        ay += 20.f;
+
         for (const auto& desc : shell.appRegistry().apps()) {
             if (ay + 46.f > y + h) break;
 
@@ -366,8 +420,8 @@ private:
 
         m_ctx.end();
 
-        if (shell.appRegistry().empty()) {
-            ui.drawText(8.f, ay + 8.f, "(no apps registered)", kTextMuted);
+        if (shell.appRegistry().empty() && shell.toolRegistry().empty()) {
+            ui.drawText(8.f, ay + 8.f, "(no tools registered)", kTextMuted);
         }
     }
 

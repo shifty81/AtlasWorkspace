@@ -1490,3 +1490,37 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Recent list is front-inserted, deduplicates by path, capped at maxRecentProjects ✓
 - 36 test cases pass (107 assertions) ✓
 - Total test suite: ~3133 tests passing ✓
+
+---
+
+## Phase 48 – Workspace Activity Bar
+
+**Status: Done**
+
+- [x] Create `WorkspaceActivityBar.h` — activity bar data model
+  - [x] ActivityItemKind enum (Tool/Action/Separator) with `activityItemKindName()` helper
+  - [x] ActivityBarItem — id + label + iconKey + toolId + commandId + kind + enabled + pinned; `isValid()`; `isTool/isAction/isSeparator()`; `makeTool/makeAction/makeSeparator()` factories; equality by id
+  - [x] ActivityBarSection — named, ordered item collection (MAX_ITEMS=32); `addItem`/`removeItem`/`findItem`/`findItemMut`/`contains`/`count`/`clear`; duplicate id rejected; capacity enforced
+  - [x] ActivityBarManager — section registry (MAX_SECTIONS=8); `createSection`/`removeSection`/`findSection`/`hasSection`; `addItem`/`removeItem`/`findItem` (search all sections); `setActiveItem` (guards disabled, fires deactivate-then-activate observers on switch, no-ops if same id); `clearActiveItem`; `enableItem`; observer callbacks (MAX_OBSERVERS=16); `clear()`
+- [x] Update `WorkspaceRenderer::renderSidebar()` — TOOLS section prepended above LAUNCH TOOL
+  - [x] Each registered IHostedTool gets a 30px card: left accent stripe (blue if active), label, `*` marker for active tool
+  - [x] Click active tool → `deactivateTool()` (returns to dashboard); click inactive → `activateTool()`
+  - [x] Separator drawn between TOOLS and LAUNCH TOOL sections
+  - [x] Hint "(no tools registered)" only if both tool and app registries are empty
+- [x] Add `Tests/Workspace/test_phase48_activity_bar.cpp` — 48 test cases / 171 assertions:
+  - [x] ActivityItemKind (1 test): all 3 name helpers
+  - [x] ActivityBarItem (9 tests): default invalid, valid Tool, Tool without toolId, valid Action, Action without commandId, Separator only needs id, equality by id, defaults
+  - [x] ActivityBarSection (11 tests): default empty, addItem, duplicate rejected, removeItem, remove unknown, findItem, findItemMut mutates, Separator adds without kind constraints, clear, MAX_ITEMS enforced
+  - [x] ActivityBarManager (24 tests): default empty, createSection, duplicate rejected, empty name rejected, removeSection, remove unknown, findSection, addItem, addItem unknown section, removeItem searches all, removeItem unknown, findItem, setActiveItem, setActiveItem unknown, setActiveItem disabled, clearActiveItem, enableItem, enableItem unknown, observer on setActiveItem, observer deactivate+activate on switch, observer on clearActiveItem, clearObservers, MAX_SECTIONS enforced, no-op if same item, clear
+  - [x] Integration (4 tests): multi-section navigator, disable+re-enable, multiple observers, sections() view
+- [x] Wire `NF_Phase48Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ActivityItemKind provides three item types with name helpers ✓
+- ActivityBarItem.isValid() correctly gates per-kind required fields ✓
+- ActivityBarSection maintains order, rejects duplicates, enforces MAX_ITEMS ✓
+- ActivityBarManager.setActiveItem() fires deactivate+activate observers on switch, no-ops if same id ✓
+- Sidebar TOOLS section shows all registered tools with active highlight and toggle-click behavior ✓
+- Tools accessible from sidebar regardless of which view (dashboard / active tool) is shown ✓
+- 48 test cases pass (171 assertions) ✓
+- Total test suite: ~3213 tests passing ✓
