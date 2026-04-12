@@ -535,7 +535,7 @@ private:
 
         // Registered tools list — clickable rows to activate each tool
         ui.drawText(rx, ry, "Registered Tools", kTextSecondary);
-        ui.drawText(rx + w - 120.f, ry, "Click a tool to open it", kTextMuted);
+        ui.drawText(rx + w - 120.f, ry, "Click a tool to Open it", kTextMuted);
         ui.drawRect({rx, ry + 16.f, w - 32.f, 1.f}, kBorder);
         ry += 22.f;
 
