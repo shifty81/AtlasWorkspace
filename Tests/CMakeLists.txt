@@ -1210,3 +1210,113 @@ target_link_libraries(NF_EditorS192Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_EditorS192Tests)
+
+# S180 — ProcGenRuleEditorV1, WaveFunctionCollapseEditorV1, GrammarGeneratorEditorV1
+add_executable(NF_EditorS180Tests
+    Editor/Legacy/test_s180_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS180Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS180Tests)
+
+# S181 — WaterSimEditorV1, WeatherSystemEditorV1, VoxelPaintEditorV1
+add_executable(NF_EditorS181Tests
+    Editor/Legacy/test_s181_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS181Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS181Tests)
+
+# S182 — UIDesignEditorV1, UndoRedoSystemV1, TypographySystemV1
+add_executable(NF_EditorS182Tests
+    Editor/Legacy/test_s182_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS182Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS182Tests)
+
+# S183 — TrailEditorV1, VFXGraphEditorV1, TouchInputMapperV1
+add_executable(NF_EditorS183Tests
+    Editor/Legacy/test_s183_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS183Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS183Tests)
+
+# S184 — CinematicEditorV1, DecalEditorV1, LightingRigEditorV1
+add_executable(NF_EditorS184Tests
+    Editor/Legacy/test_s184_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS184Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS184Tests)
+
+# S185 — LODEditorV1, MeshBatchEditorV1, ProceduralMeshEditorV1
+add_executable(NF_EditorS185Tests
+    Editor/Legacy/test_s185_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS185Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS185Tests)
+
+# S186 — GamepadMapperV1, KeyBindingEditorV1, InputProfileEditorV1
+add_executable(NF_EditorS186Tests
+    Editor/Legacy/test_s186_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS186Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS186Tests)
+
+# S193 — ParticleSystemEditorV1, AudioGraphEditorV1, ShaderEditorV1
+add_executable(NF_EditorS193Tests
+    Editor/Legacy/test_s193_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS193Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS193Tests)
+
+# S194 — MaterialNodeEditorV1, TextureViewerV1, RenderPassEditorV1
+add_executable(NF_EditorS194Tests
+    Editor/Legacy/test_s194_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS194Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS194Tests)
+
+# S195 — SequencerTrackV1, TimelineMarkerV1, SoundMixerEditorV1
+add_executable(NF_EditorS195Tests
+    Editor/Legacy/test_s195_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS195Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS195Tests)
