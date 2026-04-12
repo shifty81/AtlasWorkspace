@@ -132,6 +132,7 @@ public:
         m_loadContract = {};
         m_openDocuments.clear();
         m_activeDocumentId.clear();
+        m_activePanelContext.clear();
         notifyChanged();
     }
 

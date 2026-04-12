@@ -111,7 +111,7 @@ public:
                 if (src) m_entries.push_back(makeUIEntry(*src));
             }
         } else {
-            for (const auto& src : registry.entries()) {
+            for (const auto& src : registry.all()) {
                 m_entries.push_back(makeUIEntry(src));
             }
         }

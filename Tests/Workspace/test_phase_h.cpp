@@ -915,7 +915,7 @@ TEST_CASE("ProjectOpenFlowController confirmOpen after valid validate", "[phase_
     ctrl.setOnProjectOpened([&](const std::string&){ opened = true; });
     ctrl.beginFileOpen();
     ctrl.selectFile("/projects/MyGame.atlas");
-    ctrl.validate();
+    (void)ctrl.validate();
     REQUIRE(ctrl.confirmOpen());
     REQUIRE(ctrl.state() == ProjectOpenFlowState::Open);
     REQUIRE(opened);
