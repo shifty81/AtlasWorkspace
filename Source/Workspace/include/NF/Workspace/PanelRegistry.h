@@ -134,6 +134,18 @@ public:
         return false;
     }
 
+    // Convenience aliases for setPanelVisible.
+    bool setVisible(const std::string& panelId, bool visible) {
+        return setPanelVisible(panelId, visible);
+    }
+
+    bool toggleVisible(const std::string& panelId) {
+        for (auto& e : m_panels) {
+            if (e.desc.panelId == panelId) { e.visible = !e.visible; return true; }
+        }
+        return false;
+    }
+
     [[nodiscard]] bool isPanelVisible(const std::string& panelId) const {
         for (const auto& e : m_panels)
             if (e.desc.panelId == panelId) return e.visible;

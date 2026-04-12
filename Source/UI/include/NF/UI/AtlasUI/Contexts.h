@@ -71,10 +71,13 @@ public:
         }
     }
 
+    void setTypedText(std::string_view text) { m_typedText = text; }
+
     [[nodiscard]] NF::Vec2 mousePosition() const override { return m_mousePosition; }
     [[nodiscard]] bool primaryDown() const override { return m_primaryDown; }
     [[nodiscard]] bool secondaryDown() const override { return m_secondaryDown; }
     [[nodiscard]] bool keyDown(int keyCode) const override { return m_keysDown.contains(keyCode); }
+    [[nodiscard]] std::string_view typedText() const override { return m_typedText; }
     void requestFocus(IWidget* widget) override { m_focusWidget = widget; }
     void capturePointer(IWidget* widget) override { m_captureWidget = widget; }
     void releasePointer(IWidget* widget) override {
@@ -90,6 +93,7 @@ private:
     NF::Vec2 m_mousePosition{};
     bool m_primaryDown = false;
     bool m_secondaryDown = false;
+    std::string m_typedText;
     std::unordered_set<int> m_keysDown;
     IWidget* m_focusWidget = nullptr;
     IWidget* m_captureWidget = nullptr;

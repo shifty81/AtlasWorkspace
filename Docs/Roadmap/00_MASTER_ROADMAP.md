@@ -2064,3 +2064,35 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Refresh deselects the selected asset if it is excluded by the new filter ✓
 - Observer callbacks fire on refresh (with count) and on select (with id) ✓
 - 41 test cases pass (102 assertions) ✓
+
+## Phase 68 – TextInput Typed-Text Wiring (Audit Patch 4)
+
+**Status: Done**
+
+Implements the text-input wiring fixes identified in `auditxtras.md` Patch 4.
+Before this phase, `TextInput::handleInput()` only tracked click-to-focus; typed
+characters were never consumed from `IInputContext`, so the widget was visually
+interactive but functionally a read-only display.
+
+- [x] Add `typedText()` pure-virtual method to `IInputContext` (Interfaces.h)
+  — returns `std::string_view` of characters typed this frame; `'\b'`=Backspace, `'\r'`=Enter
+- [x] Implement `setTypedText()` / `typedText()` in `BasicInputContext` (Contexts.h)
+- [x] Update `WorkspaceInputBridge::sync()` to forward `state.textInput` into `BasicInputContext`
+- [x] Rewrite `TextInput::handleInput()` (TextInput.cpp):
+  - Click inside → gains focus; click outside → loses focus
+  - While focused: printable chars inserted at cursor; `'\b'` removes char before cursor; `'\r'`/`'\n'` defocuses (single-line)
+  - Fires `m_onChange` callback whenever text changes
+- [x] Add `onInputFocusChanged(bool)` no-op hook to `IHostedTool` interface (IHostedTool.h)
+- [x] Update three test stub structs to implement the new `typedText()` method:
+  - `TestInputCtx` in `test_widgets_v2.cpp`
+  - `TestInputContext` in `test_atlasui.cpp`
+  - `WireTestInput` in `test_workspace_wiring.cpp`
+- [x] Add `Tests/UI/test_phase68_text_input_wiring.cpp` — 21 test cases / 25 assertions
+- [x] Wire `NF_Phase68Tests` into `Tests/CMakeLists.txt`
+
+**Success Criteria:**
+- Focused TextInput appends printable typed chars; Backspace removes; Enter defocuses ✓
+- `onChange` callback fires on text mutation (type, backspace); does not fire on Enter ✓
+- `WorkspaceInputBridge::sync()` forwards textInput including special chars ✓
+- All existing UI tests still pass (NF_UITests: 459 assertions, NF_WorkspaceWiringTests: 102 assertions) ✓
+- 21 Phase 68 test cases pass (25 assertions) ✓

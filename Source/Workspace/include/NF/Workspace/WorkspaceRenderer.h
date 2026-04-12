@@ -187,28 +187,28 @@ private:
         };
         // Project menu
         m_dropMenus[1].items = {
-            {"Close Project",    WorkspaceAction::None, "workspace.project.close",    false},
+            {"Close Project",    WorkspaceAction::None, "workspace.project.close",    true},
             {"", WorkspaceAction::None, "", false},  // separator
-            {"Project Settings", WorkspaceAction::None, "workspace.project.settings", false},
+            {"Project Settings", WorkspaceAction::None, "workspace.project.settings", true},
         };
         // Tools menu
         m_dropMenus[2].items = {
-            {"Preferences",     WorkspaceAction::None, "workspace.preferences",      false},
-            {"Command Palette", WorkspaceAction::None, "workspace.command_palette",   false},
+            {"Preferences",     WorkspaceAction::None, "workspace.preferences",      true},
+            {"Command Palette", WorkspaceAction::None, "workspace.command_palette",  true},
             {"", WorkspaceAction::None, "", false},  // separator
-            {"Diagnostics",     WorkspaceAction::None, "workspace.diagnostics",       false},
+            {"Diagnostics",     WorkspaceAction::None, "workspace.diagnostics",      true},
         };
         // View menu
         m_dropMenus[3].items = {
-            {"Content Browser", WorkspaceAction::None, "workspace.view.content_browser", false},
-            {"Inspector",       WorkspaceAction::None, "workspace.view.inspector",        false},
-            {"Outliner",        WorkspaceAction::None, "workspace.view.outliner",         false},
-            {"Console",         WorkspaceAction::None, "workspace.view.console",          false},
+            {"Content Browser", WorkspaceAction::None, "workspace.view.content_browser", true},
+            {"Inspector",       WorkspaceAction::None, "workspace.view.inspector",        true},
+            {"Outliner",        WorkspaceAction::None, "workspace.view.outliner",         true},
+            {"Console",         WorkspaceAction::None, "workspace.view.console",          true},
         };
         // Help menu
         m_dropMenus[4].items = {
-            {"Documentation", WorkspaceAction::None, "workspace.help.docs",  false},
-            {"About",         WorkspaceAction::None, "workspace.help.about", false},
+            {"Documentation", WorkspaceAction::None, "workspace.help.docs",  true},
+            {"About",         WorkspaceAction::None, "workspace.help.about", true},
         };
     }
 
@@ -654,7 +654,14 @@ private:
                         if (it.action != WorkspaceAction::None) {
                             m_pendingAction = it.action;
                         } else if (!it.command.empty()) {
-                            (void)shell.commandBus().execute(it.command);
+                            auto cmdResult = shell.commandBus().execute(it.command);
+                            if (cmdResult != ConsoleCmdExecResult::Ok &&
+                                cmdResult != ConsoleCmdExecResult::PermissionDenied) {
+                                m_pendingError = {
+                                    "Command Failed",
+                                    std::string("Could not execute: ") + it.command
+                                };
+                            }
                         }
                         m_openMenuIdx    = -1;
                         m_menuDismissed  = true;  // prevents dismissal click from activating underlying elements

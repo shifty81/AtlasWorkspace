@@ -123,6 +123,10 @@ public:
     // and cache the pointer.  Do NOT call delete on the pointer.
     virtual void onAttachInput(const InputSystem* /*input*/) {}
     virtual void onDetachInput() {}
+
+    // Called by the InputRouter / workspace shell when focus changes so that
+    // tools can update cursor, highlight, or mode display.  Default is a no-op.
+    virtual void onInputFocusChanged(bool /*focused*/) {}
 };
 
 } // namespace NF

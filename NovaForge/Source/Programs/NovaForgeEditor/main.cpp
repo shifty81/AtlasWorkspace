@@ -101,10 +101,17 @@ int main(int argc, char* argv[]) {
 
     // ── Register the NovaForge adapter factory ───────────────────
     // The registry is used when the editor loads a project from an .atlas file.
+    // The factory captures atlasFilePath by reference so that the project root
+    // (the directory containing the .atlas file) is passed to the adapter when
+    // the project is actually loaded.
     NF::ProjectRegistry projectRegistry;
     projectRegistry.initialize();
-    projectRegistry.registerProject("novaforge", []() {
-        return std::make_unique<NovaForge::NovaForgeAdapter>();
+    projectRegistry.registerProject("novaforge", [&atlasFilePath]() {
+        namespace fs = std::filesystem;
+        std::string projectRoot;
+        if (!atlasFilePath.empty())
+            projectRoot = fs::path(atlasFilePath).parent_path().string();
+        return std::make_unique<NovaForge::NovaForgeAdapter>(std::move(projectRoot));
     });
 
     // ── Load project from .atlas file ────────────────────────────

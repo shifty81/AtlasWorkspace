@@ -16,6 +16,7 @@ public:
         ctx.setMousePosition({state.mouse.x, state.mouse.y});
         ctx.setPrimaryDown(state.keys[static_cast<size_t>(KeyCode::Mouse1)]);
         ctx.setSecondaryDown(state.keys[static_cast<size_t>(KeyCode::Mouse2)]);
+        ctx.setTypedText(state.textInput);
         // Mirror a representative set of keyboard keys used by widgets.
         for (size_t k = 0; k < static_cast<size_t>(KeyCode::COUNT); ++k) {
             ctx.setKeyDown(static_cast<int>(k), state.keys[k]);

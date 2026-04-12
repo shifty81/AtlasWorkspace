@@ -27,6 +27,7 @@
 #include "NF/Workspace/IGameProjectAdapter.h"
 #include "NF/Workspace/ProjectSystemsTool.h"
 #include "NF/Workspace/ConsoleCommandBus.h"
+#include "NF/Workspace/InputRouter.h"
 #include "NF/Workspace/SelectionService.h"
 #include "NF/Workspace/EditorEventBus.h"
 #include "NF/Workspace/WorkspaceViewportManager.h"
@@ -94,6 +95,9 @@ public:
 
         // Register canonical shared panels
         registerDefaultPanels();
+
+        // Seed the command bus with default workspace commands
+        registerDefaultCommands();
 
         // Invoke registered tool factories to populate the tool registry
         for (auto& factory : m_toolFactories) {
@@ -179,6 +183,9 @@ public:
     [[nodiscard]] ConsoleCommandBus&         commandBus()          { return m_commandBus;       }
     [[nodiscard]] const ConsoleCommandBus&   commandBus()    const { return m_commandBus;       }
 
+    [[nodiscard]] InputRouter&               inputRouter()         { return m_inputRouter;      }
+    [[nodiscard]] const InputRouter&         inputRouter()   const { return m_inputRouter;      }
+
     [[nodiscard]] SelectionService&          selectionService()          { return m_selectionService; }
     [[nodiscard]] const SelectionService&    selectionService()    const { return m_selectionService; }
 
@@ -225,6 +232,108 @@ private:
         m_panelRegistry.registerPanel({"asset_preview",    "Asset Preview",   SharedPanelCategory::Preview, false});
     }
 
+    // Seed the command bus with the default workspace-level command set.
+    // Each command is registered with a live handler so menu items and the
+    // command palette can dispatch real behavior instead of no-ops.
+    void registerDefaultCommands() {
+        auto addCmd = [this](const std::string& name,
+                              ConsoleCmdScope scope,
+                              const std::string& description,
+                              ConsoleCommandHandler handler,
+                              bool enabled = true) {
+            ConsoleCommand cmd(name, scope, ConsoleCmdArgType::None);
+            cmd.setDescription(description);
+            cmd.setEnabled(enabled);
+            (void)m_commandBus.registerCommand(cmd, std::move(handler));
+        };
+
+        // Project commands
+        addCmd("workspace.project.close", ConsoleCmdScope::Global,
+               "Close the active project",
+               [this]() -> ConsoleCmdExecResult {
+                   if (!hasProject()) return ConsoleCmdExecResult::PermissionDenied;
+                   unloadProject();
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        addCmd("workspace.project.settings", ConsoleCmdScope::Global,
+               "Open project settings",
+               [this]() -> ConsoleCmdExecResult {
+                   m_shellContract.postNotification(
+                       Notification{"Project settings — not yet implemented."});
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        // Tools menu
+        addCmd("workspace.preferences", ConsoleCmdScope::Global,
+               "Open workspace preferences",
+               [this]() -> ConsoleCmdExecResult {
+                   m_shellContract.postNotification(
+                       Notification{"Preferences — not yet implemented."});
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        addCmd("workspace.command_palette", ConsoleCmdScope::Global,
+               "Open the command palette",
+               [this]() -> ConsoleCmdExecResult {
+                   m_panelRegistry.setVisible("command_palette", true);
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        addCmd("workspace.diagnostics", ConsoleCmdScope::Global,
+               "Open diagnostics panel",
+               [this]() -> ConsoleCmdExecResult {
+                   m_panelRegistry.setVisible("diagnostics", true);
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        // View menu — panel visibility toggles
+        addCmd("workspace.view.content_browser", ConsoleCmdScope::Global,
+               "Toggle Content Browser",
+               [this]() -> ConsoleCmdExecResult {
+                   m_panelRegistry.toggleVisible("content_browser");
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        addCmd("workspace.view.inspector", ConsoleCmdScope::Global,
+               "Toggle Inspector",
+               [this]() -> ConsoleCmdExecResult {
+                   m_panelRegistry.toggleVisible("inspector");
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        addCmd("workspace.view.outliner", ConsoleCmdScope::Global,
+               "Toggle Outliner",
+               [this]() -> ConsoleCmdExecResult {
+                   m_panelRegistry.toggleVisible("outliner");
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        addCmd("workspace.view.console", ConsoleCmdScope::Global,
+               "Toggle Console",
+               [this]() -> ConsoleCmdExecResult {
+                   m_panelRegistry.toggleVisible("console");
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        // Help menu
+        addCmd("workspace.help.docs", ConsoleCmdScope::Global,
+               "Open documentation",
+               [this]() -> ConsoleCmdExecResult {
+                   m_shellContract.postNotification(
+                       Notification{"Documentation: see Docs/ in the repository."});
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        addCmd("workspace.help.about", ConsoleCmdScope::Global,
+               "Show About",
+               [this]() -> ConsoleCmdExecResult {
+                   m_shellContract.postNotification(
+                       Notification{"Atlas Workspace — development host platform."});
+                   return ConsoleCmdExecResult::Ok;
+               });
+    }
+
     // ── Owned subsystems ──────────────────────────────────────────
 
     ToolRegistry              m_toolRegistry;
@@ -234,6 +343,7 @@ private:
     ProjectSystemsTool        m_projectSystemsTool;
     LayoutManagerV1           m_layoutManager;
     ConsoleCommandBus         m_commandBus;
+    InputRouter               m_inputRouter;
     SelectionService          m_selectionService;
     EditorEventBus            m_eventBus;
     WorkspaceViewportManager  m_viewportManager;

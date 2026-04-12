@@ -92,10 +92,12 @@ struct TestPaintContext : IPaintContext {
 struct TestInputContext : IInputContext {
     NF::Vec2 pos{};
     bool primary = false;
+    std::string typed;
     NF::Vec2 mousePosition() const override { return pos; }
     bool primaryDown() const override { return primary; }
     bool secondaryDown() const override { return false; }
     bool keyDown(int) const override { return false; }
+    std::string_view typedText() const override { return typed; }
     void requestFocus(IWidget*) override {}
     void capturePointer(IWidget*) override {}
     void releasePointer(IWidget*) override {}

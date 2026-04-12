@@ -21,6 +21,7 @@
 #include "NF/Workspace/WorkspaceLaunchContract.h"
 #include "NF/Workspace/IGameProjectAdapter.h"
 #include "NF/Editor/CoreToolRoster.h"
+#include "NovaForge/EditorAdapter/NovaForgeAdapter.h"
 #if defined(_WIN32)
 #  include <windows.h>
 #  include <shlobj.h>     // SHBrowseForFolderW / SHGetPathFromIDListW
@@ -37,9 +38,10 @@
 
 // ── LocalProjectAdapter ───────────────────────────────────────────
 // Minimal IGameProjectAdapter backed by a filesystem directory or .atlas file.
-// Used when the user opens or creates a project from the workspace welcome screen.
-// The adapter has no content-specific logic — it simply records the project path
-// and lets the shell host the registered tools and panels.
+// Used when the user opens or creates a generic (non-NovaForge) project from
+// the workspace welcome screen.  The adapter has no content-specific logic —
+// it simply records the project path and lets the shell host the registered
+// tools and panels.
 
 class LocalProjectAdapter final : public NF::IGameProjectAdapter {
 public:
@@ -63,43 +65,6 @@ private:
     std::string m_id;
     std::string m_displayName;
     std::string m_path;
-};
-
-// ── NovaForgeWorkspaceAdapter ─────────────────────────────────────
-// IGameProjectAdapter for the NovaForge game project that lives in the
-// repo tree under the NovaForge/ subdirectory.  It exposes the project's
-// content roots so the workspace can browse and reference NovaForge assets.
-
-class NovaForgeWorkspaceAdapter final : public NF::IGameProjectAdapter {
-public:
-    explicit NovaForgeWorkspaceAdapter(std::string projectRoot)
-        : m_root(std::move(projectRoot)) {}
-
-    std::string projectId()          const override { return "novaforge"; }
-    std::string projectDisplayName() const override { return "NovaForge"; }
-
-    bool initialize() override { return true; }
-    void shutdown()   override {}
-
-    std::vector<NF::GameplaySystemPanelDescriptor> panelDescriptors() const override {
-        return {};
-    }
-
-    std::vector<std::string> contentRoots() const override {
-        return { m_root + "/Content", m_root + "/Data" };
-    }
-
-    std::vector<std::string> customCommands() const override {
-        return {
-            "novaforge.build_game",
-            "novaforge.build_server",
-            "novaforge.launch_editor",
-            "novaforge.validate_assets",
-        };
-    }
-
-private:
-    std::string m_root;
 };
 
 // ── String conversion helpers ─────────────────────────────────────
@@ -127,8 +92,17 @@ static std::wstring utf8ToWide(const std::string& u8) {
     return ws;
 }
 
+// ── NovaForge project-root detection ─────────────────────────────
+// Returns true if |root| is the NovaForge project directory.
+// Checks for NovaForge.atlas (canonical) or novaforge.project.json (legacy marker).
+
+static bool isNovaForgeProjectRoot(const std::filesystem::path& root) {
+    return std::filesystem::exists(root / "NovaForge.atlas") ||
+           std::filesystem::exists(root / "novaforge.project.json");
+}
+
 // ── Win32 project dialogs ─────────────────────────────────────────
-// Both helpers open a modal dialog and, on success, load a LocalProjectAdapter
+// Both helpers open a modal dialog and, on success, load a project adapter
 // into the shell.  They must be called from OUTSIDE WM_PAINT (the main loop)
 // so that the nested COM/common-dialog message pump does not corrupt paint state.
 
@@ -158,11 +132,11 @@ static void doNewProject(NF::WorkspaceShell& shell, HWND hwnd) {
     std::string name    = wideToUtf8(wname.c_str());
     std::string pathStr = wideToUtf8(path);
 
-    // If the selected folder is a NovaForge project root, use the specialised
-    // adapter so its content roots and commands are registered correctly.
+    // If the selected folder is a NovaForge project root, use the NovaForgeAdapter
+    // so its gameplay panels, content roots, and commands are registered correctly.
     std::unique_ptr<NF::IGameProjectAdapter> adapter;
-    if (std::filesystem::exists(std::filesystem::path(pathStr) / "novaforge.project.json")) {
-        adapter = std::make_unique<NovaForgeWorkspaceAdapter>(pathStr);
+    if (isNovaForgeProjectRoot(std::filesystem::path(pathStr))) {
+        adapter = std::make_unique<NovaForge::NovaForgeAdapter>(pathStr);
     } else {
         adapter = std::make_unique<LocalProjectAdapter>("local." + name, name, pathStr);
     }
@@ -200,18 +174,15 @@ static void doOpenProject(NF::WorkspaceShell& shell, HWND hwnd) {
     std::string name    = wideToUtf8(wname.c_str());
     std::string pathStr = wideToUtf8(buf);
 
-    // Check whether the chosen .atlas file is the NovaForge project descriptor.
-    // If so, use the specialised adapter so its content roots and commands are
-    // registered correctly.  For any other project file, fall back to the
-    // generic LocalProjectAdapter.
+    // If the opened .atlas file belongs to the NovaForge project root, use the
+    // NovaForgeAdapter so its gameplay panels and content roots are registered.
+    // For any other project file, fall back to the generic LocalProjectAdapter.
     std::filesystem::path atlaspath(pathStr);
     std::filesystem::path projectDir = atlaspath.parent_path();
-    bool isNovaForge = (name == "NovaForge") &&
-                       std::filesystem::exists(projectDir / "novaforge.project.json");
 
     std::unique_ptr<NF::IGameProjectAdapter> adapter;
-    if (isNovaForge) {
-        adapter = std::make_unique<NovaForgeWorkspaceAdapter>(projectDir.string());
+    if (isNovaForgeProjectRoot(projectDir)) {
+        adapter = std::make_unique<NovaForge::NovaForgeAdapter>(projectDir.string());
     } else {
         adapter = std::make_unique<LocalProjectAdapter>("local." + name, name, pathStr);
     }
@@ -268,7 +239,6 @@ static int g_clientW = 1280, g_clientH = 800;
 
 // Per-frame left-button state for edge detection (leftPressed / leftReleased).
 // Updated each WM_PAINT so transitions fire for exactly one rendered frame.
-static bool g_prevLeftDown = false;
 
 static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
                                           WPARAM wParam, LPARAM lParam) {
@@ -280,18 +250,12 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
         if (g_shell && g_renderer && g_ui && g_gdiBackend && g_inputSystem) {
-            // Build UIMouseState from InputSystem — includes edge-transition flags.
-            const auto& is = g_inputSystem->state();
-            bool currLeft = g_inputSystem->isKeyDown(NF::KeyCode::Mouse1);
-            NF::UIMouseState mouse;
-            mouse.x           = is.mouse.x;
-            mouse.y           = is.mouse.y;
-            mouse.scrollDelta = is.mouse.scrollDelta;
-            mouse.leftDown    = currLeft;
-            mouse.leftPressed  = !g_prevLeftDown && currLeft;
-            mouse.leftReleased =  g_prevLeftDown && !currLeft;
-            mouse.typedText    = is.textInput;
-            g_prevLeftDown = currLeft;
+            // Route input through the shell's InputRouter.  beginFrame() extracts
+            // mouse position, button edge transitions, scroll, and typed text from
+            // the InputSystem snapshot.  The shell owns the prevLeftDown tracking.
+            g_shell->inputRouter().beginFrame(g_inputSystem->state());
+
+            const NF::UIMouseState& mouse = g_shell->inputRouter().mouseState();
 
             g_gdiBackend->setTargetDC(hdc);
             g_gdiBackend->beginFrame(g_clientW, g_clientH);
@@ -300,6 +264,7 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
                                static_cast<float>(g_clientH),
                                *g_shell, mouse, g_launchSvc);
             g_gdiBackend->endFrame();
+            g_shell->inputRouter().endFrame();
         }
         EndPaint(hwnd, &ps);
         return 0;
@@ -323,6 +288,13 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
     case WM_CLOSE:
         DestroyWindow(hwnd);
         return 0;
+    case WM_ACTIVATE:
+        // On deactivation (losing focus), reset input router focus to workspace chrome
+        // so that stale TextInput focus doesn't persist into the next activation.
+        if (LOWORD(wParam) == WA_INACTIVE && g_shell) {
+            g_shell->inputRouter().clearFocus();
+        }
+        break;
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
