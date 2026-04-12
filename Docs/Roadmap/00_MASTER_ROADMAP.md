@@ -1642,3 +1642,62 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - serialize/deserialize round-trip is lossless ✓
 - 38 test cases pass (88 assertions) ✓
 - Total test suite: ~3390 tests passing ✓
+
+---
+
+## Phase 53 – Workspace Project Template
+
+**Status: Done**
+
+- [x] Create `WorkspaceProjectTemplate.h` — project template catalogue and instantiation
+  - [x] TemplateCategory — id + label + description; `isValid()` (id + label required)
+  - [x] TemplateFileStub — relativePath + contentTemplate (may contain `{{VAR}}`); `isValid()` (path required)
+  - [x] TemplateVariable — key + defaultValue + description + required flag; `isValid()` (key required)
+  - [x] TemplateDefinition — id + name + categoryId + description + version; `addStub`/`removeStub`/`findStub` (MAX_STUBS=64, unique paths); `addVariable`/`removeVariable`/`findVariable` (MAX_VARS=32, unique keys); `substitute(text, vars)` — replaces all `{{KEY}}` tokens, falls back to `defaultValue`, supports multiple occurrences; `isValid()` (id + name required)
+  - [x] TemplateInstance — result of instantiate(): templateId + resolved variable map + resolvedFiles (path→content); `isComplete()` (no missing required vars); `missingRequired()` — list of required key names with empty values
+  - [x] TemplateRegistry — category store (MAX_CATEGORIES=32, addCategory/removeCategory/findCategory/hasCategory); template store (MAX_TEMPLATES=256, addTemplate/removeTemplate/findTemplate/hasTemplate/findByCategory); `instantiate(id, vars)` — resolves vars, substitutes all stubs, reports missing required vars; observer callbacks (MAX_OBSERVERS=16); `clear()`
+- [x] Add `Tests/Workspace/test_phase53_project_template.cpp` — 43 test cases / 76 assertions:
+  - [x] TemplateCategory (2): valid, invalid without id or label
+  - [x] TemplateFileStub (2): valid, invalid without path
+  - [x] TemplateVariable (2): valid, invalid without key
+  - [x] TemplateDefinition (13): valid, invalid, addStub/invalid/duplicate/remove/find, addVariable/invalid/duplicate/remove, substitute replaces, substitute default, substitute multiple occurrences
+  - [x] TemplateRegistry (18): empty, addCategory/invalid/duplicate, removeCategory/unknown, addTemplate/invalid/duplicate, removeTemplate/unknown, findByCategory, instantiate resolved files, instantiate default, instantiate missing required, instantiate unknown, observer on add/remove, clearObservers, clear
+  - [x] Integration (2): multi-file project instantiation, missing required var detection
+- [x] Wire `NF_Phase53Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- substitute() replaces all `{{KEY}}` occurrences including multiples ✓
+- substitute() falls back to defaultValue when key absent from supplied vars ✓
+- instantiate() reports missing required vars without preventing file generation ✓
+- findByCategory() filters correctly; empty category returns empty vector ✓
+- 43 test cases pass (76 assertions) ✓
+- Total test suite: ~3473 tests passing ✓
+
+---
+
+## Phase 54 – Workspace Breadcrumb Navigation
+
+**Status: Done**
+
+- [x] Create `WorkspaceBreadcrumb.h` — hierarchical navigation breadcrumb trail
+  - [x] BreadcrumbItemKind — Root / Category / Item / Leaf; `breadcrumbItemKindName()` helper
+  - [x] BreadcrumbItem — id + label + kind + iconKey + contextData; `isValid()` (id + label); equality by id
+  - [x] BreadcrumbTrail — ordered stack; `push` (rejects invalid / duplicate id / at MAX_DEPTH=32); `pop`; `current()` (top); `root()` (front); `contains`/`findById`; `truncateTo(id)` (pop all above id); `clear()`; equality
+  - [x] BreadcrumbHistory — circular history (MAX_HISTORY=16); `push(trail)` — evicts oldest when full, clears forward history; `back()`/`forward()` — move cursor, return trail pointer; `canBack()`/`canForward()`; `current()`; `clear()`
+  - [x] BreadcrumbManager — owns one active BreadcrumbTrail + BreadcrumbHistory; `navigate(item)` — push + record; `popTo(id)` — truncate + record; `pop()` — pop one + record; `back()`/`forward()` — restore from history; `canBack()`/`canForward()`; `reset()`; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase54_breadcrumb.cpp` — 40 test cases / 107 assertions:
+  - [x] BreadcrumbItemKind (1): all 4 name helpers
+  - [x] BreadcrumbItem (4): default invalid, valid, no label, equality by id
+  - [x] BreadcrumbTrail (11): default empty, push, invalid/duplicate rejected, pop, pop empty, contains/findById, truncateTo, truncateTo unknown, root stays front, clear, equality
+  - [x] BreadcrumbHistory (6): default empty, push records, back+forward, back at start, push clears forward, clear
+  - [x] BreadcrumbManager (15): navigate, invalid rejected, popTo, popTo unknown, pop, pop empty, back, forward, canBack/canForward, reset, observer on navigate/popTo/back+forward/reset, clearObservers
+  - [x] Integration (2): full drill-down + back navigation; popTo mid-trail then continue
+- [x] Wire `NF_Phase54Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- BreadcrumbTrail.push() rejects duplicate ids in trail ✓
+- BreadcrumbTrail.truncateTo() pops precisely to target item ✓
+- BreadcrumbHistory.push() clears forward history ✓
+- BreadcrumbManager.navigate() branches correctly after back+navigate ✓
+- 40 test cases pass (107 assertions) ✓
+- Total test suite: 3473 tests passing ✓

@@ -745,3 +745,25 @@ target_link_libraries(NF_Phase52Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase52Tests)
+
+# Phase 53 — WorkspaceProjectTemplate
+add_executable(NF_Phase53Tests
+    Workspace/test_phase53_project_template.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase53Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase53Tests)
+
+# Phase 54 — WorkspaceBreadcrumb
+add_executable(NF_Phase54Tests
+    Workspace/test_phase54_breadcrumb.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase54Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase54Tests)
