@@ -1554,3 +1554,34 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Observer fires on record (true) and remove (false) with copy of the entry ✓
 - 45 test cases pass (132 assertions) ✓
 - Total test suite: ~3258 tests passing ✓
+
+---
+
+## Phase 50 – Workspace Quick-Open Palette
+
+**Status: Done**
+
+- [x] Create `WorkspaceQuickOpen.h` — cmd+P style quick-open data model
+  - [x] QuickOpenItemKind enum (File/Tool/Command/Symbol/Custom) with `quickOpenItemKindName()` helper
+  - [x] QuickOpenItem — id + label + detail + kind + score; `isValid()` (non-empty id+label); equality by id
+  - [x] QuickOpenQuery — text + filterKind/filterByKind + maxResults; `matches(item)` (case-insensitive substring, optional kind filter); `score(item)` → Exact(100) > Prefix(60) > Contains(30) > None(-1)
+  - [x] QuickOpenProvider — id + name + `populate` callback; `isValid()` (all fields required)
+  - [x] QuickOpenSession — id + up to MAX_PROVIDERS=8 providers; `open`/`close`/`query`/`submit`; `addProvider`/`removeProvider`/`hasProvider`; `results()` (scored, sorted desc, capped at maxResults); `submitted()`/`hasSubmit()`/`clearSubmit()`; query rejects when closed; submit requires open + id in results → closes on success
+  - [x] QuickOpenManager — session registry (MAX_SESSIONS=8); `createSession`/`removeSession`/`findSession`/`hasSession`; `notifySubmit` — fires observers after caller calls session.submit(); observer callbacks (MAX_OBSERVERS=16); `clear()`
+- [x] Add `Tests/Workspace/test_phase50_quick_open.cpp` — 48 test cases / 124 assertions:
+  - [x] QuickOpenItemKind (1 test): all 5 name helpers
+  - [x] QuickOpenItem (5 tests): default invalid, valid, no label, no id, equality by id
+  - [x] QuickOpenQuery (5 tests): empty matches all, case-insensitive, non-match, score Exact>Prefix>Contains, kind filter
+  - [x] QuickOpenProvider (4 tests): invalid no id, invalid no name, invalid no populate, valid
+  - [x] QuickOpenSession (17 tests): default closed, addProvider, invalid rejected, duplicate rejected, removeProvider, remove unknown, open, close, query when closed=0, query collects all providers, query filters text, query sorts by score, query caps maxResults, submit valid, submit unknown, submit when closed, open clears submission, MAX_PROVIDERS enforced
+  - [x] QuickOpenManager (9 tests): default empty, createSession, duplicate rejected, empty id rejected, removeSession, remove unknown, findSession, observer fires on notifySubmit, clearObservers, MAX_SESSIONS enforced, clear
+  - [x] Integration (4 tests): full open-query-submit flow, kind filter narrows, multiple providers merged+ranked, empty query returns all
+- [x] Wire `NF_Phase50Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- QuickOpenQuery.score() correctly ranks Exact > Prefix > Contains ✓
+- QuickOpenSession.query() collects from all providers, scores, sorts descending, caps at maxResults ✓
+- QuickOpenSession.submit() requires open + id in result set; closes session on success ✓
+- QuickOpenManager.notifySubmit() fires all observers independently of the session ✓
+- 48 test cases pass (124 assertions) ✓
+- Total test suite: ~3306 tests passing ✓

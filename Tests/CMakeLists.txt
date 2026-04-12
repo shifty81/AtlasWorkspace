@@ -712,3 +712,14 @@ target_link_libraries(NF_Phase49Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase49Tests)
+
+# Phase 50 — WorkspaceQuickOpen
+add_executable(NF_Phase50Tests
+    Workspace/test_phase50_quick_open.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase50Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase50Tests)
