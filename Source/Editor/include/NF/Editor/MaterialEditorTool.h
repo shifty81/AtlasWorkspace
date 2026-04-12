@@ -14,6 +14,7 @@
 
 #include "NF/Workspace/IHostedTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/IViewportSceneProvider.h"
 #include <string>
 
 namespace NF {
@@ -45,7 +46,7 @@ struct MaterialEditorStats {
 
 // ── MaterialEditorTool ────────────────────────────────────────────
 
-class MaterialEditorTool final : public IHostedTool {
+class MaterialEditorTool final : public IHostedTool, public IViewportSceneProvider {
 public:
     static constexpr const char* kToolId = "workspace.material_editor";
 
@@ -85,6 +86,21 @@ public:
     [[nodiscard]] const std::string& openAssetPath() const { return m_openAssetPath; }
     void                             setOpenAssetPath(const std::string& path);
 
+    // ── IViewportSceneProvider ────────────────────────────────────
+    ViewportSceneState provideScene(ViewportHandle handle,
+                                    const ViewportSlot& slot) override;
+
+    /// Attach a material preview provider (Phase D.4 wiring).
+    /// NovaForgeMaterialPreview implements IViewportSceneProvider — pass it directly.
+    /// Pass nullptr to detach and revert to stub state.
+    void attachMaterialPreviewProvider(IViewportSceneProvider* provider) {
+        m_materialPreviewProvider = provider;
+    }
+
+    [[nodiscard]] IViewportSceneProvider* materialPreviewProvider() const {
+        return m_materialPreviewProvider;
+    }
+
     // ── Render contract ───────────────────────────────────────────
     // Renders: Material Graph | Viewport Preview | Properties — three-column layout.
     void renderToolView(const ToolViewRenderContext& ctx) const override;
@@ -96,6 +112,9 @@ private:
     MaterialEditorStats   m_stats;
     std::string           m_openAssetPath;
     std::string           m_activeProjectId;
+
+    // Optional material preview scene provider (Phase D.4)
+    IViewportSceneProvider* m_materialPreviewProvider = nullptr;
 
     void buildDescriptor();
 };

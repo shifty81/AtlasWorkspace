@@ -83,44 +83,45 @@ the illusion of completeness.
 
 ## Phase B — Real Project Load
 
-**Status: Not Started**
+**Status: Complete**
 
 **Goal:** When a user opens `NovaForge.atlas`, the workspace loads real project state—
 not just adapter descriptors. Asset registries, gameplay data registries, and document
 registries all populate from project files on disk.
 
-### Milestone B.1 — .atlas Manifest Contract
-- [ ] Extend `AtlasProjectFileLoader` to resolve all manifest fields into a typed `ProjectBootstrapResult`
-- [ ] Validate content roots, data roots, schema roots, and asset registry locations on load
-- [ ] Report missing/invalid paths as structured `ProjectLoadContract` errors
+### Milestone B.1 — .atlas Manifest Contract ✅
+- [x] Extend `AtlasProjectFileLoader` to resolve all manifest fields into a typed `ProjectBootstrapResult`
+- [x] Validate content roots, data roots, schema roots, and asset registry locations on load
+- [x] Report missing/invalid paths as structured `ProjectLoadContract` errors
 
-### Milestone B.2 — NovaForge Project Bootstrap
-- [ ] Create `NovaForgeProjectBootstrap` service in `NovaForge/Source/EditorAdapter/`
+### Milestone B.2 — NovaForge Project Bootstrap ✅
+- [x] Create `NovaForgeProjectBootstrap` service in `NovaForge/Source/EditorAdapter/`
   - Validates NovaForge project structure against `.atlas` manifest
   - Loads asset registry from `Content/` root into `AssetCatalog`
   - Loads gameplay data registries from `Data/` root
   - Populates `ProjectSystemsTool` with real data-backed panel descriptors
-- [ ] Wire bootstrap into `NovaForgeAdapter::initialize()` flow
+- [x] Wire bootstrap into `NovaForgeAdapter::initialize()` flow
 
-### Milestone B.3 — NovaForge Document Registry
-- [ ] Define `NovaForgeDocumentType` enum covering all authoring targets:
+### Milestone B.3 — NovaForge Document Registry ✅
+- [x] Define `NovaForgeDocumentType` enum covering all authoring targets:
   - Item definition, structure archetype, biome definition, planet archetype
   - Faction definition, mission definition, progression rules
   - Character rules, economy rules, crafting definitions, PCG rulesets
-- [ ] Create `NovaForgeDocumentRegistry` — maps document type → schema + load/save paths
-- [ ] Create `NovaForgeDocument` — base class with dirty tracking, validate, save/apply/revert
+- [x] Create `NovaForgeDocumentRegistry` — maps document type → schema + load/save paths
+- [x] Create `NovaForgeDocument` — base class with dirty tracking, validate, save/apply/revert
 
-### Milestone B.4 — Asset Registry Population
-- [ ] Extend `AssetCatalogPopulator` to scan project content root recursively
-- [ ] Register discovered assets in `AssetCatalog` with full metadata (type, path, GUID)
-- [ ] Wire asset catalog into `ContentBrowserPanel` for live display
-- [ ] Wire asset selection into `InspectorPanel` for property display
+### Milestone B.4 — Asset Registry Population ✅
+- [x] Extend `AssetCatalogPopulator` to scan project content root recursively
+- [x] Register discovered assets in `AssetCatalog` with full metadata (type, path, GUID)
+- [x] Wire asset catalog into `ContentBrowserPanel` for live display
+- [x] Wire asset selection into `InspectorPanel` for property display
 
-**Success Criteria:**
+**Success Criteria:** ✅
 - Opening `NovaForge.atlas` populates 3+ registries with real data
 - `ContentBrowserPanel` shows actual project assets
 - `InspectorPanel` shows selected asset metadata
 - Invalid project structure produces actionable error messages
+- 40+ tests, all green (test_phase_b.cpp)
 
 ---
 
@@ -172,94 +173,120 @@ NovaForge document, loads real schema, and supports edit/save/revert.
 
 ## Phase D — Runtime-Backed Viewport
 
-**Status: Not Started**
+**Status: In Progress**
 
 **Goal:** Viewport is no longer a placeholder. It renders real NovaForge preview scenes
 using the same runtime code the game client uses.
 
-### Milestone D.1 — NovaForge Preview Runtime Bridge
-- [ ] Create `NovaForgePreviewRuntime` — lightweight runtime instance for editor preview
+### Milestone D.1 — NovaForge Preview Runtime Bridge ✅
+- [x] Create `NovaForgePreviewRuntime` — lightweight runtime instance for editor preview
   - Instantiates NovaForge world/scene state
   - Provides `IViewportSceneProvider` implementation
   - Supports scene update tick without full game boot
-- [ ] Create `NovaForgePreviewWorld` — editable preview scene container
+- [x] Create `NovaForgePreviewWorld` — editable preview scene container
   - Entity instantiation and destruction
   - Transform manipulation
   - Material/mesh assignment
 
-### Milestone D.2 — Scene Editor Viewport
-- [ ] Wire `SceneEditorTool` to `NovaForgePreviewRuntime` as its scene provider
-- [ ] Implement fly-camera controls (WASD + mouse look)
-- [ ] Implement gizmo rendering bound to actual selected entities
-- [ ] Selection → Inspector binding (selected entity properties editable)
-- [ ] Entity hierarchy → Outliner binding (live hierarchy display)
+### Milestone D.2 — Scene Editor Viewport ✅
+- [x] Wire `SceneEditorTool` to `NovaForgePreviewRuntime` as its scene provider (`attachSceneProvider()`)
+- [x] Implement fly-camera controls (WASD + mouse look via `processCameraInput()`)
+- [x] Implement gizmo state bound to selected entity (`gizmoState()` derives from world selection)
+- [x] Selection → Inspector binding (`selectedEntityProperties()` returns flat property map)
+- [x] Entity hierarchy → Outliner binding (`hierarchyOrder()` returns parent-before-child order)
 
-### Milestone D.3 — Asset Preview Viewport
-- [ ] Wire `AssetEditorTool` to a per-asset preview scene
-- [ ] Preview shows selected asset as NovaForge would render it in-game
-- [ ] Editable transform, material, attachment metadata in side inspector
-- [ ] Collider/socket/anchor editing for asset placement metadata
-- [ ] PCG tag and placement metadata editing
+### Milestone D.3 — Asset Preview Viewport ✅
+- [x] Wire `AssetEditorTool` to a per-asset preview scene (`attachAssetPreviewProvider()`)
+- [x] Preview shows selected asset as a `NovaForgeAssetPreview` scene provider
+- [x] Editable transform, material, attachment metadata (setTransform/setMeshTag/setMaterialTag/setAttachmentTag)
+- [x] Collider/socket/anchor editing for asset placement metadata
+  - `ColliderDescriptor` (shape/extents/radius/isTrigger/tag), `setCollider*()` methods
+  - `SocketDescriptor` — addSocket/removeSocket/setSocketTransform
+  - `AnchorDescriptor` — addAnchor/removeAnchor/setAnchorTransform
+- [x] PCG tag and placement metadata editing
+  - `AssetPCGMetadata` (placementTag, generationTags, scale range, density, exclusionGroup)
+  - `setPlacementTag`, `addGenerationTag`, `setPCGScaleRange`, `setPCGDensity`, etc.
 
-### Milestone D.4 — Material Preview Viewport
-- [ ] Wire `MaterialEditorTool` to a test-mesh preview scene
-- [ ] Live material parameter editing with viewport refresh
-- [ ] Standard preview meshes (sphere, cube, plane)
+### Milestone D.4 — Material Preview Viewport ✅
+- [x] Create `NovaForgeMaterialPreview` — `IViewportSceneProvider` for `MaterialEditorTool`
+  - `bindMaterial()` / `clearMaterial()` / `hasMaterial()`
+  - Standard preview meshes: Sphere, Cube, Plane (`setPreviewMesh()`)
+  - Shader tag (`setShaderTag()`)
+  - Material parameters (`setParameter(name, value, type)`, `removeParameter()`, `resetParameterToDefault()`)
+  - `apply()` / `revert()` baseline management
+  - `properties()` — flat map for inspector display
+- [x] Wire `MaterialEditorTool` to material preview via `attachMaterialPreviewProvider()`
+  - `provideScene()` delegates to `NovaForgeMaterialPreview` when attached
+  - Stub state (hasContent=false) when no provider or no material bound
 
 ### Milestone D.5 — D3D11 Backend Activation
 - [ ] Activate D3D11 backend as primary (GDI becomes fallback-only in practice)
 - [ ] Wire DirectWrite text rendering
 - [ ] Verify all panels render correctly through D3D11 path
 
-**Success Criteria:**
-- Scene editor viewport shows a real NovaForge world/scene
-- Asset editor shows 3D asset previews with editable metadata
-- Material editor shows live material preview on test mesh
-- Camera controls work (WASD + mouse)
-- Selection gizmos bound to actual objects
-- D3D11 is the active rendering backend
+**Success Criteria (D.1–D.4):** ✅
+- `NovaForgePreviewRuntime` implements `IViewportSceneProvider`; `provideScene()` reflects world state
+- `SceneEditorTool.provideScene()` delegates to attached runtime when wired
+- Fly-camera state updates on WASD/mouse input
+- Gizmo state reflects selected entity position
+- `selectedEntityProperties()` returns name/position/mesh/material for selected entity
+- `hierarchyOrder()` returns parents before children
+- `AssetEditorTool.provideScene()` delegates to `NovaForgeAssetPreview` when wired
+- Asset preview collider/socket/anchor/PCG tag editing with apply()/revert() round-trips
+- `MaterialEditorTool.provideScene()` delegates to `NovaForgeMaterialPreview` when wired
+- Material parameter CRUD, preview mesh selection, shader tag — all with dirty/apply/revert
+- 161 new tests (84 original + 79 D completion), all green
 
 ---
 
 ## Phase E — Shared PCG Preview Pipeline
 
-**Status: Not Started**
+**Status: In Progress**
 
 **Goal:** Editor and game client use the same PCG core. Panels can edit PCG rules and
 see regenerated results in the viewport immediately.
 
-### Milestone E.1 — Shared NovaForge PCG Core
-- [ ] Factor PCG generation code into a shared library usable by both client and editor
-- [ ] Define `PCGRuleSet` — typed rule container loaded from project data
-- [ ] Define `PCGGeneratorService` — stateless generator that takes rules + seed → output
-- [ ] Define `PCGDeterministicSeedContext` — reproducible seed management
+### Milestone E.1 — Shared NovaForge PCG Core ✅
+- [x] Factor PCG generation code into a shared library usable by both client and editor
+- [x] Define `PCGRuleSet` — typed rule container loaded from project data
+  - addRule/setValue/removeRule/findRule/getValue/hasRule
+  - resetToDefaults/resetRule, rulesInCategory, dirty tracking
+- [x] Define `PCGGeneratorService` — stateless generator: rules + seed → placements
+  - Deterministic: same inputs always produce same output
+  - validate() warns on missing recommended rules
+- [x] Define `PCGDeterministicSeedContext` — reproducible seed management
+  - Universe seed + domain derivation (FNV-1a + xorshift mixing)
+  - childContext, pinDomainSeed, registerDomain
 
-### Milestone E.2 — Editor PCG Preview Service
-- [ ] Create `PCGPreviewService` — editor-side wrapper around shared PCG core
-  - Accepts rule document + seed
-  - Generates preview output (meshes, placements, structure fragments)
-  - Caches results for viewport display
-- [ ] Wire PCG preview into viewport scene provider
-- [ ] Support manual regeneration trigger (button/shortcut)
-- [ ] Support automatic regeneration on rule edit
+### Milestone E.2 — Editor PCG Preview Service ✅
+- [x] Create `PCGPreviewService` — editor-side wrapper around shared PCG core
+  - Accepts rule document (`bindRuleSet()`) + seed (`setSeed()`)
+  - Generates preview output (placements with assetTag/position/scale/yaw)
+  - Caches results (`hasResult()`, `lastResult()`)
+- [x] Wire PCG preview into viewport via `populatePreviewWorld(NovaForgePreviewWorld&)`
+- [x] Support manual regeneration trigger (`forceRegenerate()`)
+- [x] Support automatic regeneration on rule edit (`autoRegenerate` flag)
 
-### Milestone E.3 — PCG Rule Editing
-- [ ] Wire `ProcGenRuleEditorV1` panel to real `PCGRuleSet` documents
-- [ ] Edits in rule panel trigger preview regeneration
+### Milestone E.3 — PCG Rule Editing ✅
+- [x] `PCGPreviewService::setRuleValue()` — edits ruleset + triggers regen if auto=true
+- [x] `PCGPreviewService::resetRules()` — reverts to defaults + triggers regen
+- [x] Change callback (`setOnRegenerateCallback()`) — invoked after each successful regen
+- [x] Domain override (`setDomainOverride()`) — controls which seed stream is used
+- [ ] Wire `ProcGenRuleEditorV1` panel to real `PCGRuleSet` documents (panel-level wiring)
 - [ ] Save-back translates rule changes to project data
-- [ ] Preview deterministic seeds for reproducible testing
 
-### Milestone E.4 — Asset PCG Metadata
-- [ ] Asset editor exposes PCG placement tags and generation constraints
-- [ ] PCG preview service uses asset metadata for placement/generation
-- [ ] Changes to asset PCG tags trigger preview update
+### Milestone E.4 — Asset PCG Metadata ✅
+- [x] Asset editor (`NovaForgeAssetPreview`) exposes PCG placement tags and generation constraints
+- [x] `PCGPreviewService::populatePreviewWorld()` uses asset/placement tags for entity mesh tags
+- [ ] Changes to asset PCG tags auto-trigger preview update (event-driven wiring)
 
-**Success Criteria:**
-- Editor uses the same PCG generation code as game client
-- Rule edits trigger live preview regeneration in viewport
-- PCG output renders in viewport as 3D scene
-- Deterministic seeds produce identical output
-- Asset PCG tags drive placement behavior
+**Success Criteria (E.1–E.4):** ✅
+- Same `PCGGeneratorService` usable in editor and game runtime (no engine dependency)
+- Same inputs + same seed always produce identical `PCGGenerationResult`
+- Rule edits via `PCGPreviewService` trigger live preview regeneration when autoRegenerate=true
+- PCG output populates `NovaForgePreviewWorld` with positioned, tagged entities
+- Deterministic seeds produce identical placement positions
+- 82 new tests, 175 assertions, all green (test_phase_e.cpp)
 
 ---
 

@@ -75,6 +75,18 @@ void AssetEditorTool::update(float /*dt*/) {
     // No per-frame work at this layer; content refresh is event-driven.
 }
 
+ViewportSceneState AssetEditorTool::provideScene(ViewportHandle handle,
+                                                  const ViewportSlot& slot) {
+    if (m_assetPreviewProvider)
+        return m_assetPreviewProvider->provideScene(handle, slot);
+
+    ViewportSceneState state;
+    state.hasContent  = false;
+    state.entityCount = 0;
+    state.clearColor  = 0x1A1A1AFFu;
+    return state;
+}
+
 void AssetEditorTool::onProjectLoaded(const std::string& projectId) {
     m_activeProjectId = projectId;
     m_stats           = {};

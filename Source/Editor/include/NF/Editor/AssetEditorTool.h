@@ -15,6 +15,7 @@
 
 #include "NF/Workspace/IHostedTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/IViewportSceneProvider.h"
 #include <string>
 
 namespace NF {
@@ -55,7 +56,7 @@ struct AssetEditorStats {
 
 // ── AssetEditorTool ───────────────────────────────────────────────
 
-class AssetEditorTool final : public IHostedTool {
+class AssetEditorTool final : public IHostedTool, public IViewportSceneProvider {
 public:
     static constexpr const char* kToolId = "workspace.asset_editor";
 
@@ -101,6 +102,21 @@ public:
     void setTotalAssetCount(uint32_t count);
     void setFilteredAssetCount(uint32_t count);
 
+    // ── IViewportSceneProvider ────────────────────────────────────
+    ViewportSceneState provideScene(ViewportHandle handle,
+                                    const ViewportSlot& slot) override;
+
+    /// Attach a scene provider for the asset preview viewport (Phase D.3 wiring).
+    /// NovaForgeAssetPreview implements IViewportSceneProvider — pass it directly.
+    /// Pass nullptr to detach and revert to stub state.
+    void attachAssetPreviewProvider(IViewportSceneProvider* provider) {
+        m_assetPreviewProvider = provider;
+    }
+
+    [[nodiscard]] IViewportSceneProvider* assetPreviewProvider() const {
+        return m_assetPreviewProvider;
+    }
+
     // ── Render contract ───────────────────────────────────────────
     // Renders: Content Browser (wide) | Preview | Inspector — three-column layout.
     void renderToolView(const ToolViewRenderContext& ctx) const override;
@@ -114,6 +130,9 @@ private:
     std::string          m_activeProjectId;
 
     void buildDescriptor();
+
+    // Optional asset preview scene provider (Phase D.3)
+    IViewportSceneProvider* m_assetPreviewProvider = nullptr;
 };
 
 } // namespace NF

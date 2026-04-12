@@ -70,6 +70,18 @@ void MaterialEditorTool::update(float /*dt*/) {
     // Material editor updates are event-driven (shader recompile, live preview).
 }
 
+ViewportSceneState MaterialEditorTool::provideScene(ViewportHandle handle,
+                                                     const ViewportSlot& slot) {
+    if (m_materialPreviewProvider)
+        return m_materialPreviewProvider->provideScene(handle, slot);
+
+    ViewportSceneState state;
+    state.hasContent  = false;
+    state.entityCount = 0;
+    state.clearColor  = 0x222222FFu;
+    return state;
+}
+
 void MaterialEditorTool::onProjectLoaded(const std::string& projectId) {
     m_activeProjectId = projectId;
     m_stats           = {};

@@ -119,22 +119,20 @@ void SceneEditorTool::update(float dt) {
     }
 }
 
-ViewportSceneState SceneEditorTool::provideScene(ViewportHandle /*handle*/,
+ViewportSceneState SceneEditorTool::provideScene(ViewportHandle handle,
                                                   const ViewportSlot& slot) {
+    // Delegate to the attached scene provider when one is wired (Phase D).
+    if (m_sceneProvider)
+        return m_sceneProvider->provideScene(handle, slot);
+
     ViewportSceneState state;
     state.hasContent  = (m_stats.entityCount > 0);
     state.entityCount = m_stats.entityCount;
     state.clearColor  = 0x1E1E1EFFu; // dark viewport background
 
-    // Push the tool camera into the slot camera descriptor.
-    // ViewportHostRegistry::setCamera() is called via the manager so the frame
-    // loop picks up the updated camera on the same tick.
     if (m_viewportMgr && slot.handle != kInvalidViewportHandle) {
-        ViewportCameraDescriptor cam = slot.camera; // start from existing slot camera
-        // Camera position / orientation are driven by m_input (if attached).
-        // For now the descriptor is passed through unmodified; the fly-cam
-        // update in update() will write to it in a future integration step.
-        state.overrideCamera = false; // camera update deferred until fly-cam wired
+        // Camera update deferred until fly-cam wired
+        state.overrideCamera = false;
     }
 
     return state;

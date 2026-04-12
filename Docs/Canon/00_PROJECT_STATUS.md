@@ -64,10 +64,10 @@ Atlas Workspace v1.0.
 |-------|-------|--------|
 | Checkpoint | Foundation (Phases 0–71) | ✅ Complete |
 | A | Truth and Cleanup Lock | 🔄 In Progress |
-| B | Real Project Load | ⬚ Not Started |
-| C | Panels Edit Real Data | ⬚ Not Started |
-| D | Runtime-Backed Viewport | ⬚ Not Started |
-| E | Shared PCG Preview Pipeline | ⬚ Not Started |
+| B | Real Project Load | ✅ Complete |
+| C | Panels Edit Real Data | ✅ Complete |
+| D | Runtime-Backed Viewport | 🔄 In Progress |
+| E | Shared PCG Preview Pipeline | 🔄 In Progress |
 | F | Play-In-Editor (PIE) | ⬚ Not Started |
 | G | Full Tool Wiring | ⬚ Not Started |
 | H | UX Completion | ⬚ Not Started |
@@ -85,9 +85,69 @@ Atlas Workspace v1.0.
 - [ ] Add CI smoke build entry for `ATLAS_ENABLE_ONLINE_DEPS=ON`
 
 ### A.2 — Build and CI Hygiene
-- [x] All test suites build and pass on clean checkout (4125 test cases, all green)
+- [x] All test suites build and pass on clean checkout (4469 test cases, all green)
 
 ### A.3 — Documentation Correction
 - [x] Update project status phase marker to "In Progress"
 - [x] Mark stale phase-specific roadmap docs (01–07) as historical
 - [x] Add "panel edits real data" criteria to `09_DEFINITION_OF_DONE.md`
+
+## Phase B Progress (Complete)
+- 40+ tests covering B.1–B.4, all green (test_phase_b.cpp)
+
+## Phase C Progress (Complete)
+- 58 tests, 104 assertions, all green (test_phase_c.cpp)
+
+## Phase D Progress (In Progress — D.1–D.4 complete, D.5 pending)
+### D.1 — NovaForge Preview Runtime Bridge ✅
+- [x] `NovaForgePreviewWorld` — entity lifecycle, transform, mesh/material, selection, dirty tracking
+- [x] `NovaForgePreviewRuntime` — IViewportSceneProvider, fly-camera, gizmo state, inspector data, hierarchy order
+
+### D.2 — Scene Editor Viewport ✅
+- [x] `SceneEditorTool::attachSceneProvider()` — delegates `provideScene()` to attached provider
+- [x] Fly-camera: `processCameraInput()` — WASD movement + mouse-look with pitch clamp
+- [x] Gizmo state: `gizmoState()` — reflects selected entity position
+- [x] Inspector data: `selectedEntityProperties()` — flat property map for selected entity
+- [x] Hierarchy order: `hierarchyOrder()` — BFS parent-before-child traversal
+
+### D.3 — Asset Preview Viewport ✅
+- [x] `NovaForgeAssetPreview` — IViewportSceneProvider, bind/edit/apply/revert
+- [x] `AssetEditorTool::attachAssetPreviewProvider()` — delegates `provideScene()` to asset preview
+- [x] Collider editing: `ColliderDescriptor`, `setCollider*()` methods
+- [x] Socket editing: `SocketDescriptor`, addSocket/removeSocket/setSocketTransform
+- [x] Anchor editing: `AnchorDescriptor`, addAnchor/removeAnchor/setAnchorTransform
+- [x] PCG metadata: `AssetPCGMetadata`, setPlacementTag/addGenerationTag/setPCGScaleRange etc.
+
+### D.4 — Material Preview Viewport ✅
+- [x] `NovaForgeMaterialPreview` — IViewportSceneProvider, bindMaterial/clearMaterial
+- [x] Preview meshes: Sphere/Cube/Plane via `setPreviewMesh()`
+- [x] Material parameters: setParameter/removeParameter/resetParameterToDefault/resetAllParametersToDefault
+- [x] apply()/revert() baseline management; properties() for inspector
+- [x] `MaterialEditorTool::attachMaterialPreviewProvider()` + `provideScene()` delegation
+
+### D.5 — D3D11 Backend Activation (pending)
+- [ ] Activate D3D11 backend as primary
+- [ ] Wire DirectWrite text rendering
+- 161 D completion tests (79 test cases, 155 assertions), all green (test_phase_d_completion.cpp)
+
+## Phase E Progress (In Progress — E.1–E.4 core done)
+### E.1 — Shared NovaForge PCG Core ✅
+- [x] `PCGRuleSet` — typed rule container (add/set/remove/reset/filter, dirty tracking)
+- [x] `PCGGeneratorService` — stateless deterministic generator (rules + seed → placements)
+- [x] `PCGDeterministicSeedContext` — universe seed + domain derivation + child contexts + pinning
+
+### E.2 — Editor PCG Preview Service ✅
+- [x] `PCGPreviewService` — bindRuleSet/forceRegenerate/autoRegenerate/stats/lastResult
+- [x] `populatePreviewWorld()` — writes PCG placements into NovaForgePreviewWorld
+
+### E.3 — PCG Rule Editing ✅
+- [x] `PCGPreviewService::setRuleValue()` + `resetRules()` with auto-regen
+- [x] Change callback (`setOnRegenerateCallback()`)
+- [x] Domain override (`setDomainOverride()`)
+- [ ] ProcGenRuleEditorV1 panel wiring + save-back to project data
+
+### E.4 — Asset PCG Metadata ✅
+- [x] `NovaForgeAssetPreview::AssetPCGMetadata` — placementTag/generationTags/scale/density
+- [x] `PCGPreviewService::populatePreviewWorld()` uses asset/placement tags for entity mesh tags
+- [ ] Event-driven trigger from asset PCG tag changes → preview update
+- 82 Phase E tests, 175 assertions, all green (test_phase_e.cpp)

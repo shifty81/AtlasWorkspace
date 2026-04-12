@@ -999,3 +999,60 @@ if(TARGET NF::NovaForgeAdapter)
     )
     catch_discover_tests(NF_PhaseCTests)
 endif()
+
+# Phase D — Runtime-Backed Viewport
+#   D.1: NovaForgePreviewWorld entity lifecycle + transforms + selection
+#   D.1: NovaForgePreviewRuntime IViewportSceneProvider + fly-camera + gizmo + hierarchy
+#   D.2: SceneEditorTool provideScene() delegation to attached runtime
+#   D.3: NovaForgeAssetPreview IViewportSceneProvider + bind/edit/apply/revert
+#   D.3: AssetEditorTool provideScene() delegation to attached asset preview
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseDTests
+        Workspace/test_phase_d.cpp
+        catch_main.cpp
+    )
+    target_include_directories(NF_PhaseDTests PRIVATE
+        ${CMAKE_SOURCE_DIR}/NovaForge/Source/EditorAdapter/include
+    )
+    target_link_libraries(NF_PhaseDTests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseDTests)
+endif()
+
+# Phase D Completion — D.3 extended (collider/socket/anchor/PCG tag metadata) + D.4 (MaterialPreview)
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseDCompletionTests
+        Workspace/test_phase_d_completion.cpp
+        catch_main.cpp
+    )
+    target_include_directories(NF_PhaseDCompletionTests PRIVATE
+        ${CMAKE_SOURCE_DIR}/NovaForge/Source/EditorAdapter/include
+    )
+    target_link_libraries(NF_PhaseDCompletionTests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseDCompletionTests)
+endif()
+
+# Phase E — Shared PCG Preview Pipeline
+#   E.1: PCGRuleSet + PCGDeterministicSeedContext + PCGGeneratorService
+#   E.2: PCGPreviewService (binding, regen, seed, stats)
+#   E.3: Rule editing via PCGPreviewService (auto-regen, callbacks, domain override)
+#   E.4: populatePreviewWorld — NovaForgePreviewWorld from PCG placements
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseETests
+        Workspace/test_phase_e.cpp
+        catch_main.cpp
+    )
+    target_include_directories(NF_PhaseETests PRIVATE
+        ${CMAKE_SOURCE_DIR}/NovaForge/Source/EditorAdapter/include
+    )
+    target_link_libraries(NF_PhaseETests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseETests)
+endif()
