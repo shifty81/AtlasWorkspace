@@ -45,6 +45,7 @@
 #include "NF/Workspace/WorkspaceActivityBar.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
 #include <array>
+#include <cctype>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -1115,33 +1116,120 @@ private:
         }
 
         case HostedToolCategory::AIAssistant: {
-            // AI Chat | Context / Tools
+            // ── Layout: chat area | context/tools sidebar ─────────
             float chatW = w * 0.68f;
             float ctxW  = w - chatW;
+            Rect  inputBoxR = {x + 4.f, y + h - 32.f, chatW - 8.f, 26.f};
+
+            // ── Click-to-focus on input box (or blur elsewhere) ───
+            if (mouse.leftPressed) {
+                m_aiInputFocused = inputBoxR.contains(mouse.x, mouse.y);
+            }
+
+            // ── Process typed characters when focused ─────────────
+            if (m_aiInputFocused && !mouse.typedText.empty()) {
+                for (char c : mouse.typedText) {
+                    if (c == '\b') {                    // Backspace
+                        if (!m_aiInputBuffer.empty())
+                            m_aiInputBuffer.pop_back();
+                    } else if (c == '\r') {             // Enter — submit
+                        if (!m_aiInputBuffer.empty()) {
+                            std::string userMsg = m_aiInputBuffer;
+                            m_aiMessages.push_back({true,  userMsg});
+                            // Generate a simple stub response
+                            std::string resp;
+                            auto lower = userMsg;
+                            for (char& ch : lower) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+                            if (lower.find("hello") != std::string::npos || lower.find("hi") != std::string::npos)
+                                resp = "Hello! I'm AtlasAI. How can I assist?";
+                            else if (lower.find("scene") != std::string::npos)
+                                resp = "I can help with your scene. What do you need?";
+                            else if (lower.find("asset") != std::string::npos)
+                                resp = "Asset management: use the Asset Editor to import and organize assets.";
+                            else if (lower.find("build") != std::string::npos)
+                                resp = "Build via the Build Tool. Check the console for errors.";
+                            else if (lower.find("help") != std::string::npos)
+                                resp = "Available tools: Scene, Asset, Material, Animation, Data, Logic, Build. Ask me anything!";
+                            else
+                                resp = "Understood. I'll analyze your workspace context and respond shortly.";
+                            m_aiMessages.push_back({false, resp});
+                            m_aiInputBuffer.clear();
+                        }
+                    } else {                            // Printable char
+                        if (m_aiInputBuffer.size() < 256)
+                            m_aiInputBuffer += c;
+                    }
+                }
+            }
+
+            // ── Chat area background ──────────────────────────────
             ui.drawRect({x, y, chatW, h}, 0x1A1A2AFF);
             ui.drawRectOutline({x, y, chatW, h}, kBorder, 1.f);
             ui.drawRect({x, y, chatW, 22.f}, kSurface);
             ui.drawRect({x, y + 22.f, chatW, 1.f}, kBorder);
             ui.drawText(x + 8.f, y + 4.f, "ATLAS AI CHAT", kAccentBlue);
-            // Chat message stubs
+
+            // ── Render chat messages ──────────────────────────────
             float cy = y + 30.f;
-            ui.drawRect({x + 8.f, cy, chatW - 16.f, 28.f}, 0x252535FF);
-            ui.drawText(x + 14.f, cy + 7.f,
-                        "AtlasAI: Ready. Load a project to begin.", kTextSecondary);
-            cy += 36.f;
-            if (shell.hasProject() && shell.projectAdapter()) {
-                std::string pmsg = "AtlasAI: Project '"
-                    + shell.projectAdapter()->projectDisplayName()
-                    + "' context loaded.";
+            float msgAreaH = h - 32.f - 30.f;  // space between header and input box
+
+            // Always show the ready message first
+            if (m_aiMessages.empty()) {
                 ui.drawRect({x + 8.f, cy, chatW - 16.f, 28.f}, 0x252535FF);
-                ui.drawText(x + 14.f, cy + 7.f, pmsg, kGreen);
+                ui.drawText(x + 14.f, cy + 7.f,
+                            "AtlasAI: Ready. Type a message below to begin.", kTextSecondary);
                 cy += 36.f;
+                if (shell.hasProject() && shell.projectAdapter()) {
+                    std::string pmsg = "AtlasAI: Project '"
+                        + shell.projectAdapter()->projectDisplayName()
+                        + "' context loaded.";
+                    ui.drawRect({x + 8.f, cy, chatW - 16.f, 28.f}, 0x252535FF);
+                    ui.drawText(x + 14.f, cy + 7.f, pmsg, kGreen);
+                }
+            } else {
+                // Show most-recent messages that fit in the visible area
+                // Compute start index so we show as many recent messages as possible
+                int startIdx = 0;
+                {
+                    float spaceLeft = msgAreaH;
+                    for (int i = static_cast<int>(m_aiMessages.size()) - 1; i >= 0; --i) {
+                        spaceLeft -= 36.f;
+                        if (spaceLeft < 0.f) { startIdx = i + 1; break; }
+                    }
+                }
+                for (int i = startIdx; i < static_cast<int>(m_aiMessages.size()); ++i) {
+                    const auto& entry = m_aiMessages[static_cast<size_t>(i)];
+                    if (cy + 28.f > y + h - 34.f) break;
+                    uint32_t bg = entry.isUser ? 0x1E2A4AFF : 0x252535FF;
+                    // Truncate text to fit chat width
+                    std::string line = (entry.isUser ? "You: " : "AtlasAI: ") + entry.text;
+                    size_t maxChars = static_cast<size_t>((chatW - 28.f) / 7.5f);
+                    if (line.size() > maxChars) line = line.substr(0, maxChars - 2) + "..";
+                    ui.drawRect({x + 8.f, cy, chatW - 16.f, 28.f}, bg);
+                    ui.drawText(x + 14.f, cy + 7.f, line, entry.isUser ? 0x7ABAFFFF : kTextSecondary);
+                    cy += 36.f;
+                }
             }
-            // Input box placeholder
-            ui.drawRect({x + 4.f, y + h - 32.f, chatW - 8.f, 26.f}, 0x2A2A3AFF);
-            ui.drawRectOutline({x + 4.f, y + h - 32.f, chatW - 8.f, 26.f}, kAccentBlue, 1.f);
-            ui.drawText(x + 10.f, y + h - 24.f, "Type a message...", kTextMuted);
-            // Context panel
+
+            // ── Input box ─────────────────────────────────────────
+            uint32_t inputBorder = m_aiInputFocused ? kAccentBlue : kBorder;
+            uint32_t inputBg     = m_aiInputFocused ? 0x1E1E3AFF : 0x2A2A3AFF;
+            ui.drawRect(inputBoxR, inputBg);
+            ui.drawRectOutline(inputBoxR, inputBorder, 1.f);
+
+            if (m_aiInputBuffer.empty() && !m_aiInputFocused) {
+                ui.drawText(x + 10.f, y + h - 24.f, "Type a message...", kTextMuted);
+            } else {
+                // Show typed buffer with a blinking-style cursor indicator
+                std::string display = m_aiInputBuffer + (m_aiInputFocused ? "|" : "");
+                // Truncate to fit box width
+                size_t maxChars = static_cast<size_t>((chatW - 20.f) / 7.5f);
+                if (display.size() > maxChars)
+                    display = display.substr(display.size() - maxChars);
+                ui.drawText(x + 10.f, y + h - 24.f, display, kTextPrimary);
+            }
+
+            // ── Context panel ─────────────────────────────────────
             drawPanel(x + chatW, y, ctxW, h, "CONTEXT / TOOLS", nullptr);
             float rly = y + 28.f;
             ui.drawText(x + chatW + 8.f, rly, "Content Roots:", kTextSecondary);
@@ -1276,6 +1364,12 @@ private:
     int m_assetSelectedItem   = -1;
     int m_dataSelectedRow     = -1;
     int m_logicSelectedNode   = -1;
+
+    // ── Atlas AI chat state ───────────────────────────────────────
+    struct AIChatEntry { bool isUser; std::string text; };
+    std::vector<AIChatEntry> m_aiMessages;
+    std::string m_aiInputBuffer;
+    bool        m_aiInputFocused = false;
 
     // Fallback project path for project-scoped apps when no project is loaded.
     static constexpr const char* kStubProjectPath = "stub.atlas";

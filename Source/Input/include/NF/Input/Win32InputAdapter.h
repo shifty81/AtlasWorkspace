@@ -129,6 +129,19 @@ public:
             return false;
         }
 
+        // ── Text input (typed characters) ─────────────────────────
+        // WM_CHAR delivers the translated character after TranslateMessage.
+        // '\b' (0x08) = Backspace, '\r' (0x0D) = Enter, 0x20-0x7E = printable ASCII.
+        case WM_CHAR: {
+            const wchar_t wc = static_cast<wchar_t>(wParam);
+            if (wc == L'\b' || wc == L'\r') {
+                m_input.appendTextInput(static_cast<char>(wc));
+            } else if (wc >= 0x20 && wc < 0x7F) {
+                m_input.appendTextInput(static_cast<char>(wc));
+            }
+            return false;
+        }
+
         // ── Scroll wheel ──────────────────────────────────────────
         case WM_MOUSEWHEEL: {
             const float delta = static_cast<float>(GET_WHEEL_DELTA_WPARAM(wParam)) / WHEEL_DELTA;
