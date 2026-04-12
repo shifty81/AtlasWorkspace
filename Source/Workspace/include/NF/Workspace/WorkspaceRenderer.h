@@ -1117,6 +1117,7 @@ private:
 
         case HostedToolCategory::AIAssistant: {
             // ── Layout: chat area | context/tools sidebar ─────────
+            static constexpr float kApproxCharWidth = 7.5f; // pixels per monospace char at default font size
             float chatW = w * 0.68f;
             float ctxW  = w - chatW;
             Rect  inputBoxR = {x + 4.f, y + h - 32.f, chatW - 8.f, 26.f};
@@ -1203,7 +1204,7 @@ private:
                     uint32_t bg = entry.isUser ? 0x1E2A4AFF : 0x252535FF;
                     // Truncate text to fit chat width
                     std::string line = (entry.isUser ? "You: " : "AtlasAI: ") + entry.text;
-                    size_t maxChars = static_cast<size_t>((chatW - 28.f) / 7.5f);
+                    size_t maxChars = static_cast<size_t>((chatW - 28.f) / kApproxCharWidth);
                     if (line.size() > maxChars) line = line.substr(0, maxChars - 2) + "..";
                     ui.drawRect({x + 8.f, cy, chatW - 16.f, 28.f}, bg);
                     ui.drawText(x + 14.f, cy + 7.f, line, entry.isUser ? 0x7ABAFFFF : kTextSecondary);
@@ -1223,7 +1224,7 @@ private:
                 // Show typed buffer with a blinking-style cursor indicator
                 std::string display = m_aiInputBuffer + (m_aiInputFocused ? "|" : "");
                 // Truncate to fit box width
-                size_t maxChars = static_cast<size_t>((chatW - 20.f) / 7.5f);
+                size_t maxChars = static_cast<size_t>((chatW - 20.f) / kApproxCharWidth);
                 if (display.size() > maxChars)
                     display = display.substr(display.size() - maxChars);
                 ui.drawText(x + 10.f, y + h - 24.f, display, kTextPrimary);
