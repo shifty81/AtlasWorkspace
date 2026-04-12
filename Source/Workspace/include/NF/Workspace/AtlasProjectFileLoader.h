@@ -24,7 +24,9 @@
 //       registry.loadProject(m.adapterId);
 //   }
 
+#include "NF/Workspace/ProjectLoadContract.h"
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -63,6 +65,24 @@ struct AtlasProjectManifest {
 
     [[nodiscard]] bool hasAdapter() const {
         return !adapterId.empty();
+    }
+};
+
+// ── ProjectBootstrapResult ────────────────────────────────────────────────
+// Produced by AtlasProjectFileLoader::bootstrap() after validating the manifest.
+// Carries the parsed manifest plus structured validation entries.
+
+struct ProjectBootstrapResult {
+    AtlasProjectManifest manifest;
+    std::vector<ProjectValidationEntry> validationEntries;
+    bool success = false;
+
+    [[nodiscard]] bool hasErrors() const {
+        for (const auto& e : validationEntries)
+            if (e.severity == ProjectValidationSeverity::Fatal ||
+                e.severity == ProjectValidationSeverity::Error)
+                return true;
+        return false;
     }
 };
 
@@ -185,6 +205,73 @@ public:
     [[nodiscard]] const std::string&          error()       const { return m_error;       }
     [[nodiscard]] const std::string&          sourcePath()  const { return m_sourcePath;  }
     [[nodiscard]] bool                        succeeded()   const { return m_error.empty() && m_manifest.isValid(); }
+
+    // Parse and validate a .atlas file. Returns a ProjectBootstrapResult with
+    // the manifest and any validation entries. When checkPathsOnDisk is true,
+    // verifies that contentRoot and assetsRoot paths exist on disk.
+    [[nodiscard]] ProjectBootstrapResult bootstrap(const std::string& path,
+                                                    bool checkPathsOnDisk = false) {
+        ProjectBootstrapResult result;
+
+        if (!loadFromFile(path)) {
+            result.validationEntries.push_back({
+                ProjectValidationSeverity::Fatal,
+                "parse_failure",
+                "Failed to parse .atlas file: " + (m_error.empty() ? path : m_error)
+            });
+            result.success = false;
+            return result;
+        }
+
+        result.manifest = m_manifest;
+
+        if (result.manifest.contentRoot.empty()) {
+            result.validationEntries.push_back({
+                ProjectValidationSeverity::Warning,
+                "empty_content_root",
+                "modules.content is empty in " + path
+            });
+        }
+
+        if (result.manifest.assetsRoot.empty()) {
+            result.validationEntries.push_back({
+                ProjectValidationSeverity::Warning,
+                "empty_assets_root",
+                "assets.root is empty in " + path
+            });
+        }
+
+        if (result.manifest.adapterId.empty()) {
+            result.validationEntries.push_back({
+                ProjectValidationSeverity::Error,
+                "missing_adapter_id",
+                "adapter field is missing or empty in " + path
+            });
+        }
+
+        if (checkPathsOnDisk) {
+            namespace fs = std::filesystem;
+            if (!result.manifest.contentRoot.empty() &&
+                !fs::exists(result.manifest.contentRoot)) {
+                result.validationEntries.push_back({
+                    ProjectValidationSeverity::Error,
+                    "missing_content_root",
+                    "contentRoot path does not exist on disk: " + result.manifest.contentRoot
+                });
+            }
+            if (!result.manifest.assetsRoot.empty() &&
+                !fs::exists(result.manifest.assetsRoot)) {
+                result.validationEntries.push_back({
+                    ProjectValidationSeverity::Error,
+                    "missing_assets_root",
+                    "assetsRoot path does not exist on disk: " + result.manifest.assetsRoot
+                });
+            }
+        }
+
+        result.success = !result.hasErrors();
+        return result;
+    }
 
 private:
     AtlasProjectManifest m_manifest;

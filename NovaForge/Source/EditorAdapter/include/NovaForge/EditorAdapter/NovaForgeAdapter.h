@@ -8,6 +8,7 @@
 // See Docs/Canon/06_WORKSPACE_VS_PROJECT_BOUNDARY.md
 
 #include "NF/Workspace/IGameProjectAdapter.h"
+#include "NovaForge/EditorAdapter/NovaForgeProjectBootstrap.h"
 #include "NovaForge/EditorAdapter/Panels/EconomyPanel.h"
 #include "NovaForge/EditorAdapter/Panels/InventoryRulesPanel.h"
 #include "NovaForge/EditorAdapter/Panels/ShopPanel.h"
@@ -41,6 +42,10 @@ public:
     [[nodiscard]] const std::string& projectRoot() const { return m_projectRoot; }
 
     bool initialize() override {
+        // Run project bootstrap (validation only — does not block adapter init)
+        NovaForgeProjectBootstrap bs(m_projectRoot, &m_assetCatalog);
+        bs.run(m_bootstrapContract);
+
         // Register gameplay system panels
         m_panels = buildPanelDescriptors();
         return true;
@@ -67,10 +72,15 @@ public:
         };
     }
 
+    [[nodiscard]] const NF::ProjectLoadContract& bootstrapContract() const { return m_bootstrapContract; }
+    [[nodiscard]] const NF::AssetCatalog& assetCatalog() const { return m_assetCatalog; }
+
 private:
     std::string m_projectRoot;
     std::vector<std::string> m_contentRoots;
     std::vector<NF::GameplaySystemPanelDescriptor> m_panels;
+    NF::AssetCatalog m_assetCatalog;
+    NF::ProjectLoadContract m_bootstrapContract;
 
     static std::vector<NF::GameplaySystemPanelDescriptor> buildPanelDescriptors() {
         std::vector<NF::GameplaySystemPanelDescriptor> panels;

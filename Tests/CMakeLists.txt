@@ -965,3 +965,20 @@ target_link_libraries(NF_Phase71Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase71Tests)
+
+# Phase B — Real Project Load
+#   B.1: ProjectBootstrapResult + AtlasProjectFileLoader manifest validation
+#   B.2: NovaForgeProjectBootstrap service + adapter wiring
+#   B.3: NovaForgeDocumentType / NovaForgeDocument / NovaForgeDocumentRegistry
+#   B.4: AssetCatalogPopulator filesystem scan + ContentBrowserPanel/InspectorPanel wiring
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseBTests
+        Workspace/test_phase_b.cpp
+        catch_main.cpp
+    )
+    target_link_libraries(NF_PhaseBTests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseBTests)
+endif()

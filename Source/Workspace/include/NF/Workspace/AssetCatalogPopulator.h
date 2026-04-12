@@ -16,6 +16,8 @@
 #include "NF/Workspace/AssetCatalog.h"
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
+#include <filesystem>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -206,12 +208,89 @@ public:
         return result;
     }
 
+    // Populate the catalog by recursively scanning a directory on disk.
+    // Returns a PopulateResult describing what was found and registered.
+    PopulateResult populateFromDirectory(AssetCatalog& catalog,
+                                         const std::string& rootDir,
+                                         bool recursive = true) {
+        namespace fs = std::filesystem;
+        PopulateResult result;
+
+        fs::path root(rootDir);
+        std::error_code ec;
+
+        auto processEntry = [&](const fs::directory_entry& entry) {
+            if (!entry.is_regular_file(ec)) return;
+
+            std::string filePath = entry.path().string();
+            ++result.filesScanned;
+
+            std::string catPath = buildCatalogPath(rootDir, filePath);
+            std::string ext;
+            auto dot = filePath.rfind('.');
+            if (dot != std::string::npos) ext = filePath.substr(dot);
+
+            std::string guid = generateGuid(catPath);
+
+            AssetDescriptor desc;
+            desc.sourcePath   = filePath;
+            desc.catalogPath  = catPath;
+            desc.displayName  = extractDisplayName(catPath);
+            desc.typeTag      = classifyExtension(ext);
+            desc.importState  = AssetImportState::Unknown;
+            desc.metadata.set("guid", guid);
+            desc.metadata.set("rootDir", rootDir);
+
+            auto sz = entry.file_size(ec);
+            if (!ec) desc.sourceSizeBytes = sz;
+
+            AssetId id = catalog.add(std::move(desc));
+            if (id != INVALID_ASSET_ID) {
+                ++result.assetsAdded;
+            } else {
+                if (catalog.findByPath(catPath) != nullptr) {
+                    ++result.duplicates;
+                } else {
+                    ++result.errors;
+                    result.errorPaths.push_back(filePath);
+                }
+            }
+        };
+
+        if (recursive) {
+            for (const auto& entry : fs::recursive_directory_iterator(root, ec)) {
+                if (ec) { ++result.errors; break; }
+                processEntry(entry);
+            }
+        } else {
+            for (const auto& entry : fs::directory_iterator(root, ec)) {
+                if (ec) { ++result.errors; break; }
+                processEntry(entry);
+            }
+        }
+
+        return result;
+    }
+
 private:
     struct PendingFile {
         std::string rootDir;
         std::string filePath;
     };
     std::vector<PendingFile> m_pending;
+
+    // Generate a deterministic pseudo-GUID from a catalog path string.
+    // Not cryptographic — just unique enough for editor purposes.
+    static std::string generateGuid(const std::string& catalogPath) {
+        uint32_t hash = 2166136261u;
+        for (unsigned char c : catalogPath) {
+            hash ^= c;
+            hash *= 16777619u;
+        }
+        char buf[9];
+        std::snprintf(buf, sizeof(buf), "%08X", hash);
+        return std::string(buf);
+    }
 };
 
 } // namespace NF

@@ -14,6 +14,7 @@
 #include <deque>
 #include <unordered_map>
 #include "NF/Editor/EditorPanel.h"
+#include "NF/Workspace/AssetCatalog.h"
 
 namespace NF {
 
@@ -81,10 +82,14 @@ public:
     [[nodiscard]] TypeRegistry* typeRegistry() const { return m_typeRegistry; }
     void setTypeRegistry(TypeRegistry* r) { m_typeRegistry = r; }
 
+    void setSelectedAsset(const NF::AssetDescriptor* desc) { m_selectedAsset = desc; }
+    [[nodiscard]] const NF::AssetDescriptor* selectedAsset() const { return m_selectedAsset; }
+
 private:
     std::string m_name = "Inspector";
     SelectionService* m_selection = nullptr;
     TypeRegistry* m_typeRegistry = nullptr;
+    const NF::AssetDescriptor* m_selectedAsset = nullptr;
 };
 
 // ── HierarchyPanel ──────────────────────────────────────────────
