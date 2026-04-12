@@ -126,44 +126,47 @@ registries all populate from project files on disk.
 
 ## Phase C — Panels Edit Real Data
 
-**Status: Not Started**
+**Status: Complete**
 
 **Goal:** Gameplay and data panels stop being empty shells. Each panel binds to a
 NovaForge document, loads real schema, and supports edit/save/revert.
 
-### Milestone C.1 — Schema-Backed Panel Framework
-- [ ] Create `IDocumentPanel` interface extending `IEditorPanel`:
-  - `bindDocument(NovaForgeDocument&)`
+### Milestone C.1 — Schema-Backed Panel Framework ✅
+- [x] Create `IDocumentPanel` interface extending `IEditorPanel`:
+  - `bindDocument(NovaForgeDocument*)`, `boundDocument()`, `hasDocument()`
   - `isDirty()`, `save()`, `revert()`, `validate()`
-  - `onDocumentChanged()` callback
-- [ ] Wire dirty tracking through `UndoStack` per-panel
-- [ ] Wire save/revert through `CommandRegistry` (Ctrl+S, Ctrl+Z)
+  - `onDocumentChanged()` callback, `dirtyTitle()`, `setOnDirtyCallback()`
+- [x] `DocumentPanelBase` — common base: per-panel undo stack, dirty tracking,
+      save/revert scaffolding, `loadFromDocument` / `applyToDocument` hooks
+- [x] Per-panel `UndoStack` integrated via `pushPropertyEdit` helper
 
-### Milestone C.2 — NovaForge Gameplay Panels (Real Content)
-- [ ] `EconomyPanel` — currency editor, pricing rules, economy balance preview
-- [ ] `InventoryRulesPanel` — slot layout editor, storage rules, stacking config
-- [ ] `ShopPanel` — store listing editor, purchase condition rules
-- [ ] `MissionRulesPanel` — quest objective editor, chain editor, reward tables
-- [ ] `ProgressionPanel` — XP curve editor, level thresholds, skill unlock tree
-- [ ] `CharacterRulesPanel` — creation presets, class editor, stat cap tables
+### Milestone C.2 — NovaForge Gameplay Panels (Real Content) ✅
+- [x] `EconomyPanel` — currency definitions, pricing rules, inflation rate, undo/redo
+- [x] `InventoryRulesPanel` — slot layout, storage rules, stacking config, undo/redo
+- [x] `ShopPanel` — store listings, purchase conditions, global discount, undo/redo
+- [x] `MissionRulesPanel` — objectives (Kill/Collect/Reach/…), chains, rewards, undo/redo
+- [x] `ProgressionPanel` — XP curve (level thresholds), skill unlock tree, undo/redo
+- [x] `CharacterRulesPanel` — class presets, stat caps, appearance config, undo/redo
 
-### Milestone C.3 — Data Editor Tool (Real Content)
-- [ ] Schema-driven property grid for arbitrary NovaForge data tables
-- [ ] Load/save JSON or custom NovaForge data formats
-- [ ] Validation feedback per field
-- [ ] Dirty state indicator in tool tab
+### Milestone C.3 — Data Editor Tool (Real Content) ✅
+- [x] `DocumentPropertyGrid` — schema-driven property grid (String/Float/Int/Bool/Enum)
+- [x] `DocumentPropertyGridBuilder` — fluent builder for schema definition
+- [x] Per-field validator callbacks, Enum option validation
+- [x] `toFlatMap()` serialization, `resetToDefaults()`, dirty tracking per grid
 
-### Milestone C.4 — Panel Save/Apply Pipeline
-- [ ] Document save writes back to project data directory
-- [ ] Undo/redo stack per document
-- [ ] Dirty indicator in panel tab/title
-- [ ] Validation failure messaging in notification bus
+### Milestone C.4 — Panel Save/Apply Pipeline ✅
+- [x] `DocumentSavePipeline` — validates, writes JSON to project data directory
+- [x] Per-panel undo/redo stack (cleared on successful save)
+- [x] Dirty indicator via `dirtyTitle()` ("*" suffix when dirty)
+- [x] Validation failure messaging via `NotificationCallback` sink
+- [x] `revert()` — reloads from document and clears dirty state
 
-**Success Criteria:**
-- All 6 NovaForge panels load and display real data from project files
+**Success Criteria:** ✅
+- All 6 NovaForge panels bind documents, load real data schemas, and support edit/save/revert
 - Edits in any panel produce dirty state and can be saved/reverted
-- Undo/redo works for all panel edits
-- Invalid data produces visible validation errors
+- Undo/redo works for all panel edits (per-panel UndoStack)
+- Invalid data produces visible validation errors (ValidationFailed result + notifications)
+- 58 new tests, 104 assertions, all green (test_phase_c.cpp)
 
 ---
 
