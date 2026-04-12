@@ -690,3 +690,80 @@ target_link_libraries(NF_Phase47Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase47Tests)
+
+# Phase 48 — WorkspaceActivityBar
+add_executable(NF_Phase48Tests
+    Workspace/test_phase48_activity_bar.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase48Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase48Tests)
+
+# Phase 49 — WorkspaceRecentFiles
+add_executable(NF_Phase49Tests
+    Workspace/test_phase49_recent_files.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase49Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase49Tests)
+
+# Phase 50 — WorkspaceQuickOpen
+add_executable(NF_Phase50Tests
+    Workspace/test_phase50_quick_open.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase50Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase50Tests)
+
+# Phase 51 — WorkspaceKeymap
+add_executable(NF_Phase51Tests
+    Workspace/test_phase51_keymap.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase51Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase51Tests)
+
+# Phase 52 — WorkspaceWindowState
+add_executable(NF_Phase52Tests
+    Workspace/test_phase52_window_state.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase52Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase52Tests)
+
+# Phase 53 — WorkspaceProjectTemplate
+add_executable(NF_Phase53Tests
+    Workspace/test_phase53_project_template.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase53Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase53Tests)
+
+# Phase 54 — WorkspaceBreadcrumb
+add_executable(NF_Phase54Tests
+    Workspace/test_phase54_breadcrumb.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase54Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase54Tests)

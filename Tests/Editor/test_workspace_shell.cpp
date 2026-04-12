@@ -298,6 +298,54 @@ TEST_CASE("ToolRegistry: notifyProject events", "[workspace][toolregistry]") {
     REQUIRE(tool->lastProjectId().empty());
 }
 
+TEST_CASE("ToolRegistry: deactivateTool with no active tool returns false", "[workspace][toolregistry]") {
+    NF::ToolRegistry reg;
+    reg.registerTool(std::make_unique<StubHostedTool>("t.a", "A"));
+    reg.initializeAll();
+    // No tool activated yet
+    REQUIRE_FALSE(reg.deactivateTool());
+    REQUIRE(reg.activeToolId().empty());
+}
+
+TEST_CASE("ToolRegistry: deactivateTool suspends active tool and clears id", "[workspace][toolregistry]") {
+    NF::ToolRegistry reg;
+    reg.registerTool(std::make_unique<StubHostedTool>("t.a", "A"));
+    reg.initializeAll();
+    REQUIRE(reg.activateTool("t.a"));
+    REQUIRE(reg.find("t.a")->state() == NF::HostedToolState::Active);
+    REQUIRE(reg.activeToolId() == "t.a");
+
+    REQUIRE(reg.deactivateTool());
+
+    REQUIRE(reg.activeToolId().empty());
+    REQUIRE(reg.activeTool() == nullptr);
+    REQUIRE(reg.find("t.a")->state() == NF::HostedToolState::Suspended);
+}
+
+TEST_CASE("ToolRegistry: deactivateTool idempotent on second call", "[workspace][toolregistry]") {
+    NF::ToolRegistry reg;
+    reg.registerTool(std::make_unique<StubHostedTool>("t.a", "A"));
+    reg.initializeAll();
+    reg.activateTool("t.a");
+    REQUIRE(reg.deactivateTool());
+    // Second call: nothing active, returns false
+    REQUIRE_FALSE(reg.deactivateTool());
+}
+
+TEST_CASE("ToolRegistry: can activate tool after deactivateTool", "[workspace][toolregistry]") {
+    NF::ToolRegistry reg;
+    reg.registerTool(std::make_unique<StubHostedTool>("t.a", "A"));
+    reg.registerTool(std::make_unique<StubHostedTool>("t.b", "B"));
+    reg.initializeAll();
+    REQUIRE(reg.activateTool("t.a"));
+    REQUIRE(reg.deactivateTool());
+    REQUIRE(reg.activeToolId().empty());
+    // Activate again (from Suspended state — activateTool checks for Unloaded only)
+    REQUIRE(reg.activateTool("t.b"));
+    REQUIRE(reg.activeToolId() == "t.b");
+    REQUIRE(reg.find("t.b")->state() == NF::HostedToolState::Active);
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // PanelRegistry
 // ═══════════════════════════════════════════════════════════════════

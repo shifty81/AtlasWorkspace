@@ -99,6 +99,18 @@ public:
 
     [[nodiscard]] const std::string& activeToolId() const { return m_activeToolId; }
 
+    /// Suspend and deselect the currently active tool.
+    /// After this call, activeTool() returns nullptr and activeToolId() is empty.
+    /// Returns false if no tool was active.
+    bool deactivateTool() {
+        if (m_activeToolId.empty()) return false;
+        if (auto* t = find(m_activeToolId)) {
+            if (t->state() == HostedToolState::Active) t->suspend();
+        }
+        m_activeToolId.clear();
+        return true;
+    }
+
     [[nodiscard]] IHostedTool* activeTool() const {
         if (m_activeToolId.empty()) return nullptr;
         return find(m_activeToolId);

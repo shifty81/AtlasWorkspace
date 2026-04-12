@@ -1490,3 +1490,214 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Recent list is front-inserted, deduplicates by path, capped at maxRecentProjects ✓
 - 36 test cases pass (107 assertions) ✓
 - Total test suite: ~3133 tests passing ✓
+
+---
+
+## Phase 48 – Workspace Activity Bar
+
+**Status: Done**
+
+- [x] Create `WorkspaceActivityBar.h` — activity bar data model
+  - [x] ActivityItemKind enum (Tool/Action/Separator) with `activityItemKindName()` helper
+  - [x] ActivityBarItem — id + label + iconKey + toolId + commandId + kind + enabled + pinned; `isValid()`; `isTool/isAction/isSeparator()`; `makeTool/makeAction/makeSeparator()` factories; equality by id
+  - [x] ActivityBarSection — named, ordered item collection (MAX_ITEMS=32); `addItem`/`removeItem`/`findItem`/`findItemMut`/`contains`/`count`/`clear`; duplicate id rejected; capacity enforced
+  - [x] ActivityBarManager — section registry (MAX_SECTIONS=8); `createSection`/`removeSection`/`findSection`/`hasSection`; `addItem`/`removeItem`/`findItem` (search all sections); `setActiveItem` (guards disabled, fires deactivate-then-activate observers on switch, no-ops if same id); `clearActiveItem`; `enableItem`; observer callbacks (MAX_OBSERVERS=16); `clear()`
+- [x] Update `WorkspaceRenderer::renderSidebar()` — TOOLS section prepended above LAUNCH TOOL
+  - [x] Each registered IHostedTool gets a 30px card: left accent stripe (blue if active), label, `*` marker for active tool
+  - [x] Click active tool → `deactivateTool()` (returns to dashboard); click inactive → `activateTool()`
+  - [x] Separator drawn between TOOLS and LAUNCH TOOL sections
+  - [x] Hint "(no tools registered)" only if both tool and app registries are empty
+- [x] Add `Tests/Workspace/test_phase48_activity_bar.cpp` — 48 test cases / 171 assertions:
+  - [x] ActivityItemKind (1 test): all 3 name helpers
+  - [x] ActivityBarItem (9 tests): default invalid, valid Tool, Tool without toolId, valid Action, Action without commandId, Separator only needs id, equality by id, defaults
+  - [x] ActivityBarSection (11 tests): default empty, addItem, duplicate rejected, removeItem, remove unknown, findItem, findItemMut mutates, Separator adds without kind constraints, clear, MAX_ITEMS enforced
+  - [x] ActivityBarManager (24 tests): default empty, createSection, duplicate rejected, empty name rejected, removeSection, remove unknown, findSection, addItem, addItem unknown section, removeItem searches all, removeItem unknown, findItem, setActiveItem, setActiveItem unknown, setActiveItem disabled, clearActiveItem, enableItem, enableItem unknown, observer on setActiveItem, observer deactivate+activate on switch, observer on clearActiveItem, clearObservers, MAX_SECTIONS enforced, no-op if same item, clear
+  - [x] Integration (4 tests): multi-section navigator, disable+re-enable, multiple observers, sections() view
+- [x] Wire `NF_Phase48Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- ActivityItemKind provides three item types with name helpers ✓
+- ActivityBarItem.isValid() correctly gates per-kind required fields ✓
+- ActivityBarSection maintains order, rejects duplicates, enforces MAX_ITEMS ✓
+- ActivityBarManager.setActiveItem() fires deactivate+activate observers on switch, no-ops if same id ✓
+- Sidebar TOOLS section shows all registered tools with active highlight and toggle-click behavior ✓
+- Tools accessible from sidebar regardless of which view (dashboard / active tool) is shown ✓
+- 48 test cases pass (171 assertions) ✓
+- Total test suite: ~3213 tests passing ✓
+
+---
+
+## Phase 49 – Workspace Recent Files
+
+**Status: Done**
+
+- [x] Create `WorkspaceRecentFiles.h` — unified recent-files manager
+  - [x] RecentFileKind enum (Project/Scene/Asset/Script/Config/Custom) with `recentFileKindName()` helper
+  - [x] RecentFileEntry — path + displayName + kind + lastOpenedMs + pinned + accessCount; `isValid()` (non-empty path); equality by path
+  - [x] RecentFileList — MRU ring (MAX_ENTRIES=64); `record` (dedup by path → moves to front + bumps accessCount; evicts oldest unpinned at cap; pinned entries survive eviction; rejects all-pinned overflow); `remove`/`pin`/`findByPath`/`contains`/`mostRecent`; `pinned()`/`unpinned()` views; `pinnedCount`/`count`/`empty`; `clearUnpinned`/`clear`; `appendDirect` (for deserialization)
+  - [x] RecentFilesManager — one RecentFileList per kind (6 lists); `record`/`remove`/`pin`/`find`/`listForKind`; `globalRecent()` (merges all kinds, sorts by lastOpenedMs desc, capped at MAX_GLOBAL=32); `clearKind`/`clearAll`/`clearAllUnpinned`; observer callbacks on record/remove (MAX_OBSERVERS=16); `serialize()` / `deserialize()` — pipe-delimited wire format with `\P` escape for pipes in paths; `deserialize` clears existing data before loading
+- [x] Add `Tests/Workspace/test_phase49_recent_files.cpp` — 45 test cases / 132 assertions:
+  - [x] RecentFileKind (1 test): all 6 name helpers
+  - [x] RecentFileEntry (3 tests): default invalid, valid with path, equality by path
+  - [x] RecentFileList (16 tests): default empty, record adds to front, empty path rejected, re-record moves to front+bumps count, remove, remove unknown, findByPath, contains, pin/unpin, pin unknown, pinned()/unpinned() views, clearUnpinned leaves pinned, clear removes all, MRU order, capacity evicts oldest unpinned, pinned survives eviction
+  - [x] RecentFilesManager (21 tests): default empty, record to correct kind, empty path rejected, find, remove, remove unknown, pin/unpin, pin unknown, globalRecent merges+sorts, globalRecent capped at MAX_GLOBAL, clearKind, clearAll, clearAllUnpinned, observer on record, observer on remove, clearObservers, serialize empty, serialize round-trip, serialize escapes pipe, deserialize empty, deserialize clears existing
+  - [x] Integration (4 tests): project open workflow, observer tracks all operations, access-count increments on re-record, full serialize/deserialize preserves accessCount and pinned
+- [x] Wire `NF_Phase49Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- RecentFileList.record() dedup by path; moves to front; bumps accessCount ✓
+- Pinned entries survive capacity eviction; all-pinned-full rejects new entry ✓
+- RecentFilesManager.globalRecent() sorts newest-first across all kinds; capped at MAX_GLOBAL ✓
+- clearAllUnpinned() removes only unpinned entries across all kinds ✓
+- Serialize/deserialize round-trip is lossless (path, displayName, kind, ts, accessCount, pinned) ✓
+- Pipe characters in path/displayName escaped as \P ✓
+- Observer fires on record (true) and remove (false) with copy of the entry ✓
+- 45 test cases pass (132 assertions) ✓
+- Total test suite: ~3258 tests passing ✓
+
+---
+
+## Phase 50 – Workspace Quick-Open Palette
+
+**Status: Done**
+
+- [x] Create `WorkspaceQuickOpen.h` — cmd+P style quick-open data model
+  - [x] QuickOpenItemKind enum (File/Tool/Command/Symbol/Custom) with `quickOpenItemKindName()` helper
+  - [x] QuickOpenItem — id + label + detail + kind + score; `isValid()` (non-empty id+label); equality by id
+  - [x] QuickOpenQuery — text + filterKind/filterByKind + maxResults; `matches(item)` (case-insensitive substring, optional kind filter); `score(item)` → Exact(100) > Prefix(60) > Contains(30) > None(-1)
+  - [x] QuickOpenProvider — id + name + `populate` callback; `isValid()` (all fields required)
+  - [x] QuickOpenSession — id + up to MAX_PROVIDERS=8 providers; `open`/`close`/`query`/`submit`; `addProvider`/`removeProvider`/`hasProvider`; `results()` (scored, sorted desc, capped at maxResults); `submitted()`/`hasSubmit()`/`clearSubmit()`; query rejects when closed; submit requires open + id in results → closes on success
+  - [x] QuickOpenManager — session registry (MAX_SESSIONS=8); `createSession`/`removeSession`/`findSession`/`hasSession`; `notifySubmit` — fires observers after caller calls session.submit(); observer callbacks (MAX_OBSERVERS=16); `clear()`
+- [x] Add `Tests/Workspace/test_phase50_quick_open.cpp` — 48 test cases / 124 assertions:
+  - [x] QuickOpenItemKind (1 test): all 5 name helpers
+  - [x] QuickOpenItem (5 tests): default invalid, valid, no label, no id, equality by id
+  - [x] QuickOpenQuery (5 tests): empty matches all, case-insensitive, non-match, score Exact>Prefix>Contains, kind filter
+  - [x] QuickOpenProvider (4 tests): invalid no id, invalid no name, invalid no populate, valid
+  - [x] QuickOpenSession (17 tests): default closed, addProvider, invalid rejected, duplicate rejected, removeProvider, remove unknown, open, close, query when closed=0, query collects all providers, query filters text, query sorts by score, query caps maxResults, submit valid, submit unknown, submit when closed, open clears submission, MAX_PROVIDERS enforced
+  - [x] QuickOpenManager (9 tests): default empty, createSession, duplicate rejected, empty id rejected, removeSession, remove unknown, findSession, observer fires on notifySubmit, clearObservers, MAX_SESSIONS enforced, clear
+  - [x] Integration (4 tests): full open-query-submit flow, kind filter narrows, multiple providers merged+ranked, empty query returns all
+- [x] Wire `NF_Phase50Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- QuickOpenQuery.score() correctly ranks Exact > Prefix > Contains ✓
+- QuickOpenSession.query() collects from all providers, scores, sorts descending, caps at maxResults ✓
+- QuickOpenSession.submit() requires open + id in result set; closes session on success ✓
+- QuickOpenManager.notifySubmit() fires all observers independently of the session ✓
+- 48 test cases pass (124 assertions) ✓
+- Total test suite: ~3306 tests passing ✓
+
+---
+
+## Phase 51 – Workspace Keymap System
+
+**Status: Done**
+
+- [x] Create `WorkspaceKeymap.h` — layered keyboard-shortcut configuration
+  - [x] KeyModifiers — bitmask (Ctrl/Shift/Alt/Meta); `toString()` produces "Ctrl+Shift+" etc.; equality; `none()` guard
+  - [x] KeyChord — key string + modifiers; `isValid()` (non-empty key); `toString()` → "Ctrl+S"; equality on both parts
+  - [x] KeyAction — id + chord + description + context (tool/panel id or "" for global); `isValid()` (id + chord.isValid()); equality by id
+  - [x] KeymapLayer — id + name + priority + enabled flag; `addAction`/`removeAction`/`findAction`/`findByChord` (context-aware: action context="" matches any, query context="" is wildcard); MAX_ACTIONS=128; `setEnabled`/`clear`
+  - [x] KeymapManager — ordered layer stack (sorted descending by priority so highest wins first); permanent `"default"` layer (priority=0, not removable); `addLayer`/`removeLayer`/`findLayer`/`hasLayer`/`setLayerEnabled`; `registerAction`/`unregisterAction` (on default layer); `lookup(chord, context)` → first match across enabled layers; `lookupAll(chord, context)` → all matches; `findAction(id)` → any layer; observer callbacks (MAX_OBSERVERS=16); `serialize()` / `deserialize()` — tab-delimited text; `clear()` resets to empty default layer
+- [x] Add `Tests/Workspace/test_phase51_keymap.cpp` — 46 test cases / 115 assertions:
+  - [x] KeyModifiers (4): default none, single flags, combined, equality
+  - [x] KeyChord (4): default invalid, key only, with modifiers, equality
+  - [x] KeyAction (4): default invalid, no chord key, valid, equality by id
+  - [x] KeymapLayer (11): default empty, addAction, invalid rejected, duplicate rejected, removeAction, remove unknown, findAction, findByChord, context filter, setEnabled, clear
+  - [x] KeymapManager (19): default default layer, addLayer, duplicate rejected, empty id rejected, removeLayer, cannot remove default, remove unknown, registerAction, unregisterAction, findAction all layers, lookup highest priority, lookup nullptr no match, disabled layer skipped, lookupAll all matches, observer on register, observer on addLayer, observer on setEnabled, clearObservers, serialize round-trip, deserialize empty, clear resets
+  - [x] Integration (2): multi-layer priority resolution with contexts, full serialize/deserialize preserves layers
+- [x] Wire `NF_Phase51Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- KeymapLayer.findByChord() correctly applies context filter ✓
+- KeymapManager.lookup() resolves highest-priority enabled layer ✓
+- Disabled layers are skipped; default layer is always present ✓
+- Serialize/deserialize round-trip preserves all action fields ✓
+- 46 test cases pass (115 assertions) ✓
+- Total test suite: ~3352 tests passing ✓
+
+---
+
+## Phase 52 – Workspace Window State
+
+**Status: Done**
+
+- [x] Create `WorkspaceWindowState.h` — persistent window geometry and monitor-aware restore
+  - [x] WindowBounds — x/y/width/height + isMaximized + isMinimized; `isValid()` (w>0, h>0); `contains(px,py)` (center-inclusive, right/bottom exclusive); equality
+  - [x] MonitorInfo — id + name + bounds + scaleFactor + isPrimary; `isValid()` (non-empty id + valid bounds)
+  - [x] WindowStateEntry — windowId + bounds + monitorId + workspaceId + lastSavedMs; `isValid()` (non-empty id + valid bounds)
+  - [x] WindowStateManager — monitor registry (MAX_MONITORS=8): `addMonitor`/`removeMonitor`/`findMonitor`/`primaryMonitor()` (enforces single primary; adding a second primary clears the first); entry store (MAX_ENTRIES=64): `save`/`restore`/`remove`/`has`; `isOnMonitor(entry,monitorId)` (tests center point against work area); `monitorForEntry()` (returns containing monitor or primary as fallback); observer callbacks (MAX_OBSERVERS=16); `serialize()`/`deserialize()` tab-delimited; `clear()`
+- [x] Add `Tests/Workspace/test_phase52_window_state.cpp` — 38 test cases / 88 assertions:
+  - [x] WindowBounds (6): default invalid, valid, zero dim invalid, contains point, equality, maximized flag
+  - [x] MonitorInfo (2): default invalid, valid
+  - [x] WindowStateEntry (3): default invalid, valid, no id
+  - [x] WindowStateManager (24): default empty, addMonitor, invalid rejected, duplicate rejected, only one primary, removeMonitor, remove unknown, save, invalid save, save updates existing, restore, restore unknown, remove, remove unknown, isOnMonitor true, isOnMonitor false, monitorForEntry fallback to primary, observer on save, observer on remove, clearObservers, serialize empty, serialize round-trip, deserialize empty, deserialize clears existing, clear
+  - [x] Integration (2): multi-monitor layout save and restore, orphaned window fallback to primary
+- [x] Wire `NF_Phase52Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- addMonitor() with isPrimary=true clears existing primary flag ✓
+- isOnMonitor() correctly tests center-point containment ✓
+- monitorForEntry() falls back to primary when no monitor contains the window ✓
+- save() upserts (creates or updates) without duplicating entries ✓
+- serialize/deserialize round-trip is lossless ✓
+- 38 test cases pass (88 assertions) ✓
+- Total test suite: ~3390 tests passing ✓
+
+---
+
+## Phase 53 – Workspace Project Template
+
+**Status: Done**
+
+- [x] Create `WorkspaceProjectTemplate.h` — project template catalogue and instantiation
+  - [x] TemplateCategory — id + label + description; `isValid()` (id + label required)
+  - [x] TemplateFileStub — relativePath + contentTemplate (may contain `{{VAR}}`); `isValid()` (path required)
+  - [x] TemplateVariable — key + defaultValue + description + required flag; `isValid()` (key required)
+  - [x] TemplateDefinition — id + name + categoryId + description + version; `addStub`/`removeStub`/`findStub` (MAX_STUBS=64, unique paths); `addVariable`/`removeVariable`/`findVariable` (MAX_VARS=32, unique keys); `substitute(text, vars)` — replaces all `{{KEY}}` tokens, falls back to `defaultValue`, supports multiple occurrences; `isValid()` (id + name required)
+  - [x] TemplateInstance — result of instantiate(): templateId + resolved variable map + resolvedFiles (path→content); `isComplete()` (no missing required vars); `missingRequired()` — list of required key names with empty values
+  - [x] TemplateRegistry — category store (MAX_CATEGORIES=32, addCategory/removeCategory/findCategory/hasCategory); template store (MAX_TEMPLATES=256, addTemplate/removeTemplate/findTemplate/hasTemplate/findByCategory); `instantiate(id, vars)` — resolves vars, substitutes all stubs, reports missing required vars; observer callbacks (MAX_OBSERVERS=16); `clear()`
+- [x] Add `Tests/Workspace/test_phase53_project_template.cpp` — 43 test cases / 76 assertions:
+  - [x] TemplateCategory (2): valid, invalid without id or label
+  - [x] TemplateFileStub (2): valid, invalid without path
+  - [x] TemplateVariable (2): valid, invalid without key
+  - [x] TemplateDefinition (13): valid, invalid, addStub/invalid/duplicate/remove/find, addVariable/invalid/duplicate/remove, substitute replaces, substitute default, substitute multiple occurrences
+  - [x] TemplateRegistry (18): empty, addCategory/invalid/duplicate, removeCategory/unknown, addTemplate/invalid/duplicate, removeTemplate/unknown, findByCategory, instantiate resolved files, instantiate default, instantiate missing required, instantiate unknown, observer on add/remove, clearObservers, clear
+  - [x] Integration (2): multi-file project instantiation, missing required var detection
+- [x] Wire `NF_Phase53Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- substitute() replaces all `{{KEY}}` occurrences including multiples ✓
+- substitute() falls back to defaultValue when key absent from supplied vars ✓
+- instantiate() reports missing required vars without preventing file generation ✓
+- findByCategory() filters correctly; empty category returns empty vector ✓
+- 43 test cases pass (76 assertions) ✓
+- Total test suite: ~3473 tests passing ✓
+
+---
+
+## Phase 54 – Workspace Breadcrumb Navigation
+
+**Status: Done**
+
+- [x] Create `WorkspaceBreadcrumb.h` — hierarchical navigation breadcrumb trail
+  - [x] BreadcrumbItemKind — Root / Category / Item / Leaf; `breadcrumbItemKindName()` helper
+  - [x] BreadcrumbItem — id + label + kind + iconKey + contextData; `isValid()` (id + label); equality by id
+  - [x] BreadcrumbTrail — ordered stack; `push` (rejects invalid / duplicate id / at MAX_DEPTH=32); `pop`; `current()` (top); `root()` (front); `contains`/`findById`; `truncateTo(id)` (pop all above id); `clear()`; equality
+  - [x] BreadcrumbHistory — circular history (MAX_HISTORY=16); `push(trail)` — evicts oldest when full, clears forward history; `back()`/`forward()` — move cursor, return trail pointer; `canBack()`/`canForward()`; `current()`; `clear()`
+  - [x] BreadcrumbManager — owns one active BreadcrumbTrail + BreadcrumbHistory; `navigate(item)` — push + record; `popTo(id)` — truncate + record; `pop()` — pop one + record; `back()`/`forward()` — restore from history; `canBack()`/`canForward()`; `reset()`; observer callbacks (MAX_OBSERVERS=16)
+- [x] Add `Tests/Workspace/test_phase54_breadcrumb.cpp` — 40 test cases / 107 assertions:
+  - [x] BreadcrumbItemKind (1): all 4 name helpers
+  - [x] BreadcrumbItem (4): default invalid, valid, no label, equality by id
+  - [x] BreadcrumbTrail (11): default empty, push, invalid/duplicate rejected, pop, pop empty, contains/findById, truncateTo, truncateTo unknown, root stays front, clear, equality
+  - [x] BreadcrumbHistory (6): default empty, push records, back+forward, back at start, push clears forward, clear
+  - [x] BreadcrumbManager (15): navigate, invalid rejected, popTo, popTo unknown, pop, pop empty, back, forward, canBack/canForward, reset, observer on navigate/popTo/back+forward/reset, clearObservers
+  - [x] Integration (2): full drill-down + back navigation; popTo mid-trail then continue
+- [x] Wire `NF_Phase54Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- BreadcrumbTrail.push() rejects duplicate ids in trail ✓
+- BreadcrumbTrail.truncateTo() pops precisely to target item ✓
+- BreadcrumbHistory.push() clears forward history ✓
+- BreadcrumbManager.navigate() branches correctly after back+navigate ✓
+- 40 test cases pass (107 assertions) ✓
+- Total test suite: 3473 tests passing ✓

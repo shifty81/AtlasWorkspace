@@ -42,6 +42,7 @@
 #include "NF/UI/UI.h"
 #include "NF/UI/UIWidgets.h"
 #include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/WorkspaceActivityBar.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
 #include <array>
 #include <cstring>
@@ -261,13 +262,66 @@ private:
         // Right border
         ui.drawRect({kSidebarW - 1.f, y, 1.f, h}, kBorder);
 
-        // Section header
-        ui.drawText(8.f, y + 8.f, "LAUNCH TOOL", kTextSecondary);
-        ui.drawRect({8.f, y + 22.f, kSidebarW - 16.f, 1.f}, kBorder);
-
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+        float ay = y + 8.f;
 
-        float ay = y + 30.f;
+        // ── Section 1: Registered Tools (in-process IHostedTool) ──────
+        if (!shell.toolRegistry().empty()) {
+            ui.drawText(8.f, ay, "TOOLS", kTextSecondary);
+            ui.drawRect({8.f, ay + 14.f, kSidebarW - 16.f, 1.f}, kBorder);
+            ay += 20.f;
+
+            const std::string& activeId = shell.toolRegistry().activeToolId();
+            for (const auto* desc : shell.toolRegistry().allDescriptors()) {
+                if (ay + 34.f > y + h - 4.f) break;
+
+                bool active  = (desc->toolId == activeId);
+                Rect cardR{4.f, ay, kSidebarW - 8.f, 30.f};
+                bool hovered = cardR.contains(mouse.x, mouse.y);
+
+                // Background — active tint / hover tint / default
+                uint32_t bg = active  ? kAccentDark
+                            : (hovered ? m_wsTheme.hoverHighlight : 0x252525FF);
+                ui.drawRect(cardR, bg);
+                ui.drawRectOutline(cardR, active ? kAccentBlue : kBorder, 1.f);
+                // Left accent stripe
+                ui.drawRect({4.f, ay, 3.f, 30.f}, active ? kAccentBlue : 0x404040FF);
+
+                // Tool label (truncate to sidebar width)
+                std::string lbl = desc->displayName;
+                if (lbl.size() > 16) lbl = lbl.substr(0, 13) + "...";
+                ui.drawText(12.f, ay + 8.f, lbl, active ? kTextPrimary : kTextSecondary);
+
+                // "✓" for active
+                if (active)
+                    ui.drawText(kSidebarW - 14.f, ay + 8.f, "*", kAccentBlue);
+
+                // Click: activate when inactive, deactivate when active
+                if (m_ctx.hitRegion(cardR, false)) {
+                    if (active) {
+                        NF_LOG_INFO("WorkspaceUI",
+                            std::string("ActivityBar: deactivating ") + desc->toolId);
+                        shell.toolRegistry().deactivateTool();
+                    } else {
+                        NF_LOG_INFO("WorkspaceUI",
+                            std::string("ActivityBar: activating ") + desc->toolId);
+                        shell.toolRegistry().activateTool(desc->toolId);
+                    }
+                }
+
+                ay += 34.f;
+            }
+
+            // Separator between Tools and Apps sections
+            ui.drawRect({8.f, ay + 4.f, kSidebarW - 16.f, 1.f}, kBorder);
+            ay += 14.f;
+        }
+
+        // ── Section 2: Launch Apps (external executables) ─────────────
+        ui.drawText(8.f, ay, "LAUNCH TOOL", kTextSecondary);
+        ui.drawRect({8.f, ay + 14.f, kSidebarW - 16.f, 1.f}, kBorder);
+        ay += 20.f;
+
         for (const auto& desc : shell.appRegistry().apps()) {
             if (ay + 46.f > y + h) break;
 
@@ -366,12 +420,12 @@ private:
 
         m_ctx.end();
 
-        if (shell.appRegistry().empty()) {
-            ui.drawText(8.f, ay + 8.f, "(no apps registered)", kTextMuted);
+        if (shell.appRegistry().empty() && shell.toolRegistry().empty()) {
+            ui.drawText(8.f, ay + 8.f, "(no tools registered)", kTextMuted);
         }
     }
 
-    // ── Main area: welcome or project dashboard ───────────────────
+    // ── Main area: welcome, project dashboard, or active tool view ──
     void renderMainArea(UIRenderer& ui, float width, float height,
                         WorkspaceShell& shell, const UIMouseState& mouse)
     {
@@ -384,8 +438,10 @@ private:
 
         if (!shell.hasProject()) {
             renderWelcomeScreen(ui, x, y, w, h, mouse);
+        } else if (shell.toolRegistry().activeTool() != nullptr) {
+            renderActiveToolView(ui, x, y, w, h, shell, mouse);
         } else {
-            renderProjectDashboard(ui, x, y, w, h, shell);
+            renderProjectDashboard(ui, x, y, w, h, shell, mouse);
         }
     }
 
@@ -449,7 +505,7 @@ private:
     }
 
     void renderProjectDashboard(UIRenderer& ui, float x, float y, float w, float h,
-                                const WorkspaceShell& shell)
+                                WorkspaceShell& shell, const UIMouseState& mouse)
     {
         (void)h;
         float rx = x + 16.f;
@@ -477,19 +533,43 @@ private:
         drawStatCard(rx + 296.f,  ry, "Apps",   std::to_string(shell.appRegistry().count()));
         ry += 68.f;
 
-        // Registered tools list
+        // Registered tools list — clickable rows to activate each tool
         ui.drawText(rx, ry, "Registered Tools", kTextSecondary);
+        ui.drawText(rx + w - 120.f, ry, "Click a tool to Open it", kTextMuted);
         ui.drawRect({rx, ry + 16.f, w - 32.f, 1.f}, kBorder);
         ry += 22.f;
 
+        m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
+        const std::string& activeId = shell.toolRegistry().activeToolId();
         for (const auto* desc : shell.toolRegistry().allDescriptors()) {
-            float rowH = 26.f;
-            ui.drawRect({rx, ry, w - 32.f, rowH}, 0x272727FF);
-            ui.drawRectOutline({rx, ry, w - 32.f, rowH}, kBorder, 1.f);
-            ui.drawText(rx + 8.f, ry + 6.f, desc->displayName + "  (" + desc->toolId + ")",
-                        kTextPrimary);
+            float rowH = 28.f;
+            float rowW = w - 32.f;
+            Rect  rowR = {rx, ry, rowW, rowH};
+            bool  active  = (desc->toolId == activeId);
+            bool  hovered = rowR.contains(mouse.x, mouse.y);
+
+            uint32_t bg = active  ? kAccentDark
+                        : (hovered ? m_wsTheme.hoverHighlight : 0x272727FF);
+            ui.drawRect(rowR, bg);
+            ui.drawRectOutline(rowR, kBorder, 1.f);
+            // Left accent stripe indicates active tool
+            ui.drawRect({rx, ry, 3.f, rowH}, active ? kAccentBlue : 0x444444FF);
+            ui.drawText(rx + 10.f, ry + 7.f,
+                        desc->displayName + "  (" + desc->toolId + ")", kTextPrimary);
+            if (!active)
+                ui.drawText(rx + rowW - 58.f, ry + 7.f, "Open >", kTextSecondary);
+
+            if (m_ctx.hitRegion(rowR, false)) {
+                NF_LOG_INFO("WorkspaceUI",
+                    std::string("Activating tool: ") + desc->toolId);
+                shell.toolRegistry().activateTool(desc->toolId);
+            }
+
             ry += rowH + 2.f;
         }
+
+        m_ctx.end();
 
         if (shell.toolRegistry().empty()) {
             ui.drawText(rx, ry + 4.f, "(no tools registered)", kTextMuted);
@@ -590,6 +670,369 @@ private:
             "  Apps: "   + std::to_string(shell.appRegistry().count());
         float rw = static_cast<float>(right.size()) * 8.f;
         ui.drawText(width - rw - 8.f, y + 5.f, right, 0xFFFFFFFF);
+    }
+
+    // ── Active tool editor view ───────────────────────────────────
+    // Shown in the main area when a tool has been activated from the dashboard.
+    // Displays a per-tool panel layout, a header bar with a "back" button,
+    // and a bottom strip with Console + Metrics panels.
+    void renderActiveToolView(UIRenderer& ui, float x, float y, float w, float h,
+                              WorkspaceShell& shell, const UIMouseState& mouse)
+    {
+        const IHostedTool* tool = shell.toolRegistry().activeTool();
+        if (!tool) return;
+        const auto& desc = tool->descriptor();
+
+        static constexpr float kHeaderH = 38.f;
+        static constexpr float kBottomH = 130.f;
+        const float kMainH = h - kHeaderH - kBottomH;
+
+        // ── Tool header bar ────────────────────────────────────────
+        ui.drawRect({x, y, w, kHeaderH}, kSurface);
+        ui.drawRect({x, y + kHeaderH - 1.f, w, 1.f}, kBorder);
+        ui.drawRect({x, y, 3.f, kHeaderH}, kAccentBlue);
+
+        ui.drawText(x + 14.f, y + 11.f, desc.displayName, kTextPrimary);
+
+        // Project breadcrumb
+        if (shell.hasProject() && shell.projectAdapter()) {
+            float nameW = static_cast<float>(desc.displayName.size()) * 8.f + 14.f;
+            std::string crumb = "  /  " + shell.projectAdapter()->projectDisplayName();
+            ui.drawText(x + nameW, y + 11.f, crumb, kTextSecondary);
+        }
+
+        // "< Dashboard" back button
+        static constexpr float kBackW = 96.f;
+        Rect backR{x + w - kBackW - 8.f, y + (kHeaderH - 22.f) * 0.5f, kBackW, 22.f};
+        bool backHovered = backR.contains(mouse.x, mouse.y);
+        ui.drawRect(backR, backHovered ? kButtonBg : kCardBg);
+        ui.drawRectOutline(backR, kBorder, 1.f);
+        ui.drawText(backR.x + 8.f, backR.y + 4.f, "< Dashboard", kTextSecondary);
+
+        // ── Per-tool panel layout ──────────────────────────────────
+        renderToolPanelsForCategory(ui, x, y + kHeaderH, w, kMainH, shell, desc);
+
+        // ── Bottom strip: Console + Metrics ───────────────────────
+        renderBottomStrip(ui, x, y + kHeaderH + kMainH, w, kBottomH, shell);
+
+        // ── Click handling ─────────────────────────────────────────
+        m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+        if (m_ctx.hitRegion(backR, false)) {
+            NF_LOG_INFO("WorkspaceUI", "Tool deactivated: back to dashboard");
+            shell.toolRegistry().deactivateTool();
+        }
+        m_ctx.end();
+    }
+
+    // ── Per-category panel layout ─────────────────────────────────
+    // Dispatches to a tool-appropriate multi-panel arrangement.
+    // All panels are chrome shells; actual content is handled by tool logic.
+    void renderToolPanelsForCategory(UIRenderer& ui, float x, float y, float w, float h,
+                                     const WorkspaceShell& shell,
+                                     const HostedToolDescriptor& desc)
+    {
+        // Helper: draw a labeled panel zone with an optional centered hint.
+        auto drawPanel = [&](float px, float py, float pw, float ph,
+                             const char* title, const char* hint = nullptr) {
+            ui.drawRect({px, py, pw, ph}, kCardBg);
+            ui.drawRectOutline({px, py, pw, ph}, kBorder, 1.f);
+            ui.drawRect({px, py, pw, 22.f}, kSurface);
+            ui.drawRect({px, py + 22.f, pw, 1.f}, kBorder);
+            ui.drawText(px + 8.f, py + 4.f, title, kTextSecondary);
+            if (hint) {
+                // Use the same 8px-per-glyph estimate as the rest of the renderer for centering.
+                float hx = px + (pw - static_cast<float>(std::strlen(hint)) * 8.f) * 0.5f;
+                float hy = py + 22.f + (ph - 22.f - 14.f) * 0.5f;
+                ui.drawText(hx, hy, hint, kTextMuted);
+            }
+        };
+
+        // Content-root hint shown at the bottom of the main viewport/panel.
+        std::string contentHint;
+        if (shell.hasProject() && shell.projectAdapter()) {
+            auto roots = shell.projectAdapter()->contentRoots();
+            if (!roots.empty()) {
+                contentHint = "Content: " + roots[0];
+                if (contentHint.size() > 50)
+                    contentHint = contentHint.substr(0, 47) + "...";
+            }
+        }
+
+        switch (desc.category) {
+
+        case HostedToolCategory::SceneEditing: {
+            // Hierarchy | 3D Viewport | Inspector
+            float hierW  = w * 0.20f;
+            float inspW  = w * 0.22f;
+            float viewW  = w - hierW - inspW;
+            drawPanel(x,              y, hierW, h, "HIERARCHY", "(entity tree)");
+            // Viewport
+            ui.drawRect({x + hierW, y, viewW, h}, 0x1A1A1AFF);
+            ui.drawRectOutline({x + hierW, y, viewW, h}, kBorder, 1.f);
+            ui.drawRect({x + hierW, y, viewW, 22.f}, kSurface);
+            ui.drawRect({x + hierW, y + 22.f, viewW, 1.f}, kBorder);
+            ui.drawText(x + hierW + 8.f, y + 4.f, "VIEWPORT", kTextSecondary);
+            // Grid lines
+            for (float gx = x + hierW; gx < x + hierW + viewW; gx += 38.f)
+                ui.drawRect({gx, y + 22.f, 1.f, h - 22.f}, 0x2D2D2DFF);
+            for (float gy = y + 22.f; gy < y + h; gy += 38.f)
+                ui.drawRect({x + hierW, gy, viewW, 1.f}, 0x2D2D2DFF);
+            ui.drawText(x + hierW + (viewW - 80.f) * 0.5f,
+                        y + 22.f + (h - 22.f - 14.f) * 0.5f,
+                        "[ 3D Scene ]", kTextMuted);
+            if (!contentHint.empty())
+                ui.drawText(x + hierW + 8.f, y + h - 18.f, contentHint, kTextMuted);
+            drawPanel(x + hierW + viewW, y, inspW, h, "INSPECTOR", "(properties)");
+            break;
+        }
+
+        case HostedToolCategory::AssetAuthoring: {
+            // Content Browser | Inspector
+            float cbW   = w * 0.65f;
+            float inspW = w - cbW;
+            ui.drawRect({x, y, cbW, h}, kCardBg);
+            ui.drawRectOutline({x, y, cbW, h}, kBorder, 1.f);
+            ui.drawRect({x, y, cbW, 22.f}, kSurface);
+            ui.drawRect({x, y + 22.f, cbW, 1.f}, kBorder);
+            ui.drawText(x + 8.f, y + 4.f, "CONTENT BROWSER", kTextSecondary);
+            // Asset tile placeholders
+            static const char* kTypes[] = {"Mesh","Texture","Material","Script","Prefab","Audio"};
+            float ax = x + 8.f, ay = y + 30.f;
+            for (int i = 0; i < 6 && ax + 62.f < x + cbW - 4.f; ++i) {
+                ui.drawRect({ax, ay, 60.f, 58.f}, 0x333333FF);
+                ui.drawRectOutline({ax, ay, 60.f, 58.f}, kBorder, 1.f);
+                ui.drawText(ax + 6.f, ay + 22.f, kTypes[i], kTextMuted);
+                ax += 68.f;
+            }
+            if (!contentHint.empty())
+                ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
+            drawPanel(x + cbW, y, inspW, h, "INSPECTOR", "(asset preview)");
+            break;
+        }
+
+        case HostedToolCategory::AnimationAuthoring: {
+            // Animation Preview | Sequencer / Timeline
+            float viewH = h * 0.55f;
+            float timeH = h - viewH;
+            drawPanel(x, y,          w, viewH, "ANIMATION PREVIEW", "[ 3D Preview ]");
+            drawPanel(x, y + viewH,  w, timeH, "SEQUENCER / TIMELINE", "(keyframes)");
+            if (!contentHint.empty())
+                ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
+            break;
+        }
+
+        case HostedToolCategory::DataEditing: {
+            // Data Table | Inspector
+            float tableW = w * 0.70f;
+            float inspW  = w - tableW;
+            ui.drawRect({x, y, tableW, h}, kCardBg);
+            ui.drawRectOutline({x, y, tableW, h}, kBorder, 1.f);
+            ui.drawRect({x, y, tableW, 22.f}, kSurface);
+            ui.drawRect({x, y + 22.f, tableW, 1.f}, kBorder);
+            ui.drawText(x + 8.f, y + 4.f, "DATA TABLE", kTextSecondary);
+            // Table header row
+            ui.drawRect({x, y + 22.f, tableW, 22.f}, 0x303030FF);
+            ui.drawText(x + 8.f,   y + 27.f, "ID",    kTextSecondary);
+            ui.drawText(x + 80.f,  y + 27.f, "Name",  kTextSecondary);
+            ui.drawText(x + 200.f, y + 27.f, "Value", kTextSecondary);
+            ui.drawRect({x, y + 44.f, tableW, 1.f}, kBorder);
+            if (!contentHint.empty())
+                ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
+            drawPanel(x + tableW, y, inspW, h, "INSPECTOR", "(row details)");
+            break;
+        }
+
+        case HostedToolCategory::LogicAuthoring: {
+            // Full-width node graph canvas
+            ui.drawRect({x, y, w, h}, 0x1C1C1CFF);
+            ui.drawRectOutline({x, y, w, h}, kBorder, 1.f);
+            ui.drawRect({x, y, w, 22.f}, kSurface);
+            ui.drawRect({x, y + 22.f, w, 1.f}, kBorder);
+            ui.drawText(x + 8.f, y + 4.f, "VISUAL LOGIC GRAPH", kTextSecondary);
+            // Node placeholders
+            auto drawNode = [&](float nx, float ny, const char* lbl) {
+                ui.drawRect({nx, ny, 100.f, 44.f}, kCardBg);
+                ui.drawRectOutline({nx, ny, 100.f, 44.f}, kBorder, 1.f);
+                ui.drawRect({nx, ny, 100.f, 20.f}, kAccentDark);
+                ui.drawText(nx + 6.f, ny + 4.f, lbl, kTextPrimary);
+                ui.drawRect({nx - 5.f,  ny + 28.f, 8.f, 8.f}, kAccentBlue);
+                ui.drawRect({nx + 97.f, ny + 28.f, 8.f, 8.f}, kAccentBlue);
+            };
+            float nx = x + w * 0.12f, ny = y + h * 0.30f;
+            drawNode(nx,         ny,       "On Start");
+            drawNode(nx + 160.f, ny - 28.f, "Branch");
+            drawNode(nx + 320.f, ny - 56.f, "Set Variable");
+            drawNode(nx + 320.f, ny + 22.f, "Spawn Entity");
+            // Connecting wires
+            ui.drawRect({nx + 105.f, ny + 32.f,       55.f, 1.f}, kTextMuted);
+            ui.drawRect({nx + 265.f, ny + 6.f,         55.f, 1.f}, kTextMuted);
+            ui.drawRect({nx + 265.f, ny + 50.f,        55.f, 1.f}, kTextMuted);
+            if (!contentHint.empty())
+                ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
+            break;
+        }
+
+        case HostedToolCategory::BuildPackaging: {
+            // Build output log | Build status
+            float logW    = w * 0.72f;
+            float statusW = w - logW;
+            ui.drawRect({x, y, logW, h}, 0x161616FF);
+            ui.drawRectOutline({x, y, logW, h}, kBorder, 1.f);
+            ui.drawRect({x, y, logW, 22.f}, kSurface);
+            ui.drawRect({x, y + 22.f, logW, 1.f}, kBorder);
+            ui.drawText(x + 8.f, y + 4.f, "BUILD OUTPUT", kTextSecondary);
+            static const char* kBuildLines[] = {
+                "[INFO]  Build system ready",
+                "[INFO]  Project: awaiting configuration",
+                "[INFO]  Target: Windows x64",
+                "[INFO]  ---",
+            };
+            float ly = y + 28.f;
+            for (auto* line : kBuildLines) {
+                ui.drawText(x + 8.f, ly, line, kTextSecondary);
+                ly += 18.f;
+            }
+            if (!contentHint.empty())
+                ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
+            drawPanel(x + logW, y, statusW, h, "BUILD STATUS", "Ready");
+            break;
+        }
+
+        case HostedToolCategory::AIAssistant: {
+            // AI Chat | Context / Tools
+            float chatW = w * 0.68f;
+            float ctxW  = w - chatW;
+            ui.drawRect({x, y, chatW, h}, 0x1A1A2AFF);
+            ui.drawRectOutline({x, y, chatW, h}, kBorder, 1.f);
+            ui.drawRect({x, y, chatW, 22.f}, kSurface);
+            ui.drawRect({x, y + 22.f, chatW, 1.f}, kBorder);
+            ui.drawText(x + 8.f, y + 4.f, "ATLAS AI CHAT", kAccentBlue);
+            // Chat message stubs
+            float cy = y + 30.f;
+            ui.drawRect({x + 8.f, cy, chatW - 16.f, 28.f}, 0x252535FF);
+            ui.drawText(x + 14.f, cy + 7.f,
+                        "AtlasAI: Ready. Load a project to begin.", kTextSecondary);
+            cy += 36.f;
+            if (shell.hasProject() && shell.projectAdapter()) {
+                std::string pmsg = "AtlasAI: Project '"
+                    + shell.projectAdapter()->projectDisplayName()
+                    + "' context loaded.";
+                ui.drawRect({x + 8.f, cy, chatW - 16.f, 28.f}, 0x252535FF);
+                ui.drawText(x + 14.f, cy + 7.f, pmsg, kGreen);
+                cy += 36.f;
+            }
+            // Input box placeholder
+            ui.drawRect({x + 4.f, y + h - 32.f, chatW - 8.f, 26.f}, 0x2A2A3AFF);
+            ui.drawRectOutline({x + 4.f, y + h - 32.f, chatW - 8.f, 26.f}, kAccentBlue, 1.f);
+            ui.drawText(x + 10.f, y + h - 24.f, "Type a message...", kTextMuted);
+            // Context panel
+            drawPanel(x + chatW, y, ctxW, h, "CONTEXT / TOOLS", nullptr);
+            float rly = y + 28.f;
+            ui.drawText(x + chatW + 8.f, rly, "Content Roots:", kTextSecondary);
+            rly += 18.f;
+            if (shell.hasProject() && shell.projectAdapter()) {
+                for (const auto& root : shell.projectAdapter()->contentRoots()) {
+                    std::string rstr = root;
+                    if (rstr.size() > 26) rstr = "..." + rstr.substr(rstr.size() - 23);
+                    ui.drawText(x + chatW + 12.f, rly, rstr, kTextMuted);
+                    rly += 16.f;
+                }
+            } else {
+                ui.drawText(x + chatW + 12.f, rly, "(no project)", kTextMuted);
+            }
+            break;
+        }
+
+        default: {
+            // Generic single panel for unhandled categories
+            drawPanel(x, y, w, h, desc.displayName.c_str(),
+                      "Select a tool to configure");
+            if (!contentHint.empty())
+                ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
+            break;
+        }
+        }
+    }
+
+    // ── Bottom strip: Console + Metrics ──────────────────────────
+    // Rendered below the per-tool panel layout in the active tool view.
+    // Console shows project-context log lines; Metrics shows live shell stats
+    // and the most recent workspace notification.
+    void renderBottomStrip(UIRenderer& ui, float x, float y, float w, float h,
+                           const WorkspaceShell& shell)
+    {
+        float consoleW  = w * 0.65f;
+        float metricsW  = w - consoleW;
+
+        // ── Console ────────────────────────────────────────────────
+        ui.drawRect({x, y, consoleW, h}, 0x161616FF);
+        ui.drawRectOutline({x, y, consoleW, h}, kBorder, 1.f);
+        ui.drawRect({x, y, consoleW, 22.f}, kSurface);
+        ui.drawRect({x, y + 22.f, consoleW, 1.f}, kBorder);
+        ui.drawText(x + 8.f, y + 4.f, "CONSOLE", kTextSecondary);
+
+        float cy = y + 28.f;
+        if (shell.hasProject() && shell.projectAdapter()) {
+            std::string projMsg = "[INFO]  Project: "
+                + shell.projectAdapter()->projectDisplayName()
+                + "  (id=" + shell.projectAdapter()->projectId() + ")";
+            ui.drawText(x + 8.f, cy, projMsg, kGreen);
+            cy += 18.f;
+            for (const auto& root : shell.projectAdapter()->contentRoots()) {
+                std::string rootMsg = "[INFO]  Content root: " + root;
+                if (rootMsg.size() > 72) rootMsg = rootMsg.substr(0, 69) + "...";
+                ui.drawText(x + 8.f, cy, rootMsg, kTextSecondary);
+                cy += 16.f;
+                if (cy + 16.f > y + h - 4.f) break;
+            }
+        } else {
+            ui.drawText(x + 8.f, cy, "[INFO]  No project loaded", kTextMuted);
+            cy += 18.f;
+        }
+        if (const auto* tool = shell.toolRegistry().activeTool()) {
+            if (cy + 14.f < y + h - 4.f) {
+                std::string toolMsg = "[INFO]  Active tool: "
+                    + tool->descriptor().displayName
+                    + "  (" + tool->toolId() + ")";
+                ui.drawText(x + 8.f, cy, toolMsg, kTextSecondary);
+            }
+        }
+
+        // ── Metrics ────────────────────────────────────────────────
+        float mx = x + consoleW;
+        ui.drawRect({mx, y, metricsW, h}, kCardBg);
+        ui.drawRectOutline({mx, y, metricsW, h}, kBorder, 1.f);
+        ui.drawRect({mx, y, metricsW, 22.f}, kSurface);
+        ui.drawRect({mx, y + 22.f, metricsW, 1.f}, kBorder);
+        ui.drawText(mx + 8.f, y + 4.f, "METRICS", kTextSecondary);
+
+        float mcy = y + 28.f;
+        ui.drawText(mx + 8.f, mcy,
+            std::string("Workspace: ") + shellPhaseName(shell.phase()),
+            kTextSecondary);
+        mcy += 18.f;
+        ui.drawText(mx + 8.f, mcy,
+            "Tools: "  + std::to_string(shell.toolRegistry().count()),  kTextSecondary);
+        mcy += 16.f;
+        ui.drawText(mx + 8.f, mcy,
+            "Panels: " + std::to_string(shell.panelRegistry().count()), kTextSecondary);
+        mcy += 16.f;
+        ui.drawText(mx + 8.f, mcy,
+            "Apps: "   + std::to_string(shell.appRegistry().count()),   kTextSecondary);
+        mcy += 16.f;
+        if (const auto* tool = shell.toolRegistry().activeTool()) {
+            ui.drawText(mx + 8.f, mcy,
+                std::string("State: ") + hostedToolStateName(tool->state()), kGreen);
+            mcy += 16.f;
+        }
+        // Most recent workspace notification
+        const auto& notifs = shell.shellContract().recentNotifications();
+        if (!notifs.empty() && mcy + 14.f < y + h - 4.f) {
+            const auto& last = notifs.back();
+            std::string nstr = "[!] " + last.title;
+            if (nstr.size() > 28) nstr = nstr.substr(0, 25) + "...";
+            ui.drawText(mx + 8.f, mcy, nstr, kAccentBlue);
+        }
     }
 
     // ── Per-instance state ────────────────────────────────────────
