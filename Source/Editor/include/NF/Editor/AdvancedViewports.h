@@ -15,23 +15,11 @@
 #include <deque>
 #include <unordered_map>
 #include "NF/Editor/EditorPanel.h"
+#include "NF/UI/ViewportRenderMode.h"
 
 namespace NF {
 
-enum class ViewportRenderMode : uint8_t {
-    Wireframe, Solid, Lit, Textured, Unlit
-};
-
-inline const char* viewportRenderModeName(ViewportRenderMode m) {
-    switch (m) {
-        case ViewportRenderMode::Wireframe: return "Wireframe";
-        case ViewportRenderMode::Solid:     return "Solid";
-        case ViewportRenderMode::Lit:       return "Lit";
-        case ViewportRenderMode::Textured:  return "Textured";
-        case ViewportRenderMode::Unlit:     return "Unlit";
-    }
-    return "Unknown";
-}
+// ViewportRenderMode and viewportRenderModeName() are defined in NF/UI/ViewportRenderMode.h
 
 enum class ViewportGizmoMode : uint8_t {
     None, Translate, Rotate, Scale

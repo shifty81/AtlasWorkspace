@@ -7,6 +7,7 @@
 #include "NF/GraphVM/GraphVM.h"
 #include "NF/Input/Input.h"
 #include "NF/UI/UIWidgets.h"
+#include "NF/Workspace/GizmoAxis.h"
 #include <filesystem>
 #include <fstream>
 #include <set>
@@ -72,7 +73,6 @@ struct EditorCameraOrbit {
 // ── Gizmo ─────────────────────────────────────────────────────────
 
 enum class GizmoMode : uint8_t { Translate, Rotate, Scale };
-enum class GizmoAxis : uint8_t { None, X, Y, Z, XY, YZ, XZ, All };
 
 struct GizmoState {
     GizmoMode mode       = GizmoMode::Translate;

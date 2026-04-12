@@ -19,6 +19,7 @@
 //   - This keeps NF::Workspace tool-agnostic
 
 #include "NF/Core/Core.h"
+#include "NF/UI/ViewportRenderMode.h"
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -100,25 +101,8 @@ struct ViewportGridDescriptor {
 };
 
 // ── Viewport Render Mode ──────────────────────────────────────────
-
-enum class ViewportRenderMode : uint8_t {
-    Lit,         // PBR / standard lighting
-    Unlit,       // ignore lights, full albedo
-    Wireframe,   // geometry outline
-    Normals,     // visualize vertex normals
-    Overdraw,    // visualize overdraw cost
-};
-
-inline const char* viewportRenderModeName(ViewportRenderMode m) {
-    switch (m) {
-    case ViewportRenderMode::Lit:       return "Lit";
-    case ViewportRenderMode::Unlit:     return "Unlit";
-    case ViewportRenderMode::Wireframe: return "Wireframe";
-    case ViewportRenderMode::Normals:   return "Normals";
-    case ViewportRenderMode::Overdraw:  return "Overdraw";
-    }
-    return "Unknown";
-}
+// ViewportRenderMode and viewportRenderModeName() are defined in
+// NF/UI/ViewportRenderMode.h (included above).
 
 // ── Viewport Slot ─────────────────────────────────────────────────
 // Represents a live viewport slot owned by a tool.

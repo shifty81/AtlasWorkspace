@@ -126,7 +126,7 @@ TEST_CASE("GizmoAxis enum values exist", "[Editor][S61]") {
     REQUIRE(GizmoAxis::X    != GizmoAxis::Y);
     REQUIRE(GizmoAxis::Y    != GizmoAxis::Z);
     REQUIRE(GizmoAxis::XY   != GizmoAxis::YZ);
-    REQUIRE(GizmoAxis::XZ   != GizmoAxis::All);
+    REQUIRE(GizmoAxis::XZ   != GizmoAxis::XYZ);
 }
 
 // ── GizmoState ───────────────────────────────────────────────────

@@ -101,7 +101,7 @@ public:
 // ── Viewport Host Registry ───────────────────────────────────────
 // Manages available viewport host implementations.
 
-class ViewportHostRegistry {
+class ViewportRenderHostRegistry {
 public:
     static constexpr size_t MAX_HOSTS = 16;
 
