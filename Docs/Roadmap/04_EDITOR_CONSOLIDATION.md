@@ -1,3 +1,6 @@
+> **HISTORICAL** — This document describes a completed foundation phase (Phases 0–71).
+> The canonical source of truth for current and future phases is [00_MASTER_ROADMAP.md](00_MASTER_ROADMAP.md).
+
 # Editor Consolidation
 
 **Phase 3 complete. Phase 3b — Roster Expansion (active)**

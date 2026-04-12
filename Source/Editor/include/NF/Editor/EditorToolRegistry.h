@@ -15,8 +15,8 @@
 #include "NF/Editor/ProjectServices.h"
 
 // ── Shared services ─────────────────────────────────────────────
-#include "NF/Editor/EditorEventBus.h"
-#include "NF/Editor/ConsoleCommandBus.h"
+#include "NF/Workspace/EditorEventBus.h"
+#include "NF/Workspace/ConsoleCommandBus.h"
 #include "NF/Editor/AssetDatabase.h"
 #include "NF/Editor/AssetImporters.h"
 #include "NF/Editor/BlenderImporter.h"
@@ -37,23 +37,23 @@
 #include "NF/Editor/AssetDependencies.h"
 
 // ── Serialization services ──────────────────────────────────────
-#include "NF/Editor/PanelStateSerializer.h"
-#include "NF/Editor/DockTreeSerializer.h"
-#include "NF/Editor/LayoutManagerV1.h"
+#include "NF/Workspace/PanelStateSerializer.h"
+#include "NF/Workspace/DockTreeSerializer.h"
+#include "NF/Workspace/LayoutManagerV1.h"
 
 // ── AtlasAI services ────────────────────────────────────────────
-#include "NF/Editor/AtlasAIPanelHost.h"
-#include "NF/Editor/AIPanelSession.h"
-#include "NF/Editor/AIActionSurface.h"
-#include "NF/Editor/AIIntegration.h"
-#include "NF/Editor/AIDebugPathV1.h"
-#include "NF/Editor/LoggingRouteV1.h"
-#include "NF/Editor/CodexSnippetMirror.h"
+#include "NF/Workspace/AtlasAIPanelHost.h"
+#include "NF/Workspace/AIPanelSession.h"
+#include "NF/Workspace/AIActionSurface.h"
+#include "NF/Workspace/AIIntegration.h"
+#include "NF/Workspace/AIDebugPathV1.h"
+#include "NF/Workspace/LoggingRouteV1.h"
+#include "NF/Workspace/CodexSnippetMirror.h"
 
 // ── File intake ─────────────────────────────────────────────────
-#include "NF/Editor/FileIntakePipeline.h"
-#include "NF/Editor/DropTargetHandler.h"
-#include "NF/Editor/AssetImportQueue.h"
+#include "NF/Workspace/FileIntakePipeline.h"
+#include "NF/Workspace/DropTargetHandler.h"
+#include "NF/Workspace/AssetImportQueue.h"
 
 // ── UI kit services ─────────────────────────────────────────────
 #include "NF/Editor/WidgetKitV1.h"

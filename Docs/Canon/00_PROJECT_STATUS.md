@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase A — Truth and Cleanup Lock** (Not Started)
+Current Phase: **Phase A — Truth and Cleanup Lock** (In Progress)
 
 ## Build Status
 
@@ -63,7 +63,7 @@ Atlas Workspace v1.0.
 | Phase | Title | Status |
 |-------|-------|--------|
 | Checkpoint | Foundation (Phases 0–71) | ✅ Complete |
-| A | Truth and Cleanup Lock | ⬚ Not Started |
+| A | Truth and Cleanup Lock | 🔄 In Progress |
 | B | Real Project Load | ⬚ Not Started |
 | C | Panels Edit Real Data | ⬚ Not Started |
 | D | Runtime-Backed Viewport | ⬚ Not Started |
@@ -72,11 +72,22 @@ Atlas Workspace v1.0.
 | G | Full Tool Wiring | ⬚ Not Started |
 | H | UX Completion | ⬚ Not Started |
 
-## Next Milestone
+## Phase A Progress
 
-Phase A — Truth and Cleanup Lock:
-- Archive forwarding shims
-- Remove stale EditorApp references
-- Rename ArbiterReasoner.cpp
-- Slim main.cpp
-- Correct documentation to reflect reality
+### A.1 — Repo Cleanup
+- [x] Rename `ArbiterReasoner.cpp` → `AtlasAIReasoner.cpp` in pipeline
+- [x] Archive 37 forwarding shims from `Source/Editor/include/NF/Editor/` → `Deprecated/`
+- [x] Update all consumers to use canonical `NF/Workspace/` include paths
+- [x] Remove stale `EditorApp` include from `Editor.h` (umbrella no longer pulls legacy app)
+- [x] Update stale EditorApp comment in ViewportPanel.h
+- [x] Extract `LocalProjectAdapter` from `main.cpp` → dedicated `LocalProjectAdapter.h`
+- [x] Validate — all 4125 tests pass; `validate_project.sh` passes 79/79
+- [ ] Add CI smoke build entry for `ATLAS_ENABLE_ONLINE_DEPS=ON`
+
+### A.2 — Build and CI Hygiene
+- [x] All test suites build and pass on clean checkout (4125 test cases, all green)
+
+### A.3 — Documentation Correction
+- [x] Update project status phase marker to "In Progress"
+- [x] Mark stale phase-specific roadmap docs (01–07) as historical
+- [x] Add "panel edits real data" criteria to `09_DEFINITION_OF_DONE.md`

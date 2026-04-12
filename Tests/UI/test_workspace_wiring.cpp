@@ -231,7 +231,7 @@ TEST_CASE("DrawListDispatcher mixed command batch", "[Workspace][Dispatcher]") {
 
 // ── WorkspaceInputBridge ─────────────────────────────────────────
 
-#include "NF/Editor/WorkspaceInputBridge.h"
+#include "NF/Workspace/WorkspaceInputBridge.h"
 
 TEST_CASE("WorkspaceInputBridge syncs mouse position", "[Workspace][InputBridge]") {
     NF::InputSystem input;

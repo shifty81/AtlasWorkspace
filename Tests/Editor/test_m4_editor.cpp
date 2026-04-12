@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/EditorApp.h"
+#include "NF/Editor/AssetDatabase.h"
+#include "NF/Editor/AssetImporters.h"
 
 // ── AssetGuid ────────────────────────────────────────────────────
 

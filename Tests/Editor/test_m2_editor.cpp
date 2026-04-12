@@ -1,5 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/EditorApp.h"
+#include "NF/Editor/Legacy/PCGTuning.h"
+#include "NF/Editor/Scene/EntityPlacement.h"
+#include "NF/Editor/Scene/VoxelPaint.h"
+#include "NF/Workspace/EditorUndoSystem.h"
+#include "NF/Editor/Scene/WorldPreview.h"
 
 // ── PCGTuningPanel Tests ────────────────────────────────────────
 

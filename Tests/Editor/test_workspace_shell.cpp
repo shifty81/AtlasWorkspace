@@ -4,10 +4,10 @@
 //   ISharedPanel, SharedPanels (Phase 3 shared panel extraction)
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
-#include "NF/Editor/WorkspaceShell.h"
-#include "NF/Editor/ToolRegistry.h"
-#include "NF/Editor/PanelRegistry.h"
-#include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/ToolRegistry.h"
+#include "NF/Workspace/PanelRegistry.h"
+#include "NF/Workspace/IHostedTool.h"
 #include "NF/Workspace/SharedPanels.h"
 
 // ── Concrete test tool ────────────────────────────────────────────

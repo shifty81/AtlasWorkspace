@@ -4,6 +4,7 @@
 // ImGui is banned — see ATLAS_CORE_CONTRACT.md §6.
 #include "NF/Core/Core.h"
 #include "NF/Editor/Editor.h"
+#include "NF/Editor/EditorApp.h"
 #include "NF/Input/Input.h"
 #include "NF/UI/UIBackend.h"
 #include "NF/Workspace/AtlasProjectFileLoader.h"

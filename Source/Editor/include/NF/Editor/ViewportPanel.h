@@ -125,7 +125,7 @@ public:
         ctx.endHorizontal();
     }
 
-    // Called by EditorApp::update(dt, input) each frame.
+    // Called by WorkspaceFrameController each frame.
     // Activates fly-camera only while right mouse button is held.
     void updateCamera(float dt, const InputSystem& input) {
         m_camController.update(dt, input, m_cameraPos, m_cameraYaw, m_cameraPitch);

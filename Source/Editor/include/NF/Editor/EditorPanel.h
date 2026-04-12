@@ -7,6 +7,8 @@
 #include "NF/GraphVM/GraphVM.h"
 #include "NF/Input/Input.h"
 #include "NF/UI/UIWidgets.h"
+#include "NF/Workspace/SelectionService.h"
+#include "NF/Editor/EditorTheme.h"
 #include <filesystem>
 #include <fstream>
 #include <set>

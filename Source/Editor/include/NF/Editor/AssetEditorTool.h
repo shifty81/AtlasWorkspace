@@ -13,7 +13,7 @@
 // See Docs/Canon/05_EDITOR_STRATEGY.md for the locked tool roster.
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
-#include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/IHostedTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
 #include <string>
 

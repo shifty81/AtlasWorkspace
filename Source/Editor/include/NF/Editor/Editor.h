@@ -10,7 +10,6 @@
 // Individual headers can always be included directly for faster compilation.
 
 // ── Core editor infrastructure ──────────────────────────────────
-#include "NF/Editor/EditorApp.h"
 #include "NF/Editor/EditorPanel.h"
 #include "NF/Editor/EditorTheme.h"
 #include "NF/Editor/DockLayout.h"
@@ -20,21 +19,21 @@
 #include "NF/Editor/EditorSettings.h"
 #include "NF/Editor/EditorCamera.h"
 
-// ── Workspace shell (now in NF::Workspace, forwarded here) ──────
-#include "NF/Editor/WorkspaceShell.h"
-#include "NF/Editor/IHostedTool.h"
-#include "NF/Editor/ToolRegistry.h"
-#include "NF/Editor/PanelRegistry.h"
-#include "NF/Editor/WorkspaceAppRegistry.h"
-#include "NF/Editor/WorkspaceLaunchContract.h"
-#include "NF/Editor/WorkspacePanelHost.h"
-#include "NF/Editor/WorkspaceInputBridge.h"
-#include "NF/Editor/WorkspaceShellContract.h"
-#include "NF/Editor/WorkspaceLayout.h"
-#include "NF/Editor/EditorEventBus.h"
-#include "NF/Editor/SelectionService.h"
-#include "NF/Editor/UndoRedoSystem.h"
-#include "NF/Editor/LayoutPersistence.h"
+// ── Workspace shell (canonical location: NF/Workspace) ──────────
+#include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/IHostedTool.h"
+#include "NF/Workspace/ToolRegistry.h"
+#include "NF/Workspace/PanelRegistry.h"
+#include "NF/Workspace/WorkspaceAppRegistry.h"
+#include "NF/Workspace/WorkspaceLaunchContract.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
+#include "NF/Workspace/WorkspaceInputBridge.h"
+#include "NF/Workspace/WorkspaceShellContract.h"
+#include "NF/Workspace/WorkspaceLayout.h"
+#include "NF/Workspace/EditorEventBus.h"
+#include "NF/Workspace/SelectionService.h"
+#include "NF/Workspace/UndoRedoSystem.h"
+#include "NF/Workspace/LayoutPersistence.h"
 
 // ── Shared panels (always available) ────────────────────────────
 #include "NF/Editor/EditorSharedPanels.h"
