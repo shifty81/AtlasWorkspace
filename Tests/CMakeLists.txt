@@ -1108,3 +1108,22 @@ target_link_libraries(NF_WorkspaceProjectStateTests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_WorkspaceProjectStateTests)
+
+# Phase G — Full Tool Wiring (G.1–G.8 document models)
+#   G.1: SceneDocument — entity hierarchy, transforms, components, save/load
+#   G.2: AssetDocument — LOD/variant/dependency/reimport metadata
+#   G.3: MaterialDocument — shader graph nodes, pins, connections, params
+#   G.4: AnimationDocument — channels, keyframes (sorted), clip metadata
+#   G.5: GraphDocument — visual logic nodes, pins, connections, compile
+#   G.6: BuildTaskGraph — DAG, topological order, state, build log, summary
+#   G.7: AIRequestContext — context binding, messages, diff proposals, codex
+#   G.8: DataTableDocument — columns, rows, cells, validation, CSV export
+add_executable(NF_PhaseGTests
+    Workspace/test_phase_g.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_PhaseGTests PRIVATE
+    NF::Editor NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_PhaseGTests)
