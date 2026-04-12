@@ -95,42 +95,42 @@ public:
     ViewportInputState lastInput;
 };
 
-// ── ViewportHostRegistry ─────────────────────────────────────────
+// ── ViewportRenderHostRegistry ─────────────────────────────────────────
 
-TEST_CASE("ViewportHostRegistry starts empty", "[Editor][S53]") {
-    ViewportHostRegistry reg;
+TEST_CASE("ViewportRenderHostRegistry starts empty", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
     REQUIRE(reg.hostCount() == 0);
     REQUIRE(reg.hostIds().empty());
 }
 
-TEST_CASE("ViewportHostRegistry registerHost", "[Editor][S53]") {
-    ViewportHostRegistry reg;
+TEST_CASE("ViewportRenderHostRegistry registerHost", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
     auto host = std::make_shared<TestViewportHost>();
     REQUIRE(reg.registerHost("test", host));
     REQUIRE(reg.hostCount() == 1);
     REQUIRE(reg.findHost("test") == host);
 }
 
-TEST_CASE("ViewportHostRegistry registerHost duplicate fails", "[Editor][S53]") {
-    ViewportHostRegistry reg;
+TEST_CASE("ViewportRenderHostRegistry registerHost duplicate fails", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
     auto host = std::make_shared<TestViewportHost>();
     reg.registerHost("test", host);
     REQUIRE_FALSE(reg.registerHost("test", host));
 }
 
-TEST_CASE("ViewportHostRegistry registerHost null fails", "[Editor][S53]") {
-    ViewportHostRegistry reg;
+TEST_CASE("ViewportRenderHostRegistry registerHost null fails", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
     REQUIRE_FALSE(reg.registerHost("test", nullptr));
 }
 
-TEST_CASE("ViewportHostRegistry registerHost empty id fails", "[Editor][S53]") {
-    ViewportHostRegistry reg;
+TEST_CASE("ViewportRenderHostRegistry registerHost empty id fails", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
     auto host = std::make_shared<TestViewportHost>();
     REQUIRE_FALSE(reg.registerHost("", host));
 }
 
-TEST_CASE("ViewportHostRegistry unregisterHost", "[Editor][S53]") {
-    ViewportHostRegistry reg;
+TEST_CASE("ViewportRenderHostRegistry unregisterHost", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
     auto host = std::make_shared<TestViewportHost>();
     reg.registerHost("test", host);
     REQUIRE(reg.unregisterHost("test"));
@@ -138,16 +138,16 @@ TEST_CASE("ViewportHostRegistry unregisterHost", "[Editor][S53]") {
     REQUIRE_FALSE(reg.unregisterHost("test"));
 }
 
-TEST_CASE("ViewportHostRegistry hostIds", "[Editor][S53]") {
-    ViewportHostRegistry reg;
+TEST_CASE("ViewportRenderHostRegistry hostIds", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
     reg.registerHost("a", std::make_shared<TestViewportHost>());
     reg.registerHost("b", std::make_shared<TestViewportHost>());
     auto ids = reg.hostIds();
     REQUIRE(ids.size() == 2);
 }
 
-TEST_CASE("ViewportHostRegistry activeHost", "[Editor][S53]") {
-    ViewportHostRegistry reg;
+TEST_CASE("ViewportRenderHostRegistry activeHost", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
     auto host = std::make_shared<TestViewportHost>();
     reg.registerHost("test", host);
     reg.setActiveHost("test");
@@ -155,9 +155,9 @@ TEST_CASE("ViewportHostRegistry activeHost", "[Editor][S53]") {
     REQUIRE(reg.activeHost() == host);
 }
 
-TEST_CASE("ViewportHostRegistry MAX_HOSTS limit", "[Editor][S53]") {
-    ViewportHostRegistry reg;
-    for (size_t i = 0; i < ViewportHostRegistry::MAX_HOSTS; ++i) {
+TEST_CASE("ViewportRenderHostRegistry MAX_HOSTS limit", "[Editor][S53]") {
+    ViewportRenderHostRegistry reg;
+    for (size_t i = 0; i < ViewportRenderHostRegistry::MAX_HOSTS; ++i) {
         reg.registerHost("h" + std::to_string(i), std::make_shared<TestViewportHost>());
     }
     REQUIRE_FALSE(reg.registerHost("extra", std::make_shared<TestViewportHost>()));
