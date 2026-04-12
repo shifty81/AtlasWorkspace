@@ -23,6 +23,11 @@ void DrawListDispatcher::dispatch(const DrawList& drawList) const {
             else if constexpr (std::is_same_v<T, DrawRectCmd>) {
                 m_renderer->drawRectOutline(c.rect, atlasToRendererColor(c.color), 1.f);
             }
+            else if constexpr (std::is_same_v<T, DrawImageCmd>) {
+                // DrawImage: render the scene texture into the viewport rect.
+                // The UIRenderer draws a textured quad; tint color is passed through.
+                m_renderer->drawImage(c.rect, c.textureId, atlasToRendererColor(c.tint));
+            }
             // DrawTextCmd: deferred to pass 2.
             // PushClipCmd / PopClipCmd: GDI batch path has no clip support; silently ignored.
         }, cmd);

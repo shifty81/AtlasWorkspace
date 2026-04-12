@@ -77,6 +77,12 @@ struct ViewportCameraDescriptor {
     bool  orthographic = false;
     float orthoSize   = 10.f; // half-height in world units (orthographic mode)
 
+    // Camera world-space transform — unified from ViewportCameraController.
+    // yaw/pitch are in degrees; yaw=-90 looks down -Z (same as EditorViewportPanel).
+    Vec3  position{0.f, 0.f, 5.f};
+    float yaw   = -90.f;
+    float pitch =   0.f;
+
     [[nodiscard]] bool isValid() const {
         return fovDegrees > 0.f && fovDegrees < 180.f
             && nearPlane > 0.f && farPlane > nearPlane;

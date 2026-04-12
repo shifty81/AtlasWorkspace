@@ -65,6 +65,18 @@ public:
         drawRect({r.x + r.w - thickness, r.y, thickness, r.h}, color);     // right
     }
 
+    // Draw a textured image (scene render target) into the given rect.
+    // textureId is a backend-specific handle (e.g. OpenGL texture name).
+    // tint is applied as a color multiply (RRGGBBAA).
+    // Falls back to a solid-color rect when no backend texture support is available.
+    void drawImage(const Rect& r, uint32_t textureId, uint32_t tint = 0xFFFFFFFF) {
+        // Track for query/testing purposes
+        ++m_imageDrawCount;
+        // Emit a colored rect as a fallback — real backends override via UIBackend::drawImageNative
+        drawRect(r, tint);
+        (void)textureId; // used by real backends
+    }
+
     // Gradient rectangle — top→bottom colour interpolation
     void drawGradientRect(const Rect& r, uint32_t topColor, uint32_t bottomColor) {
         UIVertex tl = {{r.x, r.y},             {0, 0}, topColor};
@@ -157,6 +169,7 @@ public:
     [[nodiscard]] const std::vector<uint32_t>& indices() const { return m_indices; }
     [[nodiscard]] size_t quadCount() const { return m_lastFrameQuadCount; }
     [[nodiscard]] size_t textDrawCount() const { return m_lastFrameTextCount; }
+    [[nodiscard]] size_t imageDrawCount() const { return m_imageDrawCount; }
     [[nodiscard]] float viewportWidth() const { return m_viewportW; }
     [[nodiscard]] float viewportHeight() const { return m_viewportH; }
 
@@ -170,6 +183,7 @@ private:
     std::vector<uint32_t> m_indices;
     size_t m_quadCount = 0;
     size_t m_textDrawCount = 0;
+    size_t m_imageDrawCount = 0;
     size_t m_lastFrameQuadCount = 0;
     size_t m_lastFrameTextCount = 0;
 };

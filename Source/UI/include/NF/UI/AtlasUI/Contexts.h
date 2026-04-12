@@ -46,6 +46,9 @@ public:
     void drawText(const NF::Rect& rect, std::string_view text, FontId font, Color color) override {
         m_drawList.push(DrawTextCmd{rect, std::string(text), font, color});
     }
+    void drawImage(const NF::Rect& rect, uint32_t textureId, Color tint) override {
+        m_drawList.push(DrawImageCmd{rect, textureId, tint});
+    }
     void pushClip(const NF::Rect& rect) override { m_drawList.push(PushClipCmd{rect}); }
     void popClip() override { m_drawList.push(PopClipCmd{}); }
     [[nodiscard]] DrawList& drawList() override { return m_drawList; }

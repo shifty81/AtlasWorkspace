@@ -17,6 +17,12 @@ struct DrawRectCmd {
     Color color = 0xFFFFFFFF;
 };
 
+struct DrawImageCmd {
+    NF::Rect rect{};
+    uint32_t textureId = 0;
+    Color tint = 0xFFFFFFFF;
+};
+
 struct FillRectCmd {
     NF::Rect rect{};
     Color color = 0xFFFFFFFF;
@@ -35,7 +41,7 @@ struct PushClipCmd {
 
 struct PopClipCmd {};
 
-using DrawCommand = std::variant<DrawRectCmd, FillRectCmd, DrawTextCmd, PushClipCmd, PopClipCmd>;
+using DrawCommand = std::variant<DrawRectCmd, FillRectCmd, DrawTextCmd, DrawImageCmd, PushClipCmd, PopClipCmd>;
 
 class DrawList {
 public:

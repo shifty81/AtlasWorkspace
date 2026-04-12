@@ -866,3 +866,14 @@ target_link_libraries(NF_Phase63Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase63Tests)
+
+# Phase 64 — Viewport Rendering Implementation
+add_executable(NF_Phase64Tests
+    Workspace/test_phase64_viewport_rendering.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase64Tests PRIVATE
+    NF::Workspace NF::UI NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase64Tests)
