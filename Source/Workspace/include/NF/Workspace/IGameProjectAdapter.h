@@ -1,6 +1,23 @@
 #pragma once
 // NF::IGameProjectAdapter — Contract for hosted projects.
 //
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │  OWNERSHIP BOUNDARY — IGameProjectAdapter is an integration bridge.     │
+// │                                                                         │
+// │  Adapter owns:                                                           │
+// │    • Project identity (projectId, displayName)                          │
+// │    • Project-specific panel descriptors                                 │
+// │    • Project-specific content roots and custom commands                 │
+// │    • Adapter lifecycle (initialize / shutdown)                          │
+// │                                                                         │
+// │  Adapter does NOT own:                                                   │
+// │    • Full mutable project session state (→ WorkspaceProjectState)       │
+// │    • Global save orchestration                                           │
+// │    • Document persistence internals (→ NovaForgeDocument)               │
+// │                                                                         │
+// │  Keep adapters thin. They are integration bridges, not state owners.    │
+// └─────────────────────────────────────────────────────────────────────────┘
+//
 // This interface defines how a hosted project (e.g., NovaForge) integrates
 // with the Atlas Workspace. Projects implement this interface to register
 // their extensions, panels, schemas, and commands.

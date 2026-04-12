@@ -64,9 +64,8 @@ TEST_CASE("S5: All tools active — AssetImported propagates correctly", "[Pipel
     registry.registerTool(std::make_unique<NF::BlenderGenAdapter>());
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
-    registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
     registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
-    REQUIRE(registry.toolCount() == 5);
+    REQUIRE(registry.toolCount() == 4);
 
     NF::PipelineWatcher watcher(dirs.changes);
     registry.attach(watcher, dirs);
@@ -93,9 +92,9 @@ TEST_CASE("S5: All tools active — AssetImported propagates correctly", "[Pipel
     REQUIRE(found >= 1);
 
     // Verify each component processed the event.
-    // BlenderGenAdapter + SwissAgentAdapter handled it.
+    // BlenderGenAdapter + AtlasAIAdapter handled it.
     REQUIRE(registry.tool(0)->handledCount() >= 1);  // BlenderGen
-    REQUIRE(registry.tool(3)->handledCount() >= 1);  // SwissAgent
+    REQUIRE(registry.tool(3)->handledCount() >= 1);  // AtlasAI
 
     // WorkspaceBroker analyzed it.
     REQUIRE(broker.totalAnalyses() >= 1);
@@ -121,7 +120,6 @@ TEST_CASE("S5: All tools active — ContractIssue propagates correctly", "[Pipel
     registry.registerTool(std::make_unique<NF::BlenderGenAdapter>());
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
-    registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
     registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
@@ -140,10 +138,8 @@ TEST_CASE("S5: All tools active — ContractIssue propagates correctly", "[Pipel
 
     watcher.poll();
 
-    // SwissAgent handles all events.
+    // AtlasAI handles all events including ContractIssue.
     REQUIRE(registry.tool(3)->handledCount() >= 1);
-    // AtlasAIAdapter handles ContractIssue.
-    REQUIRE(registry.tool(4)->handledCount() >= 1);
 
     // WorkspaceBroker analyzed.
     REQUIRE(broker.totalAnalyses() >= 1);
@@ -166,7 +162,6 @@ TEST_CASE("S5: All tools active — ScriptUpdated propagates correctly", "[Pipel
     registry.registerTool(std::make_unique<NF::BlenderGenAdapter>());
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
-    registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
     registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
@@ -185,7 +180,7 @@ TEST_CASE("S5: All tools active — ScriptUpdated propagates correctly", "[Pipel
 
     // ContractScanner handles ScriptUpdated.
     REQUIRE(registry.tool(1)->handledCount() >= 1);
-    // SwissAgent handles everything.
+    // AtlasAI handles everything.
     REQUIRE(registry.tool(3)->handledCount() >= 1);
 
     REQUIRE(broker.totalAnalyses() >= 1);
@@ -205,7 +200,6 @@ TEST_CASE("S5: All tools active — WorldChanged propagates correctly", "[Pipeli
     registry.registerTool(std::make_unique<NF::BlenderGenAdapter>());
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
-    registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
     registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
@@ -222,10 +216,8 @@ TEST_CASE("S5: All tools active — WorldChanged propagates correctly", "[Pipeli
 
     watcher.poll();
 
-    // SwissAgent handles it.
+    // AtlasAI handles all events including WorldChanged.
     REQUIRE(registry.tool(3)->handledCount() >= 1);
-    // AtlasAIAdapter handles WorldChanged.
-    REQUIRE(registry.tool(4)->handledCount() >= 1);
 
     REQUIRE(broker.totalAnalyses() >= 1);
     REQUIRE(reasoner.violationCount() >= 1);  // R010/R011 match worlds/*
@@ -244,7 +236,6 @@ TEST_CASE("S5: All tools active — ReplayExported propagates correctly", "[Pipe
     registry.registerTool(std::make_unique<NF::BlenderGenAdapter>());
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
-    registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
     registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     NF::PipelineWatcher watcher(dirs.changes);
@@ -263,7 +254,7 @@ TEST_CASE("S5: All tools active — ReplayExported propagates correctly", "[Pipe
 
     // ReplayMinimizer handles ReplayExported.
     REQUIRE(registry.tool(2)->handledCount() >= 1);
-    // SwissAgent handles everything.
+    // AtlasAI handles everything.
     REQUIRE(registry.tool(3)->handledCount() >= 1);
 
     REQUIRE(broker.totalAnalyses() >= 1);
@@ -286,7 +277,6 @@ TEST_CASE("S5: Full event matrix — all event types through all tools", "[Pipel
     registry.registerTool(std::make_unique<NF::BlenderGenAdapter>());
     registry.registerTool(std::make_unique<NF::ContractScannerAdapter>());
     registry.registerTool(std::make_unique<NF::ReplayMinimizerAdapter>());
-    registry.registerTool(std::make_unique<NF::SwissAgentAdapter>());
     registry.registerTool(std::make_unique<NF::AtlasAIAdapter>());
 
     // Dispatch all 6 active event types through the registry.
@@ -296,12 +286,12 @@ TEST_CASE("S5: Full event matrix — all event types through all tools", "[Pipel
         int expectedHandlers;  // How many adapters should handle this
     };
     std::vector<TestEvent> events = {
-        {NF::ChangeEventType::AssetImported,     "assets/a.glb",           2},  // BlenderGen + SwissAgent
-        {NF::ChangeEventType::ScriptUpdated,     "scripts/b.graph",       2},  // ContractScanner + SwissAgent
-        {NF::ChangeEventType::ReplayExported,    "replays/c.replay.json", 2},  // ReplayMinimizer + SwissAgent
-        {NF::ChangeEventType::ContractIssue,     "src/d.cpp",             2},  // SwissAgent + AtlasAI
-        {NF::ChangeEventType::WorldChanged,      "worlds/e.json",         2},  // SwissAgent + AtlasAI
-        {NF::ChangeEventType::AnimationExported, "anims/f.glb",           1},  // SwissAgent only
+        {NF::ChangeEventType::AssetImported,     "assets/a.glb",           2},  // BlenderGen + AtlasAI
+        {NF::ChangeEventType::ScriptUpdated,     "scripts/b.graph",       2},  // ContractScanner + AtlasAI
+        {NF::ChangeEventType::ReplayExported,    "replays/c.replay.json", 2},  // ReplayMinimizer + AtlasAI
+        {NF::ChangeEventType::ContractIssue,     "src/d.cpp",             1},  // AtlasAI only
+        {NF::ChangeEventType::WorldChanged,      "worlds/e.json",         1},  // AtlasAI only
+        {NF::ChangeEventType::AnimationExported, "anims/f.glb",           1},  // AtlasAI only
     };
 
     for (const auto& te : events) {
@@ -342,33 +332,32 @@ TEST_CASE("S5: No feedback loops — tool-emitted events don't cause infinite ch
     broker.attachToWatcher(watcher, sessionId, dirs);
     reasoner.attachToWatcher(watcher, dirs);
 
-    // Write a SwissAgent AIAnalysis event — broker should skip it (its own tool),
-    // but reasoner will process it (AtlasAI != SwissAgent).
+    // Write an AtlasAI AIAnalysis event — broker should skip it (its own tool);
+    // feedback loop prevention keeps the broker from re-processing its own output.
     NF::ChangeEvent ev1;
-    ev1.tool      = "SwissAgent";
+    ev1.tool      = "AtlasAI";
     ev1.eventType = NF::ChangeEventType::AIAnalysis;
     ev1.path      = "analysis/x.json";
     ev1.timestamp = 1000LL;
     ev1.writeToFile(dirs.changes);
 
-    // Write an AtlasAI AIAnalysis event — reasoner should skip it (its own tool),
-    // but broker will process it (SwissAgent != AtlasAI).
+    // Write an Editor event — broker should process it normally.
     NF::ChangeEvent ev2;
-    ev2.tool      = "AtlasAI";
-    ev2.eventType = NF::ChangeEventType::AIAnalysis;
-    ev2.path      = "analysis/y.json";
+    ev2.tool      = "Editor";
+    ev2.eventType = NF::ChangeEventType::WorldChanged;
+    ev2.path      = "worlds/sector01.json";
     ev2.timestamp = 2000LL;
     ev2.writeToFile(dirs.changes);
 
     watcher.poll();
 
-    // Broker skips SwissAgent events but processes AtlasAI events.
+    // Broker skips AtlasAI events but processes Editor events.
     REQUIRE(broker.totalAnalyses() == 1);
-    // Reasoner skips AtlasAI events but processes SwissAgent events.
+    // Reasoner skips AtlasAI events but processes Editor events.
     REQUIRE(reasoner.eventsProcessed() == 1);
 
-    // Key invariant: no tool processes its own emitted events, preventing
-    // infinite feedback loops while still allowing cross-tool analysis.
+    // Key invariant: AtlasAI-emitted events are not re-processed by the broker,
+    // preventing infinite feedback loops.
 }
 
 TEST_CASE("S5: Manifest persistence after full suite run", "[Pipeline][Suite]") {

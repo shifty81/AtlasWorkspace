@@ -40,7 +40,7 @@ enum class ChangeEventType : uint8_t {
     AnimationExported,
     ContractIssue,
     ReplayExported,
-    AIAnalysis,          // Emitted by AI tools (SwissAgent, AtlasAI) as a response
+    AIAnalysis,          // Emitted by AI tools (AtlasAI) as a response
 };
 
 inline const char* changeEventTypeName(ChangeEventType t) noexcept {
@@ -308,16 +308,9 @@ public:
                      const PipelineDirectories& dirs) override;
 };
 
-// SwissAgent: accepts all event types; AI analysis broker.
-class SwissAgentAdapter final : public ToolAdapter {
-public:
-    const char* name() const noexcept override;
-    bool acceptsEvent(ChangeEventType type) const noexcept override;
-    bool handleEvent(const ChangeEvent& event,
-                     const PipelineDirectories& dirs) override;
-};
-
-// AtlasAI: accepts ContractIssue and WorldChanged; AI reasoning.
+// AtlasAI: accepts all non-Unknown event types; unified AI analysis broker
+// (absorbs the former SwissAgent observer role) with specialised reasoning
+// for ContractIssue and WorldChanged events.
 class AtlasAIAdapter final : public ToolAdapter {
 public:
     const char* name() const noexcept override;
@@ -471,7 +464,7 @@ struct BrokerSession {
 };
 
 // ── WorkspaceBroker ──────────────────────────────────────────────
-// S3: SwissAgent workspace broker that manages AI sessions, context
+// S3: AtlasAI workspace broker that manages AI sessions, context
 // indexing, and analysis routing.  Processes pipeline events, tracks
 // workspace state, and emits analysis results back into the pipeline.
 //

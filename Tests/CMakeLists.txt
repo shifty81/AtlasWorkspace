@@ -1094,3 +1094,17 @@ target_link_libraries(NF_PhaseFTests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_PhaseFTests)
+
+# WorkspaceProjectState normalization tests (Phase G ownership wiring)
+#   Tests WorkspaceProjectState as the workspace-level project session spine:
+#   document registry, dirty tracking, save/revert, panel binding context,
+#   change listeners, and WorkspaceShell::projectState() accessor.
+add_executable(NF_WorkspaceProjectStateTests
+    Workspace/test_workspace_project_state.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_WorkspaceProjectStateTests PRIVATE
+    NF::Editor NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_WorkspaceProjectStateTests)

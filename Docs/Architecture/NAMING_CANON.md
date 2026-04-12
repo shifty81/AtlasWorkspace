@@ -21,8 +21,8 @@ This document mirrors the naming canon for Architecture-directory consumers.
 
 | Old Name | Replacement | Notes |
 |----------|-------------|-------|
-| Arbiter | AtlasAI | Active-path references migrated; historical preserved in Archive |
-| SwissAgent | AtlasAI | Unified under AtlasAI umbrella |
+| Arbiter | AtlasAI | ✅ Active-path references migrated; historical preserved in Archive |
+| SwissAgent | AtlasAI | ✅ Absorbed into AtlasAIAdapter; SwissAgentAdapter removed |
 | EditorApp | WorkspaceShell+WorkspaceRenderer | Legacy dual-runtime path deprecated |
 | NF_Editor (standalone) | NF::Workspace + NF::Editor | Split into OS layer and tool layer |
 

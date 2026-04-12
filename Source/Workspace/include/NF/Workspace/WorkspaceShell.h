@@ -1,6 +1,27 @@
 #pragma once
 // NF::Workspace — WorkspaceShell: top-level composition root.
 //
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │  OWNERSHIP BOUNDARY — WorkspaceShell is a host/runtime owner ONLY.     │
+// │                                                                         │
+// │  WorkspaceShell owns:                                                   │
+// │    • ToolRegistry, PanelRegistry, WorkspaceAppRegistry                  │
+// │    • WorkspaceShellContract (event bus, notifications, layout)          │
+// │    • ProjectSystemsTool, ConsoleCommandBus, InputRouter                 │
+// │    • SelectionService, EditorEventBus, WorkspaceViewportManager         │
+// │    • AssetCatalog, AssetCatalogPopulator, SettingsStore, LayoutPersist. │
+// │    • Active IGameProjectAdapter (non-owning ref exposed via adapter())  │
+// │    • WorkspaceProjectState (session-level project truth) ← Phase G wiring│
+// │                                                                         │
+// │  WorkspaceShell does NOT own:                                           │
+// │    • Per-document authored edit data (→ NovaForgeDocument)              │
+// │    • Aggregate dirty/save orchestration (→ WorkspaceProjectState)       │
+// │    • Panel-local authored data                                           │
+// │    • .atlas parsing (→ AtlasProjectFileLoader)                          │
+// │                                                                         │
+// │  Do NOT add authored project-data fields to this class.                 │
+// └─────────────────────────────────────────────────────────────────────────┘
+//
 // WorkspaceShell is the "OS" layer of Atlas Workspace. It owns every registry
 // and manager but does NOT know about specific editor tools. Tools are injected
 // via registerToolFactory() or registerTool() before initialize() is called,
@@ -8,13 +29,6 @@
 //
 // This separation means the workspace shell is a generic host — it can run
 // with any set of tools, not just the hardcoded primary roster.
-//
-// Owns:
-//   - ToolRegistry        (hosted primary tools)
-//   - PanelRegistry       (shared reusable panels)
-//   - WorkspaceAppRegistry  (child-process apps)
-//   - WorkspaceShellContract (event bus, notifications, layout)
-//   - ProjectSystemsTool  (project-adapter panels)
 //
 // See Docs/Canon/01_LOCKED_DIRECTION.md — "Atlas Workspace is a generic
 // development host, not a game."
@@ -35,6 +49,7 @@
 #include "NF/Workspace/AssetCatalogPopulator.h"
 #include "NF/Workspace/SettingsStore.h"
 #include "NF/Workspace/LayoutPersistence.h"
+#include "NF/Workspace/WorkspaceProjectState.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -156,6 +171,9 @@ public:
         m_toolRegistry.notifyProjectLoaded(m_projectAdapter->projectId());
         m_shellContract.postNotification(
             Notification{"Project loaded: " + m_projectAdapter->projectDisplayName()});
+
+        // Notify WorkspaceProjectState — the session-level authority for project truth.
+        m_projectState.onProjectLoaded(m_projectAdapter.get(), {});
         return true;
     }
 
@@ -166,12 +184,18 @@ public:
         m_settingsStore.clearLayer(SettingsLayer::Project);
         m_projectAdapter->shutdown();
         m_projectAdapter.reset();
+        // Clear project state so panels and viewport know no project is loaded.
+        m_projectState.onProjectUnloaded();
     }
 
     [[nodiscard]] bool hasProject() const { return m_projectAdapter != nullptr; }
     [[nodiscard]] const IGameProjectAdapter* projectAdapter() const {
         return m_projectAdapter.get();
     }
+
+    // ── Project state (session-level source of truth) ─────────────────────
+    [[nodiscard]] WorkspaceProjectState&       projectState()       { return m_projectState; }
+    [[nodiscard]] const WorkspaceProjectState& projectState() const { return m_projectState; }
 
     // ── Accessors ─────────────────────────────────────────────────
 
@@ -395,6 +419,7 @@ private:
 
     std::vector<ToolFactory>  m_toolFactories;   // pending factories (before init)
     std::unique_ptr<IGameProjectAdapter> m_projectAdapter;
+    WorkspaceProjectState                m_projectState;  ///< session-level project truth
     ShellPhase m_phase = ShellPhase::Created;
 };
 

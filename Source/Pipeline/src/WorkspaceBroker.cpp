@@ -1,7 +1,7 @@
-// NF::Pipeline — S3 SwissAgent Integration (WorkspaceBroker)
+// NF::Pipeline — S3 AtlasAI Broker (WorkspaceBroker)
 //
 // Implements WorkspaceBroker: the AI workspace broker that manages
-// sessions, context indexing, and analysis routing for SwissAgent.
+// sessions, context indexing, and analysis routing for AtlasAI.
 // All communication uses the .atlas/pipeline/ directory.
 
 #include "NF/Pipeline/Pipeline.h"
@@ -191,7 +191,7 @@ AnalysisResult WorkspaceBroker::analyzeEvent(const std::string& sessionId,
 
     // Emit an AIAnalysis response event back into the pipeline.
     ChangeEvent response;
-    response.tool      = "SwissAgent";
+    response.tool      = "AtlasAI";
     response.eventType = ChangeEventType::AIAnalysis;
     response.path      = event.path;
     response.timestamp = result.analysisTime;
@@ -209,8 +209,8 @@ void WorkspaceBroker::attachToWatcher(PipelineWatcher& watcher,
                                        const PipelineDirectories& dirs) {
     // Subscribe: every incoming event gets indexed and analyzed.
     watcher.subscribe([this, sessionId, dirs](const ChangeEvent& event) {
-        // Skip events emitted by SwissAgent itself to avoid feedback loops.
-        if (event.tool == "SwissAgent") return;
+        // Skip events emitted by AtlasAI itself to avoid feedback loops.
+        if (event.tool == "AtlasAI") return;
         analyzeEvent(sessionId, event, dirs);
     });
 }

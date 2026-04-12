@@ -4,55 +4,33 @@
 
 | Old Name | New Name | Scope | Status |
 |----------|----------|-------|--------|
-| Arbiter | AtlasAI | All active code/docs | In Progress |
-| ArbiterAI | AtlasAI | Tools, modules | In Progress |
-| AtlasArbiter | AtlasAI | Modules, docs | In Progress |
-| ARBITER | ATLAS_AI | Config keys, macros | In Progress |
-| arbiter | atlas_ai | File names, symbols | In Progress |
-| arbiter_reasoner | atlas_ai_reasoner | Pipeline symbols | In Progress |
-| Workspace/Arbiter | Workspace/AtlasAI | Directory paths | In Progress |
-| Atlas Suite | Atlas Workspace | Product naming | In Progress |
-| AtlasToolingSuite | Atlas Workspace | Product naming | In Progress |
-| MasterRepo.exe | AtlasWorkspace.exe | Executable naming | Pending |
+| Arbiter | AtlasAI | All active code/docs | ✅ Done |
+| ArbiterAI | AtlasAI | Tools, modules | ✅ Done |
+| AtlasArbiter | AtlasAI | Modules, docs | ✅ Done |
+| ARBITER | ATLAS_AI | Config keys, macros | ✅ Done |
+| arbiter | atlas_ai | File names, symbols | ✅ Done |
+| arbiter_reasoner | atlas_ai_reasoner | Pipeline symbols | ✅ Done |
+| Workspace/Arbiter | Workspace/AtlasAI | Directory paths | ✅ Done |
+| SwissAgent | AtlasAI | Pipeline adapter, broker, tool runner | ✅ Done |
+| Atlas Suite | Atlas Workspace | Product naming | ✅ Done |
+| AtlasToolingSuite | Atlas Workspace | Product naming | ✅ Done |
+| MasterRepo.exe | AtlasWorkspace.exe | Executable naming | ✅ Done |
 
-## Files with Active Arbiter References
+## Files Updated
 
-### Source Files
-| File | References | Status |
-|------|-----------|--------|
-| Source/Pipeline/src/ArbiterReasoner.cpp | ~15 | Pending |
-| Source/Pipeline/src/WorkspaceBroker.cpp | ~10 | Pending |
-| Source/Pipeline/src/ToolWiring.cpp | ~5 | Pending |
-| Source/Pipeline/include/NF/Pipeline/Pipeline.h | ~5 | Pending |
-| Source/Editor/include/NF/Editor/ToolEcosystem.h | ~3 | Pending |
+All active-path Arbiter and SwissAgent references have been resolved:
 
-### Test Files
-| File | References | Status |
-|------|-----------|--------|
-| Tests/Pipeline/test_arbiter_reasoner.cpp | ~30 | Pending |
-| Tests/Pipeline/test_workspace_broker.cpp | ~20 | Pending |
-| Tests/Pipeline/test_tool_wiring.cpp | ~15 | Pending |
-| Tests/Pipeline/test_full_suite.cpp | ~10 | Pending |
-| Tests/Pipeline/test_pipeline.cpp | ~10 | Pending |
-| Tests/Editor/test_s8_editor.cpp | ~5 | Pending |
-
-### Directory Renames
-| Old Path | New Path | Status |
-|----------|----------|--------|
-| Atlas/Workspace/Arbiter/ | Atlas/Workspace/AtlasAI/ | Pending |
-| Tools/ArbiterAI/ | Archive (or delete) | Pending |
-
-## Stale Doc References
-
-Search all active docs for:
-- ImGui (should say AtlasUI)
-- WPF (should say archived/deferred)
-- Arbiter (should say AtlasAI)
-- MasterRepo (should say Atlas Workspace)
-- Atlas Suite (should say Atlas Workspace)
+- `Source/Pipeline/src/AtlasAIReasoner.cpp` — renamed from ArbiterReasoner.cpp
+- `Source/Pipeline/src/WorkspaceBroker.cpp` — SwissAgent → AtlasAI
+- `Source/Pipeline/src/ToolWiring.cpp` — SwissAgentAdapter removed, absorbed into AtlasAIAdapter
+- `Source/Pipeline/include/NF/Pipeline/Pipeline.h` — SwissAgentAdapter class removed
+- `Source/Editor/include/NF/Editor/ToolEcosystem.h` — m_swissAgent + m_arbiter → m_atlasAI
+- `Source/Workspace/include/NF/Workspace/BrokerFlowController.h` — dual-tool skip → single AtlasAI check
+- All Pipeline test files updated to use AtlasAIAdapter
 
 ## Rules
 
 - Active docs: correct to canon
 - Historical docs: prefix with "Historical:" or move to Docs/Archive
 - Archive content: leave as-is (do not rename inside archive)
+

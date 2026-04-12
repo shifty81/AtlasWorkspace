@@ -1,5 +1,24 @@
 #pragma once
-// NF::Editor — Project surface v1: project lifecycle, metadata, file tree root, recent projects
+// NF::Editor — ProjectSurfaceV1: lightweight project browser surface.
+//
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │  SCOPE BOUNDARY — ProjectSurfaceV1 is a light shell/browser helper.    │
+// │                                                                         │
+// │  This class IS responsible for:                                         │
+// │    • Recent project list                                                │
+// │    • File tree shell model (project browser nodes)                      │
+// │    • Lightweight project open/close metadata surface                    │
+// │    • Project state transitions for browser UI                           │
+// │                                                                         │
+// │  This class is NOT responsible for:                                     │
+// │    • Authoritative authored project data  (→ NovaForgeDocument)         │
+// │    • Dirty/save truth across documents    (→ WorkspaceProjectState)     │
+// │    • Panel edit binding source            (→ WorkspaceProjectState)     │
+// │    • Viewport project data binding                                      │
+// │                                                                         │
+// │  Planned rename: ProjectBrowserSurface or ProjectMetaSurface            │
+// │  Do NOT add project-data ownership or panel binding to this class.      │
+// └─────────────────────────────────────────────────────────────────────────┘
 #include "NF/Core/Core.h"
 #include <cstdint>
 #include <functional>
