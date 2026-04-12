@@ -69,7 +69,8 @@ bool TextInput::handleInput(IInputContext& context) {
                     // Enter: unfocus (single-line widget).
                     m_focused = false;
                 } else if (static_cast<unsigned char>(ch) >= 0x20) {
-                    // Printable character: insert at cursor.
+                    // Printable character (>= ASCII 0x20 = space; excludes all control chars).
+                    // Insert at cursor position.
                     m_text.insert(m_cursor, 1, ch);
                     ++m_cursor;
                     changed = true;

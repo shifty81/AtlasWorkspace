@@ -54,6 +54,8 @@ public:
         m_mouse.leftDown    = currLeftDown;
         m_mouse.leftPressed  = !m_prevLeftDown && currLeftDown;
         m_mouse.leftReleased =  m_prevLeftDown && !currLeftDown;
+        // state.textInput is cleared by InputSystem::update() at the start of
+        // each frame, so typedText is always fresh and scoped to one frame.
         m_mouse.typedText    = state.textInput;
         m_prevLeftDown = currLeftDown;
     }
