@@ -32,6 +32,12 @@ public:
     // loop has a valid (but headless) surface to bind until a real backend is
     // attached.  The caller retains ownership of the surface.
     //
+    // Lifetime contract: the stored resize callback references `viewportMgr` by
+    // reference.  The caller MUST call disconnect() before either the panel or
+    // the viewportMgr is destroyed, to clear the callback and prevent a dangling
+    // reference.  In practice, tools call connect() in activate() and
+    // disconnect() in suspend(), which is always before manager teardown.
+    //
     // Returns true if the handle is valid and the panel is non-null.
     static bool connect(UI::AtlasUI::ViewportPanel* panel,
                         WorkspaceViewportManager&  viewportMgr,

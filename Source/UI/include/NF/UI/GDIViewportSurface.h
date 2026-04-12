@@ -135,7 +135,11 @@ private:
     void destroySurface() {
 #if defined(_WIN32)
         if (m_dib) {
-            if (m_memDC) SelectObject(m_memDC, static_cast<HGDIOBJ>(nullptr));
+            if (m_memDC) {
+                // Select a stock object before deleting the DIB to leave the DC
+                // in a well-defined state (avoids selecting a deleted bitmap).
+                SelectObject(m_memDC, GetStockObject(NULL_BRUSH));
+            }
             DeleteObject(m_dib);
             m_dib = nullptr;
         }
