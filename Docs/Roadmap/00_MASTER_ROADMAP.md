@@ -1524,3 +1524,33 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Tools accessible from sidebar regardless of which view (dashboard / active tool) is shown ✓
 - 48 test cases pass (171 assertions) ✓
 - Total test suite: ~3213 tests passing ✓
+
+---
+
+## Phase 49 – Workspace Recent Files
+
+**Status: Done**
+
+- [x] Create `WorkspaceRecentFiles.h` — unified recent-files manager
+  - [x] RecentFileKind enum (Project/Scene/Asset/Script/Config/Custom) with `recentFileKindName()` helper
+  - [x] RecentFileEntry — path + displayName + kind + lastOpenedMs + pinned + accessCount; `isValid()` (non-empty path); equality by path
+  - [x] RecentFileList — MRU ring (MAX_ENTRIES=64); `record` (dedup by path → moves to front + bumps accessCount; evicts oldest unpinned at cap; pinned entries survive eviction; rejects all-pinned overflow); `remove`/`pin`/`findByPath`/`contains`/`mostRecent`; `pinned()`/`unpinned()` views; `pinnedCount`/`count`/`empty`; `clearUnpinned`/`clear`; `appendDirect` (for deserialization)
+  - [x] RecentFilesManager — one RecentFileList per kind (6 lists); `record`/`remove`/`pin`/`find`/`listForKind`; `globalRecent()` (merges all kinds, sorts by lastOpenedMs desc, capped at MAX_GLOBAL=32); `clearKind`/`clearAll`/`clearAllUnpinned`; observer callbacks on record/remove (MAX_OBSERVERS=16); `serialize()` / `deserialize()` — pipe-delimited wire format with `\P` escape for pipes in paths; `deserialize` clears existing data before loading
+- [x] Add `Tests/Workspace/test_phase49_recent_files.cpp` — 45 test cases / 132 assertions:
+  - [x] RecentFileKind (1 test): all 6 name helpers
+  - [x] RecentFileEntry (3 tests): default invalid, valid with path, equality by path
+  - [x] RecentFileList (16 tests): default empty, record adds to front, empty path rejected, re-record moves to front+bumps count, remove, remove unknown, findByPath, contains, pin/unpin, pin unknown, pinned()/unpinned() views, clearUnpinned leaves pinned, clear removes all, MRU order, capacity evicts oldest unpinned, pinned survives eviction
+  - [x] RecentFilesManager (21 tests): default empty, record to correct kind, empty path rejected, find, remove, remove unknown, pin/unpin, pin unknown, globalRecent merges+sorts, globalRecent capped at MAX_GLOBAL, clearKind, clearAll, clearAllUnpinned, observer on record, observer on remove, clearObservers, serialize empty, serialize round-trip, serialize escapes pipe, deserialize empty, deserialize clears existing
+  - [x] Integration (4 tests): project open workflow, observer tracks all operations, access-count increments on re-record, full serialize/deserialize preserves accessCount and pinned
+- [x] Wire `NF_Phase49Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- RecentFileList.record() dedup by path; moves to front; bumps accessCount ✓
+- Pinned entries survive capacity eviction; all-pinned-full rejects new entry ✓
+- RecentFilesManager.globalRecent() sorts newest-first across all kinds; capped at MAX_GLOBAL ✓
+- clearAllUnpinned() removes only unpinned entries across all kinds ✓
+- Serialize/deserialize round-trip is lossless (path, displayName, kind, ts, accessCount, pinned) ✓
+- Pipe characters in path/displayName escaped as \P ✓
+- Observer fires on record (true) and remove (false) with copy of the entry ✓
+- 45 test cases pass (132 assertions) ✓
+- Total test suite: ~3258 tests passing ✓

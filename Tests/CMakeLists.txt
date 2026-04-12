@@ -701,3 +701,14 @@ target_link_libraries(NF_Phase48Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase48Tests)
+
+# Phase 49 — WorkspaceRecentFiles
+add_executable(NF_Phase49Tests
+    Workspace/test_phase49_recent_files.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase49Tests PRIVATE
+    NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase49Tests)
