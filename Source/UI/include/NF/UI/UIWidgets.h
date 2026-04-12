@@ -131,6 +131,7 @@ struct UIMouseState {
     bool  leftPressed = false;   // just pressed this frame
     bool  leftReleased = false;  // just released this frame
     float scrollDelta  = 0.f;
+    std::string typedText;       // characters from WM_CHAR this frame; '\b'=Backspace, '\r'=Enter
 };
 
 // ── UIContext ────────────────────────────────────────────────────

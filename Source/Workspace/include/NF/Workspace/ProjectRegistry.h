@@ -16,6 +16,7 @@
 
 #include "NF/Workspace/IGameProjectAdapter.h"
 #include "NF/Workspace/ProjectLoadContract.h"
+#include "NF/Workspace/AtlasProjectFileLoader.h"
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -144,6 +145,38 @@ public:
         m_activeAdapter  = std::move(adapter);
         m_activeContract = contract;
         return contract;
+    }
+
+    /// Load a project by reading an .atlas project file.
+    /// Parses the file, extracts the 'adapter' field, and delegates to loadProject().
+    /// Returns a failed contract if the file cannot be parsed or has no 'adapter' field.
+    ProjectLoadContract loadProjectFromAtlasFile(const std::string& atlasFilePath) {
+        ProjectLoadContract contract;
+
+        AtlasProjectFileLoader loader;
+        if (!loader.loadFromFile(atlasFilePath)) {
+            contract.state = ProjectLoadState::Failed;
+            contract.addFatal("atlas_file_parse_error",
+                "Failed to parse .atlas file '" + atlasFilePath + "': " + loader.error());
+            return contract;
+        }
+
+        const AtlasProjectManifest& manifest = loader.manifest();
+        contract.projectId          = manifest.adapterId;
+        contract.projectDisplayName = manifest.name;
+        contract.projectVersion     = manifest.version;
+        contract.contentRoots       = { manifest.contentRoot };
+
+        if (!manifest.hasAdapter()) {
+            contract.state = ProjectLoadState::Failed;
+            contract.addFatal("missing_adapter_field",
+                "The .atlas file '" + atlasFilePath
+                + "' does not specify an 'adapter' field. "
+                  "Add '\"adapter\": \"<project-id>\"' to the file.");
+            return contract;
+        }
+
+        return loadProject(manifest.adapterId);
     }
 
     /// Unload the currently active project (no-op if none active).

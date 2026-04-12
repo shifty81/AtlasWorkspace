@@ -63,6 +63,7 @@ struct InputState {
     bool keys[static_cast<size_t>(KeyCode::COUNT)] = {};
     MouseState mouse;
     GamepadState gamepad;
+    std::string textInput; // characters typed this frame (from WM_CHAR); '\b'=Backspace, '\r'=Enter
 };
 
 // ── Action Mapping ───────────────────────────────────────────────
@@ -101,7 +102,12 @@ public:
         NF_LOG_INFO("Input", "Input system shutdown");
     }
 
+    // Append a character from the platform's text-input event (WM_CHAR).
+    // '\b' = Backspace, '\r' = Enter, printable ASCII otherwise.
+    void appendTextInput(char c) { m_state.textInput += c; }
+
     void update() {
+        m_state.textInput.clear();
         m_pendingEvents.clear();
 
         for (auto& binding : m_bindings) {

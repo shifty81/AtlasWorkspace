@@ -25,6 +25,10 @@
       "type": "string",
       "description": "Optional project description"
     },
+    "adapter": {
+      "type": "string",
+      "description": "Identifier of the IGameProjectAdapter implementation to load for this project. Must match a registered factory ID in the workspace ProjectRegistry (e.g. 'novaforge')."
+    },
     "modules": {
       "type": "object",
       "description": "Module references for the project",
@@ -46,7 +50,7 @@
           "description": "Path to the content/data directory"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "runtime": {
       "type": "object",

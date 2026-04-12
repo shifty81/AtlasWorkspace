@@ -33,7 +33,7 @@ public:
     }
 
     std::vector<std::string> contentRoots() const override {
-        return { "NovaForge/Content", "NovaForge/Data" };
+        return { "Content", "Data" };
     }
 
     std::vector<std::string> customCommands() const override {

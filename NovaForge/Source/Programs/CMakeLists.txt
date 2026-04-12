@@ -4,6 +4,7 @@
 if(NF_BUILD_EDITOR)
     add_executable(NovaForgeEditor NovaForgeEditor/main.cpp)
     target_link_libraries(NovaForgeEditor PRIVATE
+        NF::NovaForgeAdapter
         NF::Editor NF::Game NF::World NF::AI NF::GraphVM
         NF::Renderer NF::Physics NF::Audio NF::Animation
         NF::Input NF::Networking NF::UI NF::Engine NF::Core

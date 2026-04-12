@@ -290,6 +290,7 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
             mouse.leftDown    = currLeft;
             mouse.leftPressed  = !g_prevLeftDown && currLeft;
             mouse.leftReleased =  g_prevLeftDown && !currLeft;
+            mouse.typedText    = is.textInput;
             g_prevLeftDown = currLeft;
 
             g_gdiBackend->setTargetDC(hdc);
@@ -312,6 +313,11 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
     case WM_MOUSEMOVE:
     case WM_LBUTTONDOWN:
     case WM_LBUTTONUP:
+        InvalidateRect(hwnd, nullptr, FALSE);
+        break;
+    // Trigger repaints on keyboard events so text input updates immediately.
+    case WM_CHAR:
+    case WM_KEYDOWN:
         InvalidateRect(hwnd, nullptr, FALSE);
         break;
     case WM_CLOSE:

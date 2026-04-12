@@ -1,0 +1,302 @@
+#pragma once
+// NF::Workspace — AtlasProjectFileLoader: lightweight .atlas project file parser.
+//
+// An .atlas file is a JSON document that conforms to the atlas.project.v1 schema.
+// This parser extracts the fields needed to boot a workspace session without
+// depending on a heavyweight JSON library. It uses a minimal line-oriented
+// tokeniser that handles the flat/nested structure of the schema.
+//
+// Key fields extracted:
+//   schema      — must equal "atlas.project.v1" for the file to be accepted
+//   name        — human-readable project name
+//   version     — semver string
+//   adapter     — IGameProjectAdapter factory ID (e.g. "novaforge")
+//   capabilities— list of capability strings
+//   content     — content root path (from modules.content)
+//   entryWorld  — entry world path (from runtime.entryWorld)
+//   tickRate    — simulation tick rate (from runtime.tickRate)
+//   maxPlayers  — max player count (from runtime.maxPlayers)
+//
+// Usage:
+//   AtlasProjectFileLoader loader;
+//   if (loader.loadFromFile("path/to/NovaForge.atlas")) {
+//       const AtlasProjectManifest& m = loader.manifest();
+//       registry.loadProject(m.adapterId);
+//   }
+
+#include <cstdint>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+namespace NF {
+
+// ── AtlasProjectManifest ──────────────────────────────────────────────────
+// In-memory representation of an .atlas project file.
+
+struct AtlasProjectManifest {
+    std::string name;
+    std::string version;
+    std::string description;
+    std::string adapterId;         // "adapter" field — maps to a ProjectRegistry factory
+
+    // capabilities array
+    std::vector<std::string> capabilities;
+
+    // modules section
+    std::string contentRoot;       // modules.content
+    std::string worldGraph;        // modules.worldGraph
+    bool        aiEnabled = false; // modules.ai
+
+    // runtime section
+    std::string entryWorld;        // runtime.entryWorld
+    int         tickRate   = 30;   // runtime.tickRate
+    int         maxPlayers = 20;   // runtime.maxPlayers
+
+    // assets section
+    std::string assetsRoot;        // assets.root
+
+    [[nodiscard]] bool isValid() const {
+        return !name.empty() && !version.empty();
+    }
+
+    [[nodiscard]] bool hasAdapter() const {
+        return !adapterId.empty();
+    }
+};
+
+// ── AtlasProjectFileLoader ────────────────────────────────────────────────
+// Stateless parser; call loadFromText() or loadFromFile() then read manifest().
+//
+// Parser design notes:
+//   - No third-party JSON library dependency.
+//   - Handles the specific flat/nested structure of atlas.project.v1.
+//   - Accepts well-formed JSON only; malformed files return false.
+//   - All string values are unquoted (surrounding double-quotes stripped).
+//   - Unknown keys are silently ignored (forward-compatibility).
+
+class AtlasProjectFileLoader {
+public:
+    // Load from a file path.  Returns true on success.
+    [[nodiscard]] bool loadFromFile(const std::string& path) {
+        std::ifstream f(path);
+        if (!f.is_open()) return false;
+        std::ostringstream buf;
+        buf << f.rdbuf();
+        return loadFromText(buf.str(), path);
+    }
+
+    // Load from a JSON string.  |sourceHint| is used in error messages only.
+    [[nodiscard]] bool loadFromText(const std::string& text,
+                                    const std::string& sourceHint = "") {
+        m_manifest  = {};
+        m_error     = {};
+        m_sourcePath = sourceHint;
+
+        if (text.empty()) {
+            m_error = "empty input";
+            return false;
+        }
+
+        // Tokenise into a flat list of key-value pairs by scanning the JSON
+        // text line by line.  This handles the two-level nesting (top-level
+        // keys and one level of object/array nesting) present in atlas.project.v1.
+
+        std::istringstream ss(text);
+        std::string line;
+
+        std::string currentSection; // e.g. "modules", "runtime", "assets", "capabilities"
+        bool        inArray = false;
+
+        while (std::getline(ss, line)) {
+            // Strip leading/trailing whitespace
+            auto stripped = trim(line);
+            if (stripped.empty()) continue;
+
+            // Detect section entry: "key": { or "key": [
+            {
+                auto kv = tryParseObjectKey(stripped);
+                if (!kv.first.empty()) {
+                    if (kv.second == "{") {
+                        currentSection = kv.first;
+                        inArray = false;
+                        continue;
+                    }
+                    if (kv.second == "[") {
+                        currentSection = kv.first;
+                        inArray = true;
+                        continue;
+                    }
+                }
+            }
+
+            // Detect section close
+            if (stripped == "}" || stripped == "}," ||
+                stripped == "]" || stripped == "],") {
+                currentSection.clear();
+                inArray = false;
+                continue;
+            }
+
+            // Inside an array (capabilities): collect bare string values
+            if (inArray && currentSection == "capabilities") {
+                auto val = extractStringValue(stripped);
+                if (!val.empty())
+                    m_manifest.capabilities.push_back(val);
+                continue;
+            }
+
+            // Parse "key": value or "key": "value"
+            auto [key, value] = parseKeyValue(stripped);
+            if (key.empty()) continue;
+
+            if (currentSection.empty()) {
+                // Top-level fields
+                applyTopLevel(key, value);
+            } else if (currentSection == "modules") {
+                applyModules(key, value);
+            } else if (currentSection == "runtime") {
+                applyRuntime(key, value);
+            } else if (currentSection == "assets") {
+                applyAssets(key, value);
+            }
+            // Other sections (buildProfiles, etc.) are ignored
+        }
+
+        // Validate schema field
+        if (m_schemaValue != "atlas.project.v1") {
+            m_error = "schema field missing or not 'atlas.project.v1' (got '"
+                    + m_schemaValue + "') in " + sourceHint;
+            return false;
+        }
+
+        if (!m_manifest.isValid()) {
+            m_error = "manifest is missing required 'name' or 'version' in " + sourceHint;
+            return false;
+        }
+
+        return true;
+    }
+
+    // ── Accessors ─────────────────────────────────────────────────
+
+    [[nodiscard]] const AtlasProjectManifest& manifest()    const { return m_manifest;   }
+    [[nodiscard]] const std::string&          error()       const { return m_error;       }
+    [[nodiscard]] const std::string&          sourcePath()  const { return m_sourcePath;  }
+    [[nodiscard]] bool                        succeeded()   const { return m_error.empty() && m_manifest.isValid(); }
+
+private:
+    AtlasProjectManifest m_manifest;
+    std::string          m_error;
+    std::string          m_sourcePath;
+    std::string          m_schemaValue;
+
+    // ── Field appliers ─────────────────────────────────────────────
+
+    void applyTopLevel(const std::string& key, const std::string& value) {
+        if      (key == "schema")      m_schemaValue      = value;
+        else if (key == "name")        m_manifest.name        = value;
+        else if (key == "version")     m_manifest.version     = value;
+        else if (key == "description") m_manifest.description = value;
+        else if (key == "adapter")     m_manifest.adapterId   = value;
+    }
+
+    void applyModules(const std::string& key, const std::string& value) {
+        if      (key == "content")    m_manifest.contentRoot = value;
+        else if (key == "worldGraph") m_manifest.worldGraph  = value;
+        else if (key == "ai")         m_manifest.aiEnabled   = (value == "true");
+    }
+
+    void applyRuntime(const std::string& key, const std::string& value) {
+        if      (key == "entryWorld")  m_manifest.entryWorld  = value;
+        else if (key == "tickRate")    m_manifest.tickRate    = parseIntOr(value, 30);
+        else if (key == "maxPlayers")  m_manifest.maxPlayers  = parseIntOr(value, 20);
+    }
+
+    void applyAssets(const std::string& key, const std::string& value) {
+        if (key == "root") m_manifest.assetsRoot = value;
+    }
+
+    // ── JSON micro-parsers ─────────────────────────────────────────
+
+    // Strips leading/trailing ASCII whitespace.
+    static std::string trim(const std::string& s) {
+        static const char* ws = " \t\r\n";
+        auto b = s.find_first_not_of(ws);
+        if (b == std::string::npos) return {};
+        auto e = s.find_last_not_of(ws);
+        return s.substr(b, e - b + 1);
+    }
+
+    // Strips a trailing comma from the string.
+    static std::string stripTrailingComma(const std::string& s) {
+        if (!s.empty() && s.back() == ',')
+            return s.substr(0, s.size() - 1);
+        return s;
+    }
+
+    // Strips surrounding double-quotes (if present).
+    static std::string unquote(const std::string& s) {
+        if (s.size() >= 2 && s.front() == '"' && s.back() == '"')
+            return s.substr(1, s.size() - 2);
+        return s;
+    }
+
+    // Extracts a string value from a bare array element line (e.g. `"Rendering3D",`).
+    static std::string extractStringValue(const std::string& s) {
+        auto stripped = stripTrailingComma(trim(s));
+        return unquote(stripped);
+    }
+
+    // Tries to detect `"key": {` or `"key": [` patterns.
+    // Returns {key, "{" or "[" or ""} — empty key means not matched.
+    static std::pair<std::string, std::string> tryParseObjectKey(const std::string& s) {
+        // Must start with '"'
+        if (s.empty() || s[0] != '"') return {{}, {}};
+
+        auto closeQuote = s.find('"', 1);
+        if (closeQuote == std::string::npos) return {{}, {}};
+        std::string key = s.substr(1, closeQuote - 1);
+
+        auto colonPos = s.find(':', closeQuote + 1);
+        if (colonPos == std::string::npos) return {{}, {}};
+
+        auto afterColon = trim(s.substr(colonPos + 1));
+        afterColon = stripTrailingComma(afterColon);
+
+        if (afterColon == "{" || afterColon == "[")
+            return {key, afterColon};
+        return {{}, {}};
+    }
+
+    // Parse `"key": value` or `"key": "value"`.
+    // Returns {key, unquoted-value}; empty key on failure.
+    static std::pair<std::string, std::string> parseKeyValue(const std::string& s) {
+        if (s.empty() || s[0] != '"') return {{}, {}};
+
+        auto closeQuote = s.find('"', 1);
+        if (closeQuote == std::string::npos) return {{}, {}};
+        std::string key = s.substr(1, closeQuote - 1);
+
+        auto colonPos = s.find(':', closeQuote + 1);
+        if (colonPos == std::string::npos) return {{}, {}};
+
+        auto valueRaw = trim(s.substr(colonPos + 1));
+        valueRaw = stripTrailingComma(valueRaw);
+
+        // Reject object/array openers (handled separately)
+        if (valueRaw == "{" || valueRaw == "[") return {{}, {}};
+
+        return {key, unquote(valueRaw)};
+    }
+
+    static int parseIntOr(const std::string& s, int fallback) {
+        if (s.empty()) return fallback;
+        try { return std::stoi(s); }
+        catch (const std::invalid_argument&) { return fallback; }
+        catch (const std::out_of_range&)     { return fallback; }
+    }
+};
+
+} // namespace NF
