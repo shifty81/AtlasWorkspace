@@ -16,10 +16,10 @@
 #include "NF/Editor/ContentBrowserPanel.h"
 #include "NF/Editor/PropertyEditor.h"
 #include "NF/Editor/SettingsPanel.h"
-#include "NF/Editor/AIAssistantPanel.h"
-#include "NF/Editor/Notifications.h"
-#include "NF/Editor/NotificationSystem.h"
-#include "NF/Editor/NotificationWorkflow.h"
+#include "NF/Workspace/AIAssistantPanel.h"
+#include "NF/Workspace/Notifications.h"
+#include "NF/Workspace/NotificationSystem.h"
+#include "NF/Workspace/NotificationWorkflow.h"
 
 // ── V1 panel implementations ────────────────────────────────────
 #include "NF/Editor/PropertyGridV1.h"

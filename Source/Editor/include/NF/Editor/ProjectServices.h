@@ -13,7 +13,7 @@
 #include <map>
 #include <deque>
 #include <unordered_map>
-#include "NF/Editor/SelectionService.h"
+#include "NF/Workspace/SelectionService.h"
 
 namespace NF {
 

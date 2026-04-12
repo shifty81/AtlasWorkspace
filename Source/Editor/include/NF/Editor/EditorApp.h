@@ -23,7 +23,7 @@
 #include <map>
 #include <deque>
 #include <unordered_map>
-#include "NF/Editor/SelectionService.h"
+#include "NF/Workspace/SelectionService.h"
 #include "NF/Editor/ContentBrowser.h"
 #include "NF/Editor/ProjectServices.h"
 #include "NF/Editor/EditorTheme.h"
@@ -37,7 +37,7 @@
 #include "NF/Editor/EditorToolbar.h"
 #include "NF/Editor/IDEIntegration.h"
 #include "NF/Editor/MenuBar.h"
-#include "NF/Editor/Notifications.h"
+#include "NF/Workspace/Notifications.h"
 #include "NF/Editor/EditorCamera.h"
 #include "NF/Editor/EditorSettings.h"
 #include "NF/Editor/GraphEditorPanel.h"
@@ -47,13 +47,13 @@
 #include "NF/Editor/Legacy/PCGTuning.h"
 #include "NF/Editor/Scene/EntityPlacement.h"
 #include "NF/Editor/Scene/VoxelPaint.h"
-#include "NF/Editor/EditorUndoSystem.h"
+#include "NF/Workspace/EditorUndoSystem.h"
 #include "NF/Editor/Scene/WorldPreview.h"
 #include "NF/Editor/EditorWorldSession.h"
 #include "NF/Editor/AssetDatabase.h"
 #include "NF/Editor/AssetImporters.h"
 #include "NF/Editor/BlenderImporter.h"
-#include "NF/Editor/WorkspacePanelHost.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include "NF/Workspace/WorkspaceViewportBridge.h"
 #include "NF/Workspace/WorkspaceViewportManager.h"
 

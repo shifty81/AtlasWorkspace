@@ -50,17 +50,17 @@ That is what the phases below address.
 
 ## Phase A — Truth and Cleanup Lock
 
-**Status: Not Started**
+**Status: In Progress**
 
 **Goal:** Stop repo drift. Make the roadmap, status docs, and codebase honest about
 what works vs. what is a stub. Remove forwarding shims and legacy cruft that creates
 the illusion of completeness.
 
 ### Milestone A.1 — Repo Cleanup
-- [ ] Archive remaining forwarding shims between `Source/Editor` and `Source/Workspace`
-- [ ] Remove stale `EditorApp` references from non-test code
-- [ ] Rename `ArbiterReasoner.cpp` in pipeline to `AtlasAIReasoner.cpp`
-- [ ] Slim `main.cpp` — extract platform init and adapter selection into dedicated units
+- [x] Archive remaining forwarding shims between `Source/Editor` and `Source/Workspace`
+- [x] Remove stale `EditorApp` references from non-test code
+- [x] Rename `ArbiterReasoner.cpp` in pipeline to `AtlasAIReasoner.cpp`
+- [x] Slim `main.cpp` — extract `LocalProjectAdapter` into dedicated unit
 - [ ] Remove overclaiming language from roadmap/status docs (presence ≠ completion)
 
 ### Milestone A.2 — Build and CI Hygiene
