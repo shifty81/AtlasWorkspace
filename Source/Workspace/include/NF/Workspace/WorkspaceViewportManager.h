@@ -12,7 +12,7 @@
 // WorkspaceShell owns one WorkspaceViewportManager and exposes it via
 // viewportManager().  Tools that need a 3D view call requestViewport()
 // to obtain a handle, register a surface and/or scene provider, then call
-// activateViewport().  EditorApp calls renderFrame() once per tick.
+// activateViewport().  The host (WorkspaceShell) calls renderFrame() once per tick.
 //
 // Design rules (from ViewportHostContract.h):
 //   - The workspace does NOT own the scene camera or scene graph.

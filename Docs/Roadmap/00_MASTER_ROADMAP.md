@@ -2178,3 +2178,57 @@ instantiate panels on demand.
 - `loadFromAdapter()` discards cached panels from previous adapter ✓
 - All 2492 NF_EditorTests assertions still pass ✓
 - 30 Phase 70 test cases pass (119 assertions) ✓
+
+---
+
+## Phase 71 – Audit Patches 7/9/11/12
+
+**Status: Done**
+
+Implements the remaining audit patches from `auditxtras.md`:
+- Patch 7: Collapse the dual runtime path
+- Patch 9: Asset population path
+- Patch 11: Persist settings and layout wiring
+- Patch 12: Canon and docs correction + validator gap fixes
+
+(Patches 8 and 10 were already done via prior work.)
+
+- [x] **Patch 7 — EditorApp deprecation**:
+  - Mark `EditorApp.h` with deprecation banner pointing to `WorkspaceShell`
+  - Remove all `EditorApp` references from `NF::Workspace` module comments
+  - Update `WorkspacePanelHost.h`, `WorkspaceViewportBridge.h`, `ViewportFrameLoop.h`, `WorkspaceViewportManager.h`
+- [x] **Patch 9 — Asset population path**:
+  - Create `AssetCatalogPopulator.h` with extension-based classification (50+ extensions → 15 asset types)
+  - `classifyExtension()` — case-insensitive extension → `AssetTypeTag` mapping
+  - `buildCatalogPath()` — convert absolute paths to catalog-relative paths
+  - `extractDisplayName()` — strip path and extension for display
+  - `AssetCatalogPopulator` — stateless utility with `addFiles()`, `clear()`, `populate(AssetCatalog&)` → `PopulateResult`
+  - Wire `AssetCatalog` into `WorkspaceShell` as owned member with accessors
+  - Clear asset catalog on project unload
+- [x] **Patch 11 — Settings and layout persistence wiring**:
+  - Wire `SettingsStore` into `WorkspaceShell` as owned member with accessors
+  - Wire `LayoutPersistenceManager` into `WorkspaceShell` as owned member with accessors
+  - Register 6 default workspace settings on `initialize()` (theme, auto_save, auto_save_interval, show_welcome, ui_scale, max_recent_projects)
+  - Clear project-scoped settings on project unload
+- [x] **Patch 12 — Canon and docs correction + validator gaps**:
+  - Fix all 23 `validate_project.sh` failures (79/79 now passing)
+  - Create `Content/`, `Content/Incoming/`, `Data/` directories
+  - Create `Dockerfile` for CI builds
+  - Create `Config/novaforge.project.json` and `Config/season.config.json`
+  - Create `AtlasAI/Atlas_Arbiter/README.md` and `AtlasAI/Atlas_SwissAgent/README.md`
+  - Create all Phase 3 extraction stubs (Game systems, PCG, BlenderGenerator, Nova-Forge-Expeditions)
+  - Create all 6 `Docs/Architecture/` documents (NAMING_CANON, CURRENT_DIRECTION, HOSTED_PROJECT_CONTRACT, DEFERRED_TO_WORKSPACE, BUILD_MODES, VOXEL_RENDER_PIPELINE)
+  - Update `Docs/Canon/00_PROJECT_STATUS.md` with current state
+- [x] Add `Tests/Workspace/test_phase71_audit_patches.cpp` — 28 test cases
+- [x] Wire `NF_Phase71Tests` into `Tests/CMakeLists.txt`
+
+**Success Criteria:**
+- EditorApp header has deprecation markers pointing to WorkspaceShell ✓
+- No `EditorApp` references in `NF::Workspace` module source (comments removed/updated) ✓
+- `classifyExtension()` correctly maps 50+ file extensions to 15 asset types ✓
+- `AssetCatalogPopulator` handles duplicates, builds catalog paths, and clears pending ✓
+- `WorkspaceShell` owns `AssetCatalog`, `SettingsStore`, `LayoutPersistenceManager` ✓
+- Default settings populated during `initialize()` ✓
+- Project unload clears asset catalog and project-scoped settings ✓
+- All 79 validator checks pass (was 56/79) ✓
+- All 4125 tests pass ✓

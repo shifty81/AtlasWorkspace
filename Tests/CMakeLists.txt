@@ -950,3 +950,18 @@ if(TARGET NF::NovaForgeAdapter)
     )
     catch_discover_tests(NF_Phase70Tests)
 endif()
+
+# Phase 71 — Audit Patches 7/9/11/12
+#   Patch 7:  EditorApp deprecation markers
+#   Patch 9:  AssetCatalogPopulator — extension classification + catalog population
+#   Patch 11: SettingsStore/LayoutPersistence wired into WorkspaceShell
+#   Patch 12: Validator gaps (verified by validate_project.sh)
+add_executable(NF_Phase71Tests
+    Workspace/test_phase71_audit_patches.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase71Tests PRIVATE
+    NF::Editor NF::Workspace NF::UI NF::Core NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase71Tests)

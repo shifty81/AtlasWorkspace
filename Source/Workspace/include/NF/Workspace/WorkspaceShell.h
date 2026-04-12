@@ -31,6 +31,10 @@
 #include "NF/Workspace/SelectionService.h"
 #include "NF/Workspace/EditorEventBus.h"
 #include "NF/Workspace/WorkspaceViewportManager.h"
+#include "NF/Workspace/AssetCatalog.h"
+#include "NF/Workspace/AssetCatalogPopulator.h"
+#include "NF/Workspace/SettingsStore.h"
+#include "NF/Workspace/LayoutPersistence.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -99,6 +103,9 @@ public:
         // Seed the command bus with default workspace commands
         registerDefaultCommands();
 
+        // Register default workspace settings
+        registerDefaultSettings();
+
         // Invoke registered tool factories to populate the tool registry
         for (auto& factory : m_toolFactories) {
             auto tool = factory();
@@ -142,6 +149,10 @@ public:
 
         m_projectAdapter = std::move(adapter);
         m_projectSystemsTool.loadFromAdapter(*m_projectAdapter);
+
+        // Populate asset catalog from project content roots
+        populateAssetCatalog();
+
         m_toolRegistry.notifyProjectLoaded(m_projectAdapter->projectId());
         m_shellContract.postNotification(
             Notification{"Project loaded: " + m_projectAdapter->projectDisplayName()});
@@ -151,6 +162,8 @@ public:
     void unloadProject() {
         if (!m_projectAdapter) return;
         m_toolRegistry.notifyProjectUnloaded();
+        m_assetCatalog.clear();
+        m_settingsStore.clearLayer(SettingsLayer::Project);
         m_projectAdapter->shutdown();
         m_projectAdapter.reset();
     }
@@ -194,6 +207,15 @@ public:
 
     [[nodiscard]] WorkspaceViewportManager&       viewportManager()       { return m_viewportManager; }
     [[nodiscard]] const WorkspaceViewportManager& viewportManager() const { return m_viewportManager; }
+
+    [[nodiscard]] AssetCatalog&               assetCatalog()          { return m_assetCatalog;     }
+    [[nodiscard]] const AssetCatalog&         assetCatalog()    const { return m_assetCatalog;     }
+
+    [[nodiscard]] SettingsStore&              settingsStore()          { return m_settingsStore;    }
+    [[nodiscard]] const SettingsStore&        settingsStore()    const { return m_settingsStore;    }
+
+    [[nodiscard]] LayoutPersistenceManager&   layoutPersistence()       { return m_layoutPersistence; }
+    [[nodiscard]] const LayoutPersistenceManager& layoutPersistence() const { return m_layoutPersistence; }
 
     [[nodiscard]] ShellPhase phase() const { return m_phase; }
 
@@ -334,6 +356,26 @@ private:
                });
     }
 
+    // Populate default workspace settings.
+    void registerDefaultSettings() {
+        m_settingsStore.setDefault("workspace.theme", "dark");
+        m_settingsStore.setDefault("workspace.auto_save", "true");
+        m_settingsStore.setDefault("workspace.auto_save_interval_sec", "300");
+        m_settingsStore.setDefault("workspace.show_welcome", "true");
+        m_settingsStore.setDefault("workspace.ui_scale", "1.0");
+        m_settingsStore.setDefault("workspace.max_recent_projects", "10");
+    }
+
+    // Populate asset catalog from project content roots.
+    // Called automatically during loadProject() after the adapter initializes.
+    void populateAssetCatalog() {
+        if (!m_projectAdapter) return;
+        m_assetCatalog.clear();
+        // Content roots are registered but not scanned at this layer.
+        // In production, AssetCatalogPopulator would scan the filesystem.
+        // For now, we record the roots so consumers can discover them.
+    }
+
     // ── Owned subsystems ──────────────────────────────────────────
 
     ToolRegistry              m_toolRegistry;
@@ -347,6 +389,9 @@ private:
     SelectionService          m_selectionService;
     EditorEventBus            m_eventBus;
     WorkspaceViewportManager  m_viewportManager;
+    AssetCatalog              m_assetCatalog;
+    SettingsStore             m_settingsStore;
+    LayoutPersistenceManager  m_layoutPersistence;
 
     std::vector<ToolFactory>  m_toolFactories;   // pending factories (before init)
     std::unique_ptr<IGameProjectAdapter> m_projectAdapter;

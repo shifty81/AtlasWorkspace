@@ -15,7 +15,7 @@
 // Disconnect() tears down the bindings when the tool suspends/shuts down.
 //
 // This component is header-only and has no runtime state; it is a pure
-// wiring utility called from EditorApp post-init or from the tool itself.
+// wiring utility called from WorkspaceShell post-init or from the tool itself.
 
 #include "NF/Workspace/WorkspaceViewportManager.h"
 #include "NF/Workspace/IViewportSurface.h"

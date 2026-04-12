@@ -10,7 +10,7 @@
 //   5. Read colorAttachment() and store in result (used by ViewportPanel)
 //   6. Call ViewportHostRegistry::onFrameRendered() to increment frameCount
 //
-// EditorApp::renderAll() calls renderFrame() each frame and uses the returned
+// The host render loop calls renderFrame() each frame and uses the returned
 // ViewportFrameResult list to drive AtlasUI::ViewportPanel::setColorAttachment()
 // so the scene texture appears inside each panel.
 

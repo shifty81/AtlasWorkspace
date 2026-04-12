@@ -1,5 +1,15 @@
 #pragma once
-// NF::Editor — Editor application
+// NF::Editor — EditorApp (LEGACY)
+//
+// ⚠️  DEPRECATED: EditorApp is the legacy dual-runtime bootstrap path.
+// The canonical runtime path is:
+//   WorkspaceShell → WorkspaceRenderer → UIRenderer → GDIBackend → Win32
+//
+// EditorApp is retained for backward-compatible tests and will be removed
+// once all consumers migrate to the WorkspaceShell bootstrap.
+// Do NOT add new features to EditorApp. Use WorkspaceShell instead.
+//
+// See Docs/Architecture/CURRENT_DIRECTION.md
 #include "NF/Core/Core.h"
 #include "NF/Engine/Engine.h"
 #include "NF/Renderer/Renderer.h"

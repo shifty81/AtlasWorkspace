@@ -2,7 +2,8 @@
 // NF::Editor::WorkspacePanelHost
 // Manages all 8 core AtlasUI panels for the workspace.
 // Maps DockLayout slot bounds → panel arrange/paint/handleInput each frame.
-// Drop-in replacement for the legacy EditorPanel render loop in EditorApp.
+// Drop-in replacement for the legacy EditorPanel render loop.
+// Note: EditorApp is deprecated; the canonical path is WorkspaceShell → WorkspaceRenderer.
 
 #include "NF/UI/AtlasUI/PanelHost.h"
 #include "NF/UI/AtlasUI/Contexts.h"
@@ -49,7 +50,7 @@ public:
         m_host.attachPanel(m_graphEditor);
         m_host.attachPanel(m_pipelineMonitor);
 
-        // Map AtlasUI panel ID → DockLayout panel name (as registered in EditorApp::init)
+        // Map AtlasUI panel ID → DockLayout panel name
         m_nameMap["atlas.viewport"]        = "Viewport";
         m_nameMap["atlas.hierarchy"]       = "Hierarchy";
         m_nameMap["atlas.inspector"]       = "Inspector";
@@ -66,7 +67,7 @@ public:
     }
 
     /// Render all visible panels: arrange to DockLayout bounds, paint, dispatch.
-    /// Call this from EditorApp::renderAll() between beginFrame and endFrame.
+    /// Call this from the host render loop between beginFrame and endFrame.
     void renderPanels(DockLayout& dock) {
         for (auto& panel : m_host.panels()) {
             auto it = m_nameMap.find(panel->panelId());
@@ -89,7 +90,7 @@ public:
     }
 
     /// Route input to all visible panels.
-    /// Call this from EditorApp::update().
+    /// Call this from the host update loop.
     void handleInput(DockLayout& dock, InputSystem& input) {
         (void)dock;
         UI::AtlasUI::BasicInputContext inputCtx;
@@ -100,7 +101,7 @@ public:
         }
     }
 
-    // Panel accessors (for data binding from EditorApp)
+    // Panel accessors (for data binding from host)
     [[nodiscard]] UI::AtlasUI::ViewportPanel&       viewport()        { return *m_viewport; }
     [[nodiscard]] UI::AtlasUI::HierarchyPanel&      hierarchy()       { return *m_hierarchy; }
     [[nodiscard]] UI::AtlasUI::InspectorPanel&      inspector()       { return *m_inspector; }
