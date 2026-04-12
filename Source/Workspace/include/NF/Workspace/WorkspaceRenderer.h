@@ -106,13 +106,25 @@ public:
                 WorkspaceShell& shell, const UIMouseState& mouse,
                 WorkspaceLaunchService* launchSvc = nullptr)
     {
+        // While a dropdown is open, or for the single frame immediately after it
+        // is dismissed, block click events from reaching the sidebar and main-area
+        // so the dismissal click cannot also trigger an underlying element.
+        bool suppressClicks = (m_openMenuIdx >= 0) || m_menuDismissed;
+        m_menuDismissed = false;  // reset for this frame; renderDropdownOverlay will re-set it if a menu closes
+
+        UIMouseState effectiveMouse = mouse;
+        if (suppressClicks) {
+            effectiveMouse.leftPressed  = false;
+            effectiveMouse.leftReleased = false;
+        }
+
         ui.beginFrame(width, height);
         renderBackground(ui, width, height);
-        renderToolbar(ui, width, shell, mouse);
-        renderSidebar(ui, height, shell, mouse, launchSvc);
-        renderMainArea(ui, width, height, shell, mouse);
+        renderToolbar(ui, width, shell, mouse);            // real mouse — menu toggles must always work
+        renderSidebar(ui, height, shell, effectiveMouse, launchSvc);
+        renderMainArea(ui, width, height, shell, effectiveMouse);
         renderStatusBar(ui, width, height, shell);
-        renderDropdownOverlay(ui, mouse, shell);  // drawn on top of all other chrome
+        renderDropdownOverlay(ui, mouse, shell);           // real mouse — dropdown owns its own hit-testing
         ui.endFrame();
     }
 
@@ -143,6 +155,12 @@ private:
         bool           enabled  = true;
     };
     struct DropMenu { std::vector<DropItem> items; };
+
+    // ── Selection toggle helper ────────────────────────────────────
+    // Selects |candidate| in |current|, or deselects if it is already selected.
+    static void toggleSelection(int& current, int candidate) {
+        current = (current == candidate) ? -1 : candidate;
+    }
 
     // ── UITheme matching workspace dark palette ────────────────────
     void initTheme() {
@@ -629,26 +647,31 @@ private:
                 uint32_t textCol = it.enabled ? kTextPrimary : kTextMuted;
                 ui.drawText(dx + 10.f, iy + 3.f, it.label, textCol);
 
-                if (iHover && it.enabled && mouse.leftPressed) {
-                    itemConsumedClick = true;
-                    if (it.action != WorkspaceAction::None) {
-                        m_pendingAction = it.action;
-                    } else if (!it.command.empty()) {
-                        (void)shell.commandBus().execute(it.command);
+                if (iHover && mouse.leftReleased) {
+                    itemConsumedClick = true;   // always consume — disabled items must not fall through
+                    if (it.enabled) {
+                        if (it.action != WorkspaceAction::None) {
+                            m_pendingAction = it.action;
+                        } else if (!it.command.empty()) {
+                            (void)shell.commandBus().execute(it.command);
+                        }
+                        m_openMenuIdx    = -1;
+                        m_menuDismissed  = true;  // prevents dismissal click from activating underlying elements
                     }
-                    m_openMenuIdx = -1;
                 }
                 iy += 22.f;
             }
         }
 
         // Close the dropdown when the user clicks outside it (and outside the toolbar).
-        if (!itemConsumedClick && mouse.leftPressed) {
+        if (!itemConsumedClick && mouse.leftReleased) {
             bool inDropdown = (mouse.x >= dx && mouse.x < dx + dw &&
                                mouse.y >= dy && mouse.y < dy + dh);
             bool inToolbar  = (mouse.y >= 0.f && mouse.y < kToolbarH);
-            if (!inDropdown && !inToolbar)
-                m_openMenuIdx = -1;
+            if (!inDropdown && !inToolbar) {
+                m_openMenuIdx   = -1;
+                m_menuDismissed = true;  // prevents dismissal click from activating underlying elements
+            }
         }
     }
 
@@ -710,7 +733,7 @@ private:
         ui.drawText(backR.x + 8.f, backR.y + 4.f, "< Dashboard", kTextSecondary);
 
         // ── Per-tool panel layout ──────────────────────────────────
-        renderToolPanelsForCategory(ui, x, y + kHeaderH, w, kMainH, shell, desc);
+        renderToolPanelsForCategory(ui, x, y + kHeaderH, w, kMainH, shell, desc, mouse);
 
         // ── Bottom strip: Console + Metrics ───────────────────────
         renderBottomStrip(ui, x, y + kHeaderH + kMainH, w, kBottomH, shell);
@@ -729,7 +752,8 @@ private:
     // All panels are chrome shells; actual content is handled by tool logic.
     void renderToolPanelsForCategory(UIRenderer& ui, float x, float y, float w, float h,
                                      const WorkspaceShell& shell,
-                                     const HostedToolDescriptor& desc)
+                                     const HostedToolDescriptor& desc,
+                                     const UIMouseState& mouse)
     {
         // Helper: draw a labeled panel zone with an optional centered hint.
         auto drawPanel = [&](float px, float py, float pw, float ph,
@@ -762,17 +786,49 @@ private:
 
         case HostedToolCategory::SceneEditing: {
             // Hierarchy | 3D Viewport | Inspector
+            static const char* kEntities[] = {
+                "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
+            };
+            static constexpr int kEntityCount = 5;
+
             float hierW  = w * 0.20f;
             float inspW  = w * 0.22f;
             float viewW  = w - hierW - inspW;
-            drawPanel(x,              y, hierW, h, "HIERARCHY", "(entity tree)");
-            // Viewport
+
+            m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
+            // ── HIERARCHY panel ──────────────────────────────────
+            ui.drawRect({x, y, hierW, h}, kCardBg);
+            ui.drawRectOutline({x, y, hierW, h}, kBorder, 1.f);
+            ui.drawRect({x, y, hierW, 22.f}, kSurface);
+            ui.drawRect({x, y + 22.f, hierW, 1.f}, kBorder);
+            ui.drawText(x + 8.f, y + 4.f, "HIERARCHY", kTextSecondary);
+
+            float ey = y + 28.f;
+            for (int i = 0; i < kEntityCount; ++i) {
+                if (ey + 22.f > y + h - 2.f) break;
+                bool sel = (m_sceneSelectedEntity == i);
+                Rect rowR{x + 2.f, ey, hierW - 4.f, 20.f};
+                bool hov = rowR.contains(mouse.x, mouse.y);
+                uint32_t bg = sel ? kAccentDark
+                            : (hov ? m_wsTheme.hoverHighlight : kCardBg);
+                ui.drawRect(rowR, bg);
+                // Left accent stripe
+                ui.drawRect({x + 2.f, ey, 2.f, 20.f},
+                             sel ? kAccentBlue : 0x404040FF);
+                ui.drawText(x + 10.f, ey + 3.f, kEntities[i],
+                             sel ? kTextPrimary : kTextSecondary);
+                if (m_ctx.hitRegion(rowR, false))
+                    toggleSelection(m_sceneSelectedEntity, i);
+                ey += 22.f;
+            }
+
+            // ── VIEWPORT ─────────────────────────────────────────
             ui.drawRect({x + hierW, y, viewW, h}, 0x1A1A1AFF);
             ui.drawRectOutline({x + hierW, y, viewW, h}, kBorder, 1.f);
             ui.drawRect({x + hierW, y, viewW, 22.f}, kSurface);
             ui.drawRect({x + hierW, y + 22.f, viewW, 1.f}, kBorder);
             ui.drawText(x + hierW + 8.f, y + 4.f, "VIEWPORT", kTextSecondary);
-            // Grid lines
             for (float gx = x + hierW; gx < x + hierW + viewW; gx += 38.f)
                 ui.drawRect({gx, y + 22.f, 1.f, h - 22.f}, 0x2D2D2DFF);
             for (float gy = y + 22.f; gy < y + h; gy += 38.f)
@@ -782,31 +838,115 @@ private:
                         "[ 3D Scene ]", kTextMuted);
             if (!contentHint.empty())
                 ui.drawText(x + hierW + 8.f, y + h - 18.f, contentHint, kTextMuted);
-            drawPanel(x + hierW + viewW, y, inspW, h, "INSPECTOR", "(properties)");
+
+            // ── INSPECTOR panel ───────────────────────────────────
+            float ipx = x + hierW + viewW;
+            ui.drawRect({ipx, y, inspW, h}, kCardBg);
+            ui.drawRectOutline({ipx, y, inspW, h}, kBorder, 1.f);
+            ui.drawRect({ipx, y, inspW, 22.f}, kSurface);
+            ui.drawRect({ipx, y + 22.f, inspW, 1.f}, kBorder);
+            ui.drawText(ipx + 8.f, y + 4.f, "INSPECTOR", kTextSecondary);
+
+            if (m_sceneSelectedEntity >= 0 && m_sceneSelectedEntity < kEntityCount) {
+                float iy2 = y + 28.f;
+                // Entity name heading
+                ui.drawText(ipx + 8.f, iy2, kEntities[m_sceneSelectedEntity], kTextPrimary);
+                iy2 += 20.f;
+                // Transform section header
+                ui.drawRect({ipx + 4.f, iy2, inspW - 8.f, 18.f}, 0x303030FF);
+                ui.drawText(ipx + 8.f, iy2 + 2.f, "Transform", kTextSecondary);
+                iy2 += 20.f;
+                // Property rows
+                auto drawProp = [&](const char* label, const char* val) {
+                    if (iy2 + 16.f > y + h - 2.f) return;
+                    ui.drawText(ipx + 8.f,  iy2, label, kTextMuted);
+                    ui.drawText(ipx + 58.f, iy2, val,   kTextSecondary);
+                    ui.drawRect({ipx + 4.f, iy2 + 14.f, inspW - 8.f, 1.f}, 0x2A2A2AFF);
+                    iy2 += 16.f;
+                };
+                drawProp("Pos X", "0.0");
+                drawProp("Pos Y", "0.0");
+                drawProp("Pos Z", "0.0");
+                drawProp("Rot X", "0.0");
+                drawProp("Rot Y", "0.0");
+                drawProp("Rot Z", "0.0");
+                drawProp("Scl X", "1.0");
+                drawProp("Scl Y", "1.0");
+                drawProp("Scl Z", "1.0");
+            } else {
+                float hx = ipx + (inspW - static_cast<float>(std::strlen("(properties)")) * 8.f) * 0.5f;
+                float hy = y + 22.f + (h - 22.f - 14.f) * 0.5f;
+                ui.drawText(hx, hy, "(properties)", kTextMuted);
+            }
+
+            m_ctx.end();
             break;
         }
 
         case HostedToolCategory::AssetAuthoring: {
             // Content Browser | Inspector
+            static const char* kAssetTypes[] = {"Mesh","Texture","Material","Script","Prefab","Audio"};
+            static constexpr int kAssetCount = 6;
+
             float cbW   = w * 0.65f;
             float inspW = w - cbW;
+
+            m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
+            // ── CONTENT BROWSER ───────────────────────────────────
             ui.drawRect({x, y, cbW, h}, kCardBg);
             ui.drawRectOutline({x, y, cbW, h}, kBorder, 1.f);
             ui.drawRect({x, y, cbW, 22.f}, kSurface);
             ui.drawRect({x, y + 22.f, cbW, 1.f}, kBorder);
             ui.drawText(x + 8.f, y + 4.f, "CONTENT BROWSER", kTextSecondary);
-            // Asset tile placeholders
-            static const char* kTypes[] = {"Mesh","Texture","Material","Script","Prefab","Audio"};
+
             float ax = x + 8.f, ay = y + 30.f;
-            for (int i = 0; i < 6 && ax + 62.f < x + cbW - 4.f; ++i) {
-                ui.drawRect({ax, ay, 60.f, 58.f}, 0x333333FF);
-                ui.drawRectOutline({ax, ay, 60.f, 58.f}, kBorder, 1.f);
-                ui.drawText(ax + 6.f, ay + 22.f, kTypes[i], kTextMuted);
+            for (int i = 0; i < kAssetCount && ax + 62.f < x + cbW - 4.f; ++i) {
+                bool sel = (m_assetSelectedItem == i);
+                Rect tileR{ax, ay, 60.f, 58.f};
+                bool hov = tileR.contains(mouse.x, mouse.y);
+                ui.drawRect(tileR, sel ? kAccentDark : (hov ? m_wsTheme.hoverHighlight : 0x333333FF));
+                ui.drawRectOutline(tileR, sel ? kAccentBlue : kBorder, 1.f);
+                ui.drawText(ax + 6.f, ay + 22.f, kAssetTypes[i], kTextMuted);
+                if (m_ctx.hitRegion(tileR, false))
+                    toggleSelection(m_assetSelectedItem, i);
                 ax += 68.f;
             }
             if (!contentHint.empty())
                 ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
-            drawPanel(x + cbW, y, inspW, h, "INSPECTOR", "(asset preview)");
+
+            // ── INSPECTOR ─────────────────────────────────────────
+            float ipx = x + cbW;
+            ui.drawRect({ipx, y, inspW, h}, kCardBg);
+            ui.drawRectOutline({ipx, y, inspW, h}, kBorder, 1.f);
+            ui.drawRect({ipx, y, inspW, 22.f}, kSurface);
+            ui.drawRect({ipx, y + 22.f, inspW, 1.f}, kBorder);
+            ui.drawText(ipx + 8.f, y + 4.f, "INSPECTOR", kTextSecondary);
+
+            if (m_assetSelectedItem >= 0 && m_assetSelectedItem < kAssetCount) {
+                float iy2 = y + 28.f;
+                ui.drawText(ipx + 8.f, iy2, kAssetTypes[m_assetSelectedItem], kTextPrimary);
+                iy2 += 20.f;
+                ui.drawRect({ipx + 4.f, iy2, inspW - 8.f, 18.f}, 0x303030FF);
+                ui.drawText(ipx + 8.f, iy2 + 2.f, "Asset Info", kTextSecondary);
+                iy2 += 20.f;
+                auto drawProp = [&](const char* label, const char* val) {
+                    if (iy2 + 16.f > y + h - 2.f) return;
+                    ui.drawText(ipx + 8.f,  iy2, label, kTextMuted);
+                    ui.drawText(ipx + 58.f, iy2, val,   kTextSecondary);
+                    ui.drawRect({ipx + 4.f, iy2 + 14.f, inspW - 8.f, 1.f}, 0x2A2A2AFF);
+                    iy2 += 16.f;
+                };
+                drawProp("Type",   kAssetTypes[m_assetSelectedItem]);
+                drawProp("Path",   "Content/");
+                drawProp("Size",   "—");
+            } else {
+                float hx = ipx + (inspW - static_cast<float>(std::strlen("(asset preview)")) * 8.f) * 0.5f;
+                float hy = y + 22.f + (h - 22.f - 14.f) * 0.5f;
+                ui.drawText(hx, hy, "(asset preview)", kTextMuted);
+            }
+
+            m_ctx.end();
             break;
         }
 
@@ -823,8 +963,17 @@ private:
 
         case HostedToolCategory::DataEditing: {
             // Data Table | Inspector
+            static const char* kRowIds[]    = {"001", "002", "003", "004", "005"};
+            static const char* kRowNames[]  = {"PlayerStats", "EnemyConfig", "ItemTable", "QuestData", "SkillTree"};
+            static const char* kRowValues[] = {"{ hp=100 }",  "{ hp=50 }",   "{ count=12 }","{ id=1 }",  "{ pts=0 }" };
+            static constexpr int kRowCount  = 5;
+
             float tableW = w * 0.70f;
             float inspW  = w - tableW;
+
+            m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
+            // ── DATA TABLE ────────────────────────────────────────
             ui.drawRect({x, y, tableW, h}, kCardBg);
             ui.drawRectOutline({x, y, tableW, h}, kBorder, 1.f);
             ui.drawRect({x, y, tableW, 22.f}, kSurface);
@@ -836,37 +985,104 @@ private:
             ui.drawText(x + 80.f,  y + 27.f, "Name",  kTextSecondary);
             ui.drawText(x + 200.f, y + 27.f, "Value", kTextSecondary);
             ui.drawRect({x, y + 44.f, tableW, 1.f}, kBorder);
+            // Data rows
+            float ry2 = y + 46.f;
+            for (int i = 0; i < kRowCount; ++i) {
+                if (ry2 + 20.f > y + h - 2.f) break;
+                bool sel = (m_dataSelectedRow == i);
+                Rect rowR{x + 2.f, ry2, tableW - 4.f, 20.f};
+                bool hov = rowR.contains(mouse.x, mouse.y);
+                uint32_t bg = sel ? kAccentDark : (hov ? m_wsTheme.hoverHighlight : kCardBg);
+                ui.drawRect(rowR, bg);
+                ui.drawRect({x + 2.f, ry2, 2.f, 20.f}, sel ? kAccentBlue : 0x404040FF);
+                ui.drawText(x + 8.f,   ry2 + 3.f, kRowIds[i],    sel ? kTextPrimary : kTextSecondary);
+                ui.drawText(x + 80.f,  ry2 + 3.f, kRowNames[i],  sel ? kTextPrimary : kTextSecondary);
+                ui.drawText(x + 200.f, ry2 + 3.f, kRowValues[i], kTextMuted);
+                if (m_ctx.hitRegion(rowR, false))
+                    toggleSelection(m_dataSelectedRow, i);
+                ry2 += 22.f;
+            }
             if (!contentHint.empty())
                 ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
-            drawPanel(x + tableW, y, inspW, h, "INSPECTOR", "(row details)");
+
+            // ── INSPECTOR ─────────────────────────────────────────
+            float ipx = x + tableW;
+            ui.drawRect({ipx, y, inspW, h}, kCardBg);
+            ui.drawRectOutline({ipx, y, inspW, h}, kBorder, 1.f);
+            ui.drawRect({ipx, y, inspW, 22.f}, kSurface);
+            ui.drawRect({ipx, y + 22.f, inspW, 1.f}, kBorder);
+            ui.drawText(ipx + 8.f, y + 4.f, "INSPECTOR", kTextSecondary);
+
+            if (m_dataSelectedRow >= 0 && m_dataSelectedRow < kRowCount) {
+                float iy2 = y + 28.f;
+                ui.drawText(ipx + 8.f, iy2, kRowNames[m_dataSelectedRow], kTextPrimary);
+                iy2 += 20.f;
+                ui.drawRect({ipx + 4.f, iy2, inspW - 8.f, 18.f}, 0x303030FF);
+                ui.drawText(ipx + 8.f, iy2 + 2.f, "Row Details", kTextSecondary);
+                iy2 += 20.f;
+                auto drawProp = [&](const char* label, const char* val) {
+                    if (iy2 + 16.f > y + h - 2.f) return;
+                    ui.drawText(ipx + 8.f,  iy2, label, kTextMuted);
+                    ui.drawText(ipx + 58.f, iy2, val,   kTextSecondary);
+                    ui.drawRect({ipx + 4.f, iy2 + 14.f, inspW - 8.f, 1.f}, 0x2A2A2AFF);
+                    iy2 += 16.f;
+                };
+                drawProp("ID",    kRowIds[m_dataSelectedRow]);
+                drawProp("Name",  kRowNames[m_dataSelectedRow]);
+                drawProp("Value", kRowValues[m_dataSelectedRow]);
+            } else {
+                float hx = ipx + (inspW - static_cast<float>(std::strlen("(row details)")) * 8.f) * 0.5f;
+                float hy = y + 22.f + (h - 22.f - 14.f) * 0.5f;
+                ui.drawText(hx, hy, "(row details)", kTextMuted);
+            }
+
+            m_ctx.end();
             break;
         }
 
         case HostedToolCategory::LogicAuthoring: {
-            // Full-width node graph canvas
+            // Full-width node graph canvas with selectable node stubs
+            struct NodeStub { const char* label; float rx; float ry; };
+            static const NodeStub kNodes[] = {
+                {"On Start",     0.12f, 0.30f},
+                {"Branch",       0.27f, 0.23f},
+                {"Set Variable", 0.44f, 0.16f},
+                {"Spawn Entity", 0.44f, 0.47f},
+            };
+            static constexpr int kNodeCount = 4;
+
             ui.drawRect({x, y, w, h}, 0x1C1C1CFF);
             ui.drawRectOutline({x, y, w, h}, kBorder, 1.f);
             ui.drawRect({x, y, w, 22.f}, kSurface);
             ui.drawRect({x, y + 22.f, w, 1.f}, kBorder);
             ui.drawText(x + 8.f, y + 4.f, "VISUAL LOGIC GRAPH", kTextSecondary);
-            // Node placeholders
-            auto drawNode = [&](float nx, float ny, const char* lbl) {
-                ui.drawRect({nx, ny, 100.f, 44.f}, kCardBg);
-                ui.drawRectOutline({nx, ny, 100.f, 44.f}, kBorder, 1.f);
-                ui.drawRect({nx, ny, 100.f, 20.f}, kAccentDark);
-                ui.drawText(nx + 6.f, ny + 4.f, lbl, kTextPrimary);
+
+            m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+
+            for (int i = 0; i < kNodeCount; ++i) {
+                float nx = x + w * kNodes[i].rx;
+                float ny = y + h * kNodes[i].ry;
+                bool sel = (m_logicSelectedNode == i);
+                Rect nodeR{nx, ny, 100.f, 44.f};
+                bool hov = nodeR.contains(mouse.x, mouse.y);
+                ui.drawRect(nodeR, sel ? 0x2A3A5AFF : (hov ? m_wsTheme.hoverHighlight : kCardBg));
+                ui.drawRectOutline(nodeR, sel ? kAccentBlue : kBorder, 1.f);
+                ui.drawRect({nx, ny, 100.f, 20.f}, sel ? kAccentBlue : kAccentDark);
+                ui.drawText(nx + 6.f, ny + 4.f, kNodes[i].label, kTextPrimary);
+                // Input/output pins
                 ui.drawRect({nx - 5.f,  ny + 28.f, 8.f, 8.f}, kAccentBlue);
                 ui.drawRect({nx + 97.f, ny + 28.f, 8.f, 8.f}, kAccentBlue);
-            };
-            float nx = x + w * 0.12f, ny = y + h * 0.30f;
-            drawNode(nx,         ny,       "On Start");
-            drawNode(nx + 160.f, ny - 28.f, "Branch");
-            drawNode(nx + 320.f, ny - 56.f, "Set Variable");
-            drawNode(nx + 320.f, ny + 22.f, "Spawn Entity");
+                if (m_ctx.hitRegion(nodeR, false))
+                    toggleSelection(m_logicSelectedNode, i);
+            }
+
+            m_ctx.end();
+
             // Connecting wires
-            ui.drawRect({nx + 105.f, ny + 32.f,       55.f, 1.f}, kTextMuted);
-            ui.drawRect({nx + 265.f, ny + 6.f,         55.f, 1.f}, kTextMuted);
-            ui.drawRect({nx + 265.f, ny + 50.f,        55.f, 1.f}, kTextMuted);
+            float nx0 = x + w * 0.12f, ny0 = y + h * 0.30f;
+            ui.drawRect({nx0 + 105.f, ny0 + 32.f,  55.f, 1.f}, kTextMuted);
+            ui.drawRect({nx0 + 265.f, ny0 + 6.f,   55.f, 1.f}, kTextMuted);
+            ui.drawRect({nx0 + 265.f, ny0 + 50.f,  55.f, 1.f}, kTextMuted);
             if (!contentHint.empty())
                 ui.drawText(x + 8.f, y + h - 18.f, contentHint, kTextMuted);
             break;
@@ -1051,7 +1267,15 @@ private:
 
     // Dropdown menu data — one entry per menu label (File/Project/Tools/View/Help).
     std::array<DropMenu, 5> m_dropMenus;
-    int m_openMenuIdx = -1;  // index of the currently open dropdown, -1 = none
+    int  m_openMenuIdx      = -1;    // index of the currently open dropdown, -1 = none
+    bool m_menuDismissed    = false; // true for the frame after a dropdown was closed,
+                                     // so the dismissal click cannot also hit underlying elements
+
+    // Per-tool panel selection state (index into the stub item list, -1 = none selected).
+    int m_sceneSelectedEntity = -1;
+    int m_assetSelectedItem   = -1;
+    int m_dataSelectedRow     = -1;
+    int m_logicSelectedNode   = -1;
 
     // Fallback project path for project-scoped apps when no project is loaded.
     static constexpr const char* kStubProjectPath = "stub.atlas";
