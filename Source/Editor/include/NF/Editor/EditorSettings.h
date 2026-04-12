@@ -13,6 +13,8 @@
 #include <map>
 #include <deque>
 #include <unordered_map>
+#include "NF/Editor/EditorCamera.h"
+#include "NF/Editor/ProjectServices.h"
 
 namespace NF {
 

@@ -13,6 +13,7 @@
 #include <map>
 #include <deque>
 #include <unordered_map>
+#include "NF/Editor/ToolWindowManager.h"
 #include "NF/Editor/EditorPanel.h"
 
 namespace NF {
