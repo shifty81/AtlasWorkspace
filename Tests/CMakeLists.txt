@@ -179,6 +179,14 @@ add_executable(NF_UIBackendTests
 target_link_libraries(NF_UIBackendTests PRIVATE NF::UI NF::Core Catch2::Catch2)
 catch_discover_tests(NF_UIBackendTests)
 
+# Phase D.5 — D3D11 Backend Activation
+add_executable(NF_PhaseD5Tests
+    UI/test_phase_d5_d3d11_activation.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_PhaseD5Tests PRIVATE NF::UI NF::Core Catch2::Catch2)
+catch_discover_tests(NF_PhaseD5Tests)
+
 # Workspace wiring tests (DrawListDispatcher, InputBridge, new widgets)
 add_executable(NF_WorkspaceWiringTests
     UI/test_workspace_wiring.cpp
@@ -1056,3 +1064,33 @@ if(TARGET NF::NovaForgeAdapter)
     )
     catch_discover_tests(NF_PhaseETests)
 endif()
+
+# Phase E Completion — E.3 ProcGenRuleEditorPanel + E.4 event-driven PCG tag wiring
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseECompletionTests
+        Workspace/test_phase_e_completion.cpp
+        catch_main.cpp
+    )
+    target_include_directories(NF_PhaseECompletionTests PRIVATE
+        ${CMAKE_SOURCE_DIR}/NovaForge/Source/EditorAdapter/include
+    )
+    target_link_libraries(NF_PhaseECompletionTests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseECompletionTests)
+endif()
+
+# Phase F — Play-In-Editor (PIE)
+#   F.1: PIEService lifecycle (enter/exit/pause/resume/step/reset) + diagnostics + perf counters
+#   F.2: PIEInputRouter — editor↔game input mode switch + escape handling
+#   F.3: PIEExternalLaunch — build→launch pipeline + stdout routing
+add_executable(NF_PhaseFTests
+    Workspace/test_phase_f.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_PhaseFTests PRIVATE
+    NF::Editor NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_PhaseFTests)

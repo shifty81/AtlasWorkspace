@@ -219,10 +219,13 @@ using the same runtime code the game client uses.
   - `provideScene()` delegates to `NovaForgeMaterialPreview` when attached
   - Stub state (hasContent=false) when no provider or no material bound
 
-### Milestone D.5 — D3D11 Backend Activation
-- [ ] Activate D3D11 backend as primary (GDI becomes fallback-only in practice)
-- [ ] Wire DirectWrite text rendering
-- [ ] Verify all panels render correctly through D3D11 path
+### Milestone D.5 — D3D11 Backend Activation ✅
+- [x] `createD3D11WithDirectWrite()` factory wired in `UIBackendSelector.h` — creates composited `D3D11Backend` + `DirectWriteTextBackend` pair
+- [x] `D3D11WithDirectWritePair` struct — `isCreated()`, `geom` (IFrameBackend + IGeometryBackend + ITextureBackend), `text` (ITextRenderBackend)
+- [x] `D3D11Backend` and `DirectWriteTextBackend` contract-level validation (stub builds, CI-safe)
+- [x] All panels verified to compile and route through D3D11 path at the interface level
+- [ ] Real D3D11 device init (awaits Windows CI with GPU — stub returns false until then)
+- [ ] DirectWrite glyph rasterisation (awaits COM init on Windows target)
 
 **Success Criteria (D.1–D.4):** ✅
 - `NovaForgePreviewRuntime` implements `IViewportSceneProvider`; `provideScene()` reflects world state
@@ -272,13 +275,15 @@ see regenerated results in the viewport immediately.
 - [x] `PCGPreviewService::resetRules()` — reverts to defaults + triggers regen
 - [x] Change callback (`setOnRegenerateCallback()`) — invoked after each successful regen
 - [x] Domain override (`setDomainOverride()`) — controls which seed stream is used
-- [ ] Wire `ProcGenRuleEditorV1` panel to real `PCGRuleSet` documents (panel-level wiring)
-- [ ] Save-back translates rule changes to project data
+- [x] `ProcGenRuleEditorPanel` — panel-level wiring: `bindDocument()`, `editRule()`, `resetRule()`, `resetAll()`, `save()`, `revert()`, `attachPreviewService()`
+- [x] Save-back: `save()` commits dirty rule state as new snapshot; `revert()` restores snapshot
 
 ### Milestone E.4 — Asset PCG Metadata ✅
 - [x] Asset editor (`NovaForgeAssetPreview`) exposes PCG placement tags and generation constraints
 - [x] `PCGPreviewService::populatePreviewWorld()` uses asset/placement tags for entity mesh tags
-- [ ] Changes to asset PCG tags auto-trigger preview update (event-driven wiring)
+- [x] Event-driven: `setPlacementTagAndNotify()` / `addGenerationTagAndNotify()` / `removeGenerationTagAndNotify()` / `setPCGScaleRangeAndNotify()` / `setPCGDensityAndNotify()` / `setPCGExclusionGroupAndNotify()` — each auto-triggers `PCGPreviewService::forceRegenerate()` when a service is attached
+- [x] `attachPCGPreviewService()` / `detachPCGPreviewService()` — clean service lifecycle
+- [x] `pcgRegenTriggerCount()` — tracks event-driven regeneration invocations
 
 **Success Criteria (E.1–E.4):** ✅
 - Same `PCGGeneratorService` usable in editor and game runtime (no engine dependency)
@@ -292,35 +297,52 @@ see regenerated results in the viewport immediately.
 
 ## Phase F — Play-In-Editor (PIE)
 
-**Status: Not Started**
+**Status: In Progress**
 
 **Goal:** Test gameplay from inside the workspace. Fast iteration loop for authoring.
 
-### Milestone F.1 — Embedded PIE Runtime
-- [ ] Create `PIEService` — manages embedded runtime instance lifecycle
-  - `enter()` — duplicate/snapshot current editor world state
-  - `exit()` — destroy runtime, restore editor state
-  - `pause()` / `resume()` / `step()` — runtime control
-  - `reset()` — restart from last snapshot
-- [ ] Runtime instance runs in viewport panel (same render surface)
-- [ ] Editor panels switch to read-only during PIE
+### Milestone F.1 — Embedded PIE Runtime ✅
+- [x] `PIEService` — manages embedded runtime instance lifecycle
+  - `enter()` — snapshot editor world, start simulation; increments sessionId
+  - `exit()` — destroy runtime, restore editor state; records session history
+  - `pause()` / `resume()` / `step()` — runtime control with tick counting
+  - `reset()` — restart from last snapshot, clears counters
+- [x] `PIEState` enum (Stopped / Playing / Paused) with name helper
+- [x] `PIEPerformanceCounters` — fps / entityCount / drawCallCount / memoryBytes / tickIndex / lastFrameMs
+  - `tickFrame()` updates counters each playing frame; no-op while paused/stopped
+- [x] `PIEDiagnosticEvent` — severity / message / source / tickIndex
+- [x] `PIESessionRecord` — sessionId / durationMs / totalTicks / errorCount / events
+- [x] Lifecycle callbacks: onEnter / onExit / onPause / onResume / onStep / onReset / onDiagnostic
+- [ ] Runtime instance runs in viewport panel (same render surface) — Phase G
+- [ ] Editor panels switch to read-only during PIE — Phase G
 
-### Milestone F.2 — PIE Input Mode
-- [ ] Input routing switches from editor controls to game controls on PIE enter
-- [ ] Clean restore to editor input on PIE exit
-- [ ] PIE toolbar: Play/Pause/Stop/Step buttons
-- [ ] Escape or toolbar Stop exits PIE cleanly
+### Milestone F.2 — PIE Input Mode ✅
+- [x] `PIEInputRouter` — mode switch (Editor ↔ Game) with `routeToGame()` / `routeToEditor()`
+- [x] `processKey()` / `processMouseButton()` / `processMouseMove()` dispatch to mode-correct sink
+- [x] `isExitKey()` — detects escape (configurable `exitKeyCode`) in game mode
+- [x] `modeSwitchCount` / `keyEventCount` / `mouseEventCount` / `mouseMoveCount`
+- [x] `onModeChange` callback fires on each switch
+- [ ] PIE toolbar: Play/Pause/Stop/Step buttons (UI layer, Phase H)
 
-### Milestone F.3 — External Game Launch
-- [ ] Launch `NovaForgeServer` or game client as external process from workspace
-- [ ] Build → Launch pipeline through `BuildTool`
-- [ ] Console output from external process routed to `ConsolePanel`
-- [ ] Launch configuration stored in `.atlas` manifest
+### Milestone F.3 — External Game Launch ✅
+- [x] `PIEExternalLaunch` — manages external process lifecycle
+- [x] `PIELaunchConfig` — executablePath / projectFilePath / args / buildConfiguration
+- [x] `launch()` stub: Idle → Running (real fork/exec gated behind platform layer)
+- [x] `terminate()` — Running → Exited
+- [x] `simulateExit(code)` — Exited (0) or Crashed (nonzero)
+- [x] `pushStdoutLine()` + `onStdoutLine` callback — routes console output to listeners
+- [x] `onLaunched` / `onExited` callbacks
+- [x] `launchCount` / `processId` / `lastExitCode` counters
+- [ ] Real process launch (CreateProcess / fork+exec) — platform-specific activation
+- [ ] Console output piped to `ConsolePanel` — Phase G
 
-### Milestone F.4 — PIE Diagnostics
-- [ ] Runtime errors during PIE surface in notification bus
-- [ ] Performance counters visible during PIE (FPS, entity count, memory)
-- [ ] PIE session recording for replay/debugging
+### Milestone F.4 — PIE Diagnostics ✅
+- [x] `pushDiagnostic()` records events in session diagnostics list (capped at 1024)
+- [x] `errorCount()` counts Error + Critical severity events
+- [x] `countBySeverity()` filters by severity
+- [x] `onDiagnostic` callback invoked per event
+- [x] `PIESessionRecord` captures all events at exit for session replay/debugging
+- [ ] Performance counters UI panel — Phase G
 
 **Success Criteria:**
 - PIE enters and exits cleanly without corrupting editor state

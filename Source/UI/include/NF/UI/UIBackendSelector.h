@@ -12,7 +12,9 @@
 //   if (!backend) { /* null = headless mode */ }
 //
 // Composited backend creation (primary path):
-//   auto [geom, text] = NF::createD3D11WithDirectWrite(hwnd, width, height);
+//   auto pair = NF::createD3D11WithDirectWrite(width, height);
+//   // pair.geom is the D3D11Backend (IFrameBackend + IGeometryBackend + ITextureBackend)
+//   // pair.text is the DirectWriteTextBackend (ITextRenderBackend)
 //
 // Backend type query:
 //   NF::UIBackendType preferred = NF::UIBackendType::D3D11;
@@ -20,6 +22,8 @@
 
 #include "NF/UI/UIBackend.h"
 #include "NF/UI/IUIBackendInterfaces.h"
+#include "NF/UI/D3D11Backend.h"
+#include "NF/UI/DirectWriteTextBackend.h"
 #include <memory>
 #include <string>
 
@@ -145,6 +149,48 @@ inline BackendCapabilities queryCapabilities(UIBackendType t) {
         return { false, false, false, false, false };
     }
 }
+
+
+#ifdef _WIN32
+
+// ── D3D11WithDirectWritePair ──────────────────────────────────────
+// Composited primary backend pair: D3D11 geometry + DirectWrite text.
+// Both objects share ownership and should be kept alive together.
+//
+// The D3D11Backend's text delegate is set to the DirectWriteTextBackend
+// automatically by createD3D11WithDirectWrite().
+//
+// Usage (happy path):
+//   auto pair = NF::createD3D11WithDirectWrite(1280, 720);
+//   if (pair.geom && pair.geom->init(1280, 720)) { /* render loop */ }
+
+struct D3D11WithDirectWritePair {
+    std::unique_ptr<D3D11Backend>           geom; ///< Geometry + frame backend
+    std::unique_ptr<DirectWriteTextBackend> text; ///< Text rendering backend
+
+    /// Returns true if both backends were successfully created (not necessarily
+    /// initialised — call geom->init() to complete device initialisation).
+    [[nodiscard]] bool isCreated() const { return geom && text; }
+};
+
+/// Create a composited D3D11 + DirectWrite backend pair.
+///
+/// This is the primary creation path for Atlas Workspace on Windows.
+///
+/// Caller must invoke pair.geom->init(width, height) before rendering.
+/// On a stub build (no real D3D11), init() returns false and logging
+/// records the deferred-init warning — the pair is still usable as a
+/// contract-level stub for testing.
+inline D3D11WithDirectWritePair createD3D11WithDirectWrite(int width, int height)
+{
+    (void)width; (void)height;
+    auto geom = std::make_unique<D3D11Backend>();
+    auto text = std::make_unique<DirectWriteTextBackend>();
+    geom->setTextBackend(text.get());
+    return { std::move(geom), std::move(text) };
+}
+
+#endif // _WIN32
 
 } // namespace NF
 
