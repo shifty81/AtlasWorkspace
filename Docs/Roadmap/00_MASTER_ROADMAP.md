@@ -1701,3 +1701,90 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - BreadcrumbManager.navigate() branches correctly after back+navigate ✓
 - 40 test cases pass (107 assertions) ✓
 - Total test suite: 3473 tests passing ✓
+
+---
+
+## Phase 55 – Workspace Favorites System
+
+**Status: Done**
+
+- [x] Create `WorkspaceFavorites.h` — workspace-wide favorites/bookmarks system
+  - [x] FavoriteItemKind enum (Asset/Tool/Scene/File/Panel/Custom) with `favoriteItemKindName()` helper
+  - [x] FavoriteItem — id + label + kind + path + iconKey + addedMs; `isValid()` (id + label); equality by id
+  - [x] FavoriteFolder — named folder of favorites (MAX_ITEMS=128); `addItem`/`removeItem`/`findItem`/`containsItem`/`moveItem`; `clear()`; `isValid()` (id + name)
+  - [x] FavoritesManager — folder registry (MAX_FOLDERS=32); `addFolder`/`removeFolder`/`findFolder`/`hasFolder`; `addItem`/`removeItem` shortcuts; `globalFavorites()` (merge all, dedup by id, sorted newest-first, capped at MAX_GLOBAL=64); observer callbacks (MAX_OBSERVERS=16); `serialize()`/`deserialize()` pipe-delimited with `\P` escape; `clear()`
+- [x] Add `Tests/Workspace/test_phase55_favorites.cpp` — 40 test cases / 80 assertions:
+  - [x] FavoriteItemKind (1 test): all 6 name helpers
+  - [x] FavoriteItem (3 tests): default invalid, valid, equality by id
+  - [x] FavoriteFolder (12 tests): default empty, valid, invalid, addItem, invalid/duplicate rejected, removeItem/unknown, findItem, moveItem/unknown/invalid index, clear
+  - [x] FavoritesManager (16 tests): default empty, addFolder/invalid/duplicate, removeFolder/unknown, addItem/unknown folder, removeItem/unknown, globalFavorites merge+sort+dedup, observer add/remove, clearObservers, serialize empty/round-trip/pipe escape, deserialize empty, clear
+  - [x] Integration (2 tests): multi-folder workflow with global view, serialize/deserialize preserves structure
+- [x] Wire `NF_Phase55Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- FavoriteFolder.addItem() rejects invalid and duplicate items ✓
+- FavoriteFolder.moveItem() reorders items within the folder ✓
+- FavoritesManager.globalFavorites() merges, deduplicates, and sorts newest-first ✓
+- Serialize/deserialize round-trip is lossless with pipe escaping ✓
+- Observer fires on addItem (true) and removeItem (false) ✓
+- 40 test cases pass (80 assertions) ✓
+- Total test suite: ~3513 tests passing ✓
+
+---
+
+## Phase 56 – Workspace Task Queue
+
+**Status: Done**
+
+- [x] Create `WorkspaceTaskQueue.h` — background task management with priority and progress
+  - [x] TaskPriority enum (Low/Normal/High/Critical) with `taskPriorityName()` helper
+  - [x] TaskState enum (Pending/Running/Completed/Failed/Cancelled) with `taskStateName()` helper
+  - [x] TaskResult — succeeded/errorMessage/durationMs; `ok()`/`fail()` factories
+  - [x] TaskDescriptor — id + label + priority + category + handler(setProgress→bool); `isValid()` (id + label + handler)
+  - [x] TaskEntry — descriptor + state + progress(0-100) + result; `start()`/`complete()`/`fail()`/`cancel()`/`setProgress()`; `isTerminal()`
+  - [x] TaskQueue — `enqueue`/`cancel`/`tick` (priority-sorted dispatch, MAX_CONCURRENT=4); `findEntry`/`hasEntry`/`countByState`/`countByPriority`; `pendingTasks()`/`completedTasks()`/`failedTasks()` views; `clearCompleted()`; observer callbacks (MAX_OBSERVERS=16); MAX_ENTRIES=256
+- [x] Add `Tests/Workspace/test_phase56_task_queue.cpp` — 36 test cases / 81 assertions:
+  - [x] TaskPriority/TaskState (2 tests): all name helpers
+  - [x] TaskResult (2 tests): ok/fail factories
+  - [x] TaskDescriptor (3 tests): valid, no id, no handler
+  - [x] TaskEntry (9 tests): initial state, start→complete, start→fail, cancel pending/running, cannot cancel completed, cannot start twice, setProgress clamps, setProgress ignored when not running
+  - [x] TaskQueue (14 tests): default empty, enqueue/invalid/duplicate, cancel/unknown, tick dispatches, priority ordering, handler failure, handler progress, countByState/Priority, pendingTasks, clearCompleted, observer tick/cancel, clearObservers, clear
+  - [x] Integration (2 tests): enqueue-tick-cancel workflow, observer tracks lifecycle
+- [x] Wire `NF_Phase56Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- TaskEntry lifecycle state machine: Pending→Running→Completed/Failed/Cancelled ✓
+- TaskQueue.tick() dispatches highest priority first ✓
+- TaskQueue.cancel() works on pending and running tasks ✓
+- clearCompleted() removes all terminal entries ✓
+- Observer notified on tick completion and cancel ✓
+- 36 test cases pass (81 assertions) ✓
+- Total test suite: ~3549 tests passing ✓
+
+---
+
+## Phase 57 – Workspace Snippet Library
+
+**Status: Done**
+
+- [x] Create `WorkspaceSnippetLibrary.h` — reusable code/content snippet storage
+  - [x] SnippetLanguage enum (None/Cpp/HLSL/GLSL/Python/Lua/JSON/XML/Custom) with `snippetLanguageName()` helper
+  - [x] SnippetEntry — id + title + body + language + tags(MAX_TAGS=16) + description + createdMs + modifiedMs; `addTag`/`removeTag`/`hasTag`; `isValid()` (id + title); equality by id
+  - [x] SnippetFolder — named folder (MAX_SNIPPETS=256); `addSnippet`/`removeSnippet`/`findSnippet`/`findSnippetMut`/`containsSnippet`; `isValid()` (id + name)
+  - [x] SnippetLibrary — folder registry (MAX_FOLDERS=32); `addFolder`/`removeFolder`/`findFolder`/`hasFolder`; `addSnippet`/`removeSnippet` shortcuts; `searchByTag`/`searchByLanguage`/`searchByText` (case-insensitive); `totalSnippets()`; observer callbacks (MAX_OBSERVERS=16); `serialize()`/`deserialize()` with multiline body support and pipe/newline escaping; `clear()`
+- [x] Add `Tests/Workspace/test_phase57_snippet_library.cpp` — 44 test cases / 95 assertions:
+  - [x] SnippetLanguage (1 test): all 9 name helpers
+  - [x] SnippetEntry (6 tests): default invalid, valid, no title, equality, addTag/duplicate/empty, removeTag/unknown
+  - [x] SnippetFolder (10 tests): default empty, valid, invalid, addSnippet/invalid/duplicate, removeSnippet/unknown, findSnippet, findSnippetMut, clear
+  - [x] SnippetLibrary (17 tests): default empty, addFolder/invalid/duplicate, removeFolder/unknown, addSnippet/unknown folder, removeSnippet/unknown, searchByTag, searchByLanguage, searchByText/case-insensitive/empty, observer add/remove, clearObservers, serialize empty/round-trip/multiline/pipe, deserialize empty, clear
+  - [x] Integration (2 tests): multi-folder search, serialize/deserialize preserves tags and multiline body
+- [x] Wire `NF_Phase57Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- SnippetEntry supports tagging with add/remove/has ✓
+- SnippetFolder.findSnippetMut() allows in-place mutation ✓
+- SnippetLibrary.searchByText() is case-insensitive across title, body, description ✓
+- Serialize/deserialize handles multiline bodies and pipe characters ✓
+- Observer fires on addSnippet and removeSnippet ✓
+- 44 test cases pass (95 assertions) ✓
+- Total test suite: ~3593 tests passing ✓
