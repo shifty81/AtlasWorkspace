@@ -14,8 +14,29 @@
 
 namespace NF {
 
-// Forward declarations
-class IEditorPanel;
+// ── IEditorPanel ────────────────────────────────────────────────
+// Base interface for all project-specific editor panels.
+// Panels are created by factory functions stored in
+// GameplaySystemPanelDescriptor::createPanel and cached by ProjectSystemsTool.
+
+class IEditorPanel {
+public:
+    virtual ~IEditorPanel() = default;
+
+    // Panel identity
+    [[nodiscard]] virtual const std::string& panelId()    const = 0;
+    [[nodiscard]] virtual const std::string& panelTitle() const = 0;
+
+    // Lifecycle hooks — called when the host project is loaded/unloaded.
+    virtual void onProjectLoaded(const std::string& /*projectRoot*/) {}
+    virtual void onProjectUnloaded() {}
+
+    // Called once per frame when the panel is visible and active.
+    virtual void update(float /*dt*/) {}
+
+    // Status — override to expose panel-specific health or state.
+    [[nodiscard]] virtual bool isReady() const { return true; }
+};
 
 // ── Panel descriptor ────────────────────────────────────────────
 // Describes a project-specific panel that should be hosted inside

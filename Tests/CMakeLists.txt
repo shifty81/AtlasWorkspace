@@ -935,3 +935,18 @@ target_link_libraries(NF_Phase69Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase69Tests)
+
+# Phase 70 — NovaForge Panel Factories (Audit Patch 6)
+#   IEditorPanel interface, 6 NovaForge gameplay panel classes,
+#   createPanel factories in NovaForgeAdapter, ProjectSystemsTool live caching.
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_Phase70Tests
+        Workspace/test_phase70_novaforge_panel_factories.cpp
+        catch_main.cpp
+    )
+    target_link_libraries(NF_Phase70Tests PRIVATE
+        NF::NovaForgeAdapter NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_Phase70Tests)
+endif()

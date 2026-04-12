@@ -2096,3 +2096,85 @@ interactive but functionally a read-only display.
 - `WorkspaceInputBridge::sync()` forwards textInput including special chars ✓
 - All existing UI tests still pass (NF_UITests: 459 assertions, NF_WorkspaceWiringTests: 102 assertions) ✓
 - 21 Phase 68 test cases pass (25 assertions) ✓
+
+---
+
+## Phase 69 – Tool Render Contract (Audit Patch 5)
+
+**Status: Done**
+
+Implements the tool render contract fixes identified in the audit backlog.
+Before this phase, `WorkspaceRenderer::renderActiveToolView()` called a single
+central `renderToolPanelsForCategory()` function that used static placeholder
+text for all tools, disconnected from each tool's live runtime state.
+
+- [x] Add `Source/Workspace/include/NF/Workspace/ToolViewRenderContext.h`:
+  - `ToolViewRenderContext` struct: `ui`, `mouse`, `x/y/w/h`, `shell` pointer
+  - Shared color palette constants (RRGGBBAA: kCardBg, kSurface, kBorder, kAccentBlue, kGreen, kRed, kTextPrimary, kTextSecond, kTextMuted)
+  - Helper methods: `drawPanel()`, `drawStatusPill()`, `drawStatRow()`
+- [x] Add `virtual void renderToolView(const ToolViewRenderContext&) const {}` to `IHostedTool`
+  — forward-declare `ToolViewRenderContext` to avoid circular include via WorkspaceShell
+- [x] Implement `renderToolView()` in all 8 core tools (declaration in .h, impl in .cpp):
+  - **SceneEditorTool**: Hierarchy (20%) | 3D Viewport (58%) | Inspector (22%) — shows entity/selection counts, edit mode pill, dirty flag
+  - **AssetEditorTool**: Content Browser (55%) | Preview (25%) | Inspector (20%) — shows asset counts, filter mode pill
+  - **MaterialEditorTool**: Material Graph (35%) | Viewport Preview (40%) | Properties (25%) — shows node/texture slot counts
+  - **AnimationEditorTool**: Skeleton/Clips (20%) | Timeline (55%) | Clip Properties (25%) — shows mode, play/rec state, frame count
+  - **DataEditorTool**: Tables (25%) | Data Grid (50%) | Inspector (25%) — shows row/col/selection counts
+  - **VisualLogicEditorTool**: Node List (20%) | Graph Canvas (60%) | Properties (20%) — shows node/connection counts, error/compile state
+  - **BuildTool**: Build Config (25%) | Build Log (55%) | Metrics (20%) — shows mode, errors/warnings, last build time
+  - **AtlasAITool**: Session (20%) | Chat/Codex (60%) | Context (20%) — shows message/snippet counts, processing state
+- [x] Update `WorkspaceRenderer::renderActiveToolView()` to delegate to `tool->renderToolView(ctx)`
+- [x] Add `Tests/Editor/test_phase69_tool_render_contract.cpp` — 23 test cases / 47 assertions
+- [x] Wire `NF_Phase69Tests` into `Tests/CMakeLists.txt`
+
+**Success Criteria:**
+- `ToolViewRenderContext` color palette constants have correct RRGGBBAA values ✓
+- Default `IHostedTool::renderToolView()` no-op emits zero quads ✓
+- All 8 core tool `renderToolView()` overrides emit >0 quads and text ✓
+- `renderToolView()` is const — does not mutate tool state ✓
+- Narrow bounding boxes (50x50) handled without crash ✓
+- All 2492 NF_EditorTests assertions still pass ✓
+- 23 Phase 69 test cases pass (47 assertions) ✓
+
+---
+
+## Phase 70 – NovaForge Panel Factories (Audit Patch 6)
+
+**Status: Done**
+
+Implements live NovaForge gameplay panel factories identified in the audit backlog.
+Before this phase, `GameplaySystemPanelDescriptor::createPanel` was always null in
+`NovaForgeAdapter::buildPanelDescriptors()`, meaning `ProjectSystemsTool` could never
+instantiate panels on demand.
+
+- [x] Define `class IEditorPanel` fully in `IGameProjectAdapter.h`:
+  — `panelId()`, `panelTitle()`, `onProjectLoaded()`, `onProjectUnloaded()`, `update()`, `isReady()`
+- [x] Create 6 NovaForge gameplay panel classes in `NovaForge/Source/EditorAdapter/include/NovaForge/EditorAdapter/Panels/`:
+  - `EconomyPanel` (`novaforge.economy`) — currency, pricing, economy balance
+  - `InventoryRulesPanel` (`novaforge.inventory_rules`) — slot layouts, storage, stacking
+  - `ShopPanel` (`novaforge.shop`) — store listings, purchase conditions
+  - `MissionRulesPanel` (`novaforge.mission_rules`) — quest objectives, chains, rewards
+  - `ProgressionPanel` (`novaforge.progression`) — XP curves, level thresholds, skill unlocks
+  - `CharacterRulesPanel` (`novaforge.character_rules`) — creation presets, classes, stat caps
+- [x] Wire `createPanel` factory lambdas into all 6 `GameplaySystemPanelDescriptor`s in `NovaForgeAdapter::buildPanelDescriptors()`
+- [x] Update `ProjectSystemsTool.h` with live panel caching:
+  - `getOrCreatePanel(id)` — lazy instantiation via descriptor factory, cached in `m_livePanels`
+  - `findLivePanel(id)` — const lookup of cached instance
+  - `livePanelCount()` — count of currently-cached panels
+  - `notifyProjectLoaded(root)` / `notifyProjectUnloaded()` — propagate lifecycle to all live panels
+  - `reset()` — destroy all cached panels and clear descriptors
+  - `loadFromAdapter()` now clears cached panels when switching projects
+- [x] Add `Tests/Workspace/test_phase70_novaforge_panel_factories.cpp` — 30 test cases / 119 assertions
+- [x] Wire `NF_Phase70Tests` (guarded by `if(TARGET NF::NovaForgeAdapter)`) into `Tests/CMakeLists.txt`
+
+**Success Criteria:**
+- All 6 NovaForge panel classes implement `IEditorPanel` correctly ✓
+- Panel `isReady()` = false before `onProjectLoaded()`, true after, false after `onProjectUnloaded()` ✓
+- All 6 descriptor `createPanel` factories produce valid, non-null `IEditorPanel` instances ✓
+- Factory-produced instance `panelId()` matches the descriptor's `id` ✓
+- `ProjectSystemsTool::getOrCreatePanel()` returns same instance on repeated calls ✓
+- `ProjectSystemsTool::notifyProjectLoaded/Unloaded()` propagates to all live panels ✓
+- `ProjectSystemsTool::reset()` destroys all cached panels ✓
+- `loadFromAdapter()` discards cached panels from previous adapter ✓
+- All 2492 NF_EditorTests assertions still pass ✓
+- 30 Phase 70 test cases pass (119 assertions) ✓
