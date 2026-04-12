@@ -355,19 +355,40 @@ see regenerated results in the viewport immediately.
 
 ## Phase G — Full Tool Wiring
 
-**Status: Not Started**
+**Status: In Progress**
 
 **Goal:** All core hosted tools become functional for real development work.
 
+### Milestone G.0 — Workspace Ownership Normalization ✅
+- [x] `WorkspaceProjectState` — missing spine between WorkspaceShell and per-document authoring units
+  - Active loaded project identity, adapter reference, load contract snapshot
+  - Open document registry (OpenDocumentEntry): open, close, has, find, count
+  - Active document context (setActiveDocument / activeDocumentId)
+  - Aggregate dirty tracking (hasUnsavedChanges, dirtyDocumentCount)
+  - Project-wide save/revert coordination (saveAll / revertAll)
+  - Panel binding context (setActivePanelContext)
+  - Change listener chain (addChangeListener / clearChangeListeners)
+- [x] WorkspaceShell owns `WorkspaceProjectState`; loadProject/unloadProject notify it
+- [x] WorkspaceShell exposes `projectState()` accessor
+- [x] Ownership guardrail comments added to: WorkspaceShell.h, IGameProjectAdapter.h
+- [x] ProjectSurfaceV1.h demoted to light browser surface (scope guardrail comment added)
+- [x] Deprecated forwarding headers (WorkspaceShell, IGameProjectAdapter, SelectionService, UndoRedoSystem, EditorUndoSystem) hardened with `#pragma message` build-time warnings
+- [x] 57 new tests in test_workspace_project_state.cpp, all green
+
 ### Milestone G.1 — Scene Editor
-- [ ] World/level document model with entity hierarchy
-- [ ] Entity create/delete/duplicate
-- [ ] Transform editing via gizmo and inspector
-- [ ] Component add/remove/edit
-- [ ] Scene save/load
+- [x] `SceneDocument.h` — world/level document model with entity hierarchy
+- [x] Entity create/delete/duplicate (createEntity/destroyEntity/duplicateEntity)
+- [x] Transform editing (setEntityTransform / entityTransform)
+- [x] Component add/remove/edit (addComponent/removeComponent/setComponentProperty)
+- [x] Scene save/load (save/load/serialize)
 
 ### Milestone G.2 — Asset Editor
-- [ ] Asset document model with metadata editing
+- [x] `AssetDocument.h` — asset document model with metadata editing
+- [x] LOD variant management (addLOD/removeLOD/findLOD/setLODScreenPercent)
+- [x] Variant management (addVariant/removeVariant/findVariant)
+- [x] Dependency table (addDependency/removeDependency)
+- [x] Reimport settings (AssetImportSettings, setSourcePath)
+- [x] Save/load/serialize contract
 - [ ] 3D preview with editable transform/material/attachment
 - [ ] LOD/variant metadata editing
 - [ ] Import/reimport pipeline integration
