@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+namespace NF { struct ToolViewRenderContext; } // forward — defined in ToolViewRenderContext.h
+
 namespace NF {
 
 // ── Hosted Tool Category ──────────────────────────────────────────
@@ -127,6 +129,13 @@ public:
     // Called by the InputRouter / workspace shell when focus changes so that
     // tools can update cursor, highlight, or mode display.  Default is a no-op.
     virtual void onInputFocusChanged(bool /*focused*/) {}
+
+    // ── Render contract ───────────────────────────────────────────
+    // Called by WorkspaceRenderer::renderActiveToolView() each paint frame when
+    // this tool is the active tool.  The tool is responsible for drawing its
+    // own panel layout (hierarchy, viewport, inspector, log, etc.) into the
+    // content area described by ctx.  The default no-op keeps non-UI tools valid.
+    virtual void renderToolView(const ToolViewRenderContext& /*ctx*/) const {}
 };
 
 } // namespace NF

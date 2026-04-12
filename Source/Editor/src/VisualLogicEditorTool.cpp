@@ -4,6 +4,8 @@
 // Manages visual scripting / blueprint graph authoring within AtlasWorkspace.
 
 #include "NF/Editor/VisualLogicEditorTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
+#include <cstdio>
 
 namespace NF {
 
@@ -102,6 +104,48 @@ void VisualLogicEditorTool::setCompiling(bool compiling) {
 
 void VisualLogicEditorTool::setErrorCount(uint32_t count) {
     m_stats.errorCount = count;
+}
+
+void VisualLogicEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
+    // Three-column layout: Node List (20%) | Graph Canvas (60%) | Properties (20%)
+    const float nodesW  = ctx.w * 0.20f;
+    const float graphW  = ctx.w * 0.60f;
+    const float propW   = ctx.w - nodesW - graphW;
+
+    // ── Node List panel ───────────────────────────────────────────
+    ctx.drawPanel(ctx.x, ctx.y, nodesW, ctx.h, "Nodes");
+    {
+        char nodeBuf[32];
+        std::snprintf(nodeBuf, sizeof(nodeBuf), "%u nodes", m_stats.nodeCount);
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, nodeBuf, ctx.kTextSecond);
+        char connBuf[32];
+        std::snprintf(connBuf, sizeof(connBuf), "%u connections", m_stats.connectionCount);
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 48.f, connBuf, ctx.kTextSecond);
+    }
+
+    // ── Graph Canvas panel ────────────────────────────────────────
+    ctx.drawPanel(ctx.x + nodesW, ctx.y, graphW, ctx.h, "Graph");
+    // Mode pill + compile status
+    ctx.drawStatusPill(ctx.x + nodesW + 8.f, ctx.y + 30.f,
+                       visualLogicModeName(m_editMode), ctx.kAccentBlue);
+    if (m_stats.isCompiling) {
+        ctx.drawStatusPill(ctx.x + nodesW + 70.f, ctx.y + 30.f, "Compiling...", ctx.kAccentBlue);
+    } else if (m_stats.errorCount > 0) {
+        char errBuf[24];
+        std::snprintf(errBuf, sizeof(errBuf), "%u errors", m_stats.errorCount);
+        ctx.drawStatusPill(ctx.x + nodesW + 70.f, ctx.y + 30.f, errBuf, ctx.kRed);
+    } else {
+        ctx.drawStatusPill(ctx.x + nodesW + 70.f, ctx.y + 30.f, "OK", ctx.kGreen);
+    }
+    if (m_stats.isDirty) {
+        ctx.ui.drawText(ctx.x + nodesW + 8.f, ctx.y + ctx.h - 20.f,
+                        "* unsaved", ctx.kRed);
+    }
+
+    // ── Properties panel ──────────────────────────────────────────
+    ctx.drawPanel(ctx.x + nodesW + graphW, ctx.y, propW, ctx.h, "Properties");
+    ctx.ui.drawText(ctx.x + nodesW + graphW + 8.f, ctx.y + 30.f,
+                    "Node Parameters", ctx.kTextSecond);
 }
 
 } // namespace NF

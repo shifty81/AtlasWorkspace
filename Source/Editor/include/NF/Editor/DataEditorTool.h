@@ -13,6 +13,7 @@
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
 #include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
 #include <string>
 
 namespace NF {
@@ -85,6 +86,10 @@ public:
 
     [[nodiscard]] const std::string& openTablePath() const { return m_openTablePath; }
     void                             setOpenTablePath(const std::string& path);
+
+    // ── Render contract ───────────────────────────────────────────
+    // Renders: Tables | Data Grid | Inspector — three-column layout.
+    void renderToolView(const ToolViewRenderContext& ctx) const override;
 
 private:
     HostedToolDescriptor m_descriptor;

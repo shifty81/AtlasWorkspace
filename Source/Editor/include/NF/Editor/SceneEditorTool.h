@@ -14,6 +14,7 @@
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
 #include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
 #include "NF/Workspace/IViewportSceneProvider.h"
 #include "NF/Workspace/ViewportHostContract.h"
 #include "NF/Workspace/WorkspaceViewportManager.h"
@@ -110,6 +111,11 @@ public:
 
     // Scene entity count (updated each frame from scene runtime)
     void setEntityCount(uint32_t count);
+
+    // ── Render contract ───────────────────────────────────────────
+    // Renders: Hierarchy | 3D Viewport | Inspector — three-column layout.
+    // Status bar row shows mode, dirty flag, entity/selection counts.
+    void renderToolView(const ToolViewRenderContext& ctx) const override;
 
 private:
     HostedToolDescriptor     m_descriptor;

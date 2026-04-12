@@ -5,6 +5,8 @@
 // lifecycle-managed tool registered with WorkspaceShell via ToolRegistry.
 
 #include "NF/Editor/SceneEditorTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
+#include <cstdio>
 
 namespace NF {
 
@@ -166,6 +168,70 @@ void SceneEditorTool::setSelectionCount(uint32_t count) {
 
 void SceneEditorTool::setEntityCount(uint32_t count) {
     m_stats.entityCount = count;
+}
+
+void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
+    // Three-column layout: Hierarchy (20%) | 3D Viewport (58%) | Inspector (22%)
+    const float hierW = ctx.w * 0.20f;
+    const float inspW = ctx.w * 0.22f;
+    const float viewW = ctx.w - hierW - inspW;
+
+    // ── Hierarchy panel ──────────────────────────────────────────
+    ctx.drawPanel(ctx.x, ctx.y, hierW, ctx.h, "Hierarchy");
+    // Entity count row
+    {
+        char entBuf[32];
+        std::snprintf(entBuf, sizeof(entBuf), "%u entities", m_stats.entityCount);
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, entBuf, ctx.kTextSecond);
+        // Simple static entity list (reflects scene state)
+        static const char* kEntityNames[] = {
+            "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
+        };
+        float ey = ctx.y + 48.f;
+        uint32_t limit = m_stats.entityCount < 5u ? m_stats.entityCount : 5u;
+        for (uint32_t i = 0; i < limit; ++i) {
+            ctx.ui.drawText(ctx.x + 16.f, ey, kEntityNames[i], ctx.kTextPrimary);
+            ey += 18.f;
+        }
+    }
+
+    // ── 3D Viewport panel ────────────────────────────────────────
+    const char* viewHint = m_stats.isDirty ? "3D Viewport  [unsaved]" : "3D Viewport";
+    ctx.drawPanel(ctx.x + hierW, ctx.y, viewW, ctx.h, viewHint);
+    // Mode pill
+    ctx.drawStatusPill(ctx.x + hierW + 8.f, ctx.y + 30.f,
+                       sceneEditModeName(m_editMode), ctx.kAccentBlue);
+    // Dirty indicator
+    if (m_stats.isDirty) {
+        ctx.ui.drawText(ctx.x + hierW + 8.f, ctx.y + ctx.h - 20.f,
+                        "* unsaved changes", ctx.kRed);
+    }
+    // Frame time
+    {
+        char ftBuf[32];
+        std::snprintf(ftBuf, sizeof(ftBuf), "%.1f ms", m_stats.lastFrameMs);
+        ctx.ui.drawText(ctx.x + hierW + viewW - 60.f, ctx.y + ctx.h - 20.f,
+                        ftBuf, ctx.kTextMuted);
+    }
+
+    // ── Inspector panel ───────────────────────────────────────────
+    ctx.drawPanel(ctx.x + hierW + viewW, ctx.y, inspW, ctx.h, "Inspector");
+    {
+        char selBuf[32];
+        std::snprintf(selBuf, sizeof(selBuf), "%u selected", m_stats.selectionCount);
+        ctx.ui.drawText(ctx.x + hierW + viewW + 8.f, ctx.y + 30.f,
+                        selBuf, ctx.kTextSecond);
+        if (m_stats.selectionCount == 0) {
+            ctx.ui.drawText(ctx.x + hierW + viewW + 8.f, ctx.y + 50.f,
+                            "Nothing selected", ctx.kTextMuted);
+        } else {
+            ctx.ui.drawText(ctx.x + hierW + viewW + 8.f, ctx.y + 50.f,
+                            "Transform", ctx.kTextPrimary);
+            ctx.drawStatRow(ctx.x + hierW + viewW + 8.f, ctx.y + 70.f, "Pos:", "0, 0, 0");
+            ctx.drawStatRow(ctx.x + hierW + viewW + 8.f, ctx.y + 88.f, "Rot:", "0, 0, 0");
+            ctx.drawStatRow(ctx.x + hierW + viewW + 8.f, ctx.y + 106.f, "Scale:", "1, 1, 1");
+        }
+    }
 }
 
 } // namespace NF

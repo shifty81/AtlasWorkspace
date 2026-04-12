@@ -8,6 +8,12 @@
 // See Docs/Canon/06_WORKSPACE_VS_PROJECT_BOUNDARY.md
 
 #include "NF/Workspace/IGameProjectAdapter.h"
+#include "NovaForge/EditorAdapter/Panels/EconomyPanel.h"
+#include "NovaForge/EditorAdapter/Panels/InventoryRulesPanel.h"
+#include "NovaForge/EditorAdapter/Panels/ShopPanel.h"
+#include "NovaForge/EditorAdapter/Panels/MissionRulesPanel.h"
+#include "NovaForge/EditorAdapter/Panels/ProgressionPanel.h"
+#include "NovaForge/EditorAdapter/Panels/CharacterRulesPanel.h"
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -79,6 +85,9 @@ private:
             d.projectId = "novaforge";
             d.defaultVisible = true;
             d.enabled = true;
+            d.createPanel = []() -> std::unique_ptr<NF::IEditorPanel> {
+                return std::make_unique<EconomyPanel>();
+            };
             panels.push_back(std::move(d));
         }
 
@@ -92,6 +101,9 @@ private:
             d.projectId = "novaforge";
             d.defaultVisible = true;
             d.enabled = true;
+            d.createPanel = []() -> std::unique_ptr<NF::IEditorPanel> {
+                return std::make_unique<InventoryRulesPanel>();
+            };
             panels.push_back(std::move(d));
         }
 
@@ -105,6 +117,9 @@ private:
             d.projectId = "novaforge";
             d.defaultVisible = false;
             d.enabled = true;
+            d.createPanel = []() -> std::unique_ptr<NF::IEditorPanel> {
+                return std::make_unique<ShopPanel>();
+            };
             panels.push_back(std::move(d));
         }
 
@@ -118,6 +133,9 @@ private:
             d.projectId = "novaforge";
             d.defaultVisible = true;
             d.enabled = true;
+            d.createPanel = []() -> std::unique_ptr<NF::IEditorPanel> {
+                return std::make_unique<MissionRulesPanel>();
+            };
             panels.push_back(std::move(d));
         }
 
@@ -131,6 +149,9 @@ private:
             d.projectId = "novaforge";
             d.defaultVisible = true;
             d.enabled = true;
+            d.createPanel = []() -> std::unique_ptr<NF::IEditorPanel> {
+                return std::make_unique<ProgressionPanel>();
+            };
             panels.push_back(std::move(d));
         }
 
@@ -144,6 +165,9 @@ private:
             d.projectId = "novaforge";
             d.defaultVisible = false;
             d.enabled = true;
+            d.createPanel = []() -> std::unique_ptr<NF::IEditorPanel> {
+                return std::make_unique<CharacterRulesPanel>();
+            };
             panels.push_back(std::move(d));
         }
 

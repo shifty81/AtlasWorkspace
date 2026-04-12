@@ -44,6 +44,7 @@
 #include "NF/Workspace/WorkspaceShell.h"
 #include "NF/Workspace/WorkspaceActivityBar.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
 #include <array>
 #include <cctype>
 #include <cstring>
@@ -741,7 +742,14 @@ private:
         ui.drawText(backR.x + 8.f, backR.y + 4.f, "< Dashboard", kTextSecondary);
 
         // ── Per-tool panel layout ──────────────────────────────────
-        renderToolPanelsForCategory(ui, x, y + kHeaderH, w, kMainH, shell, desc, mouse);
+        // Delegate to the tool's own render contract (Patch 5).
+        // The tool renders its own panel layout backed by live runtime state.
+        {
+            ToolViewRenderContext toolCtx{ui, mouse,
+                                          x, y + kHeaderH, w, kMainH,
+                                          &shell};
+            tool->renderToolView(toolCtx);
+        }
 
         // ── Bottom strip: Console + Metrics ───────────────────────
         renderBottomStrip(ui, x, y + kHeaderH + kMainH, w, kBottomH, shell);

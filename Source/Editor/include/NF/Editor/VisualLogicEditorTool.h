@@ -13,6 +13,7 @@
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
 #include "NF/Editor/IHostedTool.h"
+#include "NF/Workspace/ToolViewRenderContext.h"
 #include <string>
 
 namespace NF {
@@ -87,6 +88,10 @@ public:
     void setConnectionCount(uint32_t count);
     void setCompiling(bool compiling);
     void setErrorCount(uint32_t count);
+
+    // ── Render contract ───────────────────────────────────────────
+    // Renders: Node List | Graph Canvas | Properties — three-column layout.
+    void renderToolView(const ToolViewRenderContext& ctx) const override;
 
 private:
     HostedToolDescriptor    m_descriptor;

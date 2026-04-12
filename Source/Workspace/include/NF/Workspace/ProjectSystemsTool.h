@@ -7,6 +7,8 @@
 //
 // The workspace asks the loaded project adapter for panel descriptors,
 // and this tool hosts them as tabs/sub-panels within a unified surface.
+// Panel instances are created lazily via the descriptor's createPanel factory
+// and cached for the lifetime of the loaded project.
 //
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for consolidation plan.
 // See Docs/Canon/06_WORKSPACE_VS_PROJECT_BOUNDARY.md for boundary rules.
@@ -15,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 namespace NF {
 
@@ -41,8 +44,10 @@ namespace HostToolId {
 
 class ProjectSystemsTool {
 public:
+    // ── Descriptor management ─────────────────────────────────────
     void loadFromAdapter(const IGameProjectAdapter& adapter) {
         m_panels = adapter.panelDescriptors();
+        m_livePanels.clear(); // discard any previously-instantiated panels
     }
 
     const std::vector<GameplaySystemPanelDescriptor>& panels() const {
@@ -58,6 +63,57 @@ public:
         return nullptr;
     }
 
+    // ── Live panel access ─────────────────────────────────────────
+    // Returns the live IEditorPanel instance for the given panelId, creating
+    // it on first access via the descriptor's createPanel factory.
+    // Returns nullptr if the panel is not registered or has no factory.
+    IEditorPanel* getOrCreatePanel(const std::string& panelId) {
+        // Return cached instance if available.
+        auto it = m_livePanels.find(panelId);
+        if (it != m_livePanels.end()) return it->second.get();
+
+        // Find the descriptor and invoke the factory.
+        const GameplaySystemPanelDescriptor* desc = findPanel(panelId);
+        if (!desc || !desc->createPanel) return nullptr;
+
+        auto panel = desc->createPanel();
+        if (!panel) return nullptr;
+
+        IEditorPanel* raw = panel.get();
+        m_livePanels.emplace(panelId, std::move(panel));
+        return raw;
+    }
+
+    // Const version — returns nullptr if not yet instantiated.
+    [[nodiscard]] const IEditorPanel* findLivePanel(const std::string& panelId) const {
+        auto it = m_livePanels.find(panelId);
+        return (it != m_livePanels.end()) ? it->second.get() : nullptr;
+    }
+
+    [[nodiscard]] size_t livePanelCount() const { return m_livePanels.size(); }
+
+    // ── Project lifecycle ─────────────────────────────────────────
+    // Notify all live panels when a project is loaded or unloaded.
+    void notifyProjectLoaded(const std::string& projectRoot) {
+        for (auto& [id, panel] : m_livePanels) {
+            if (panel) panel->onProjectLoaded(projectRoot);
+        }
+    }
+
+    void notifyProjectUnloaded() {
+        for (auto& [id, panel] : m_livePanels) {
+            if (panel) panel->onProjectUnloaded();
+        }
+    }
+
+    // ── Cleanup ───────────────────────────────────────────────────
+    // Destroy all live panels and clear descriptors.
+    void reset() {
+        m_livePanels.clear();
+        m_panels.clear();
+    }
+
+    // ── Filtering helpers ─────────────────────────────────────────
     // Filter panels by category
     std::vector<const GameplaySystemPanelDescriptor*> panelsByCategory(
         const std::string& category) const
@@ -84,6 +140,10 @@ public:
 
 private:
     std::vector<GameplaySystemPanelDescriptor> m_panels;
+
+    // Live panel instances keyed by panel ID.
+    // Created lazily on first getOrCreatePanel() call.
+    std::unordered_map<std::string, std::unique_ptr<IEditorPanel>> m_livePanels;
 };
 
 } // namespace NF
