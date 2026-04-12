@@ -45,6 +45,9 @@ struct IInputContext {
     [[nodiscard]] virtual bool primaryDown() const = 0;
     [[nodiscard]] virtual bool secondaryDown() const = 0;
     [[nodiscard]] virtual bool keyDown(int keyCode) const = 0;
+    // Characters typed this frame (from the platform WM_CHAR / key event path).
+    // '\b' represents Backspace, '\r' represents Enter/Return.
+    [[nodiscard]] virtual std::string_view typedText() const = 0;
     virtual void requestFocus(IWidget* widget) = 0;
     virtual void capturePointer(IWidget* widget) = 0;
     virtual void releasePointer(IWidget* widget) = 0;

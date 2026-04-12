@@ -910,3 +910,15 @@ target_link_libraries(NF_Phase67Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase67Tests)
+
+# Phase 68 — TextInput typed-text wiring (IInputContext::typedText, BasicInputContext,
+#            WorkspaceInputBridge, TextInput::handleInput)
+add_executable(NF_Phase68Tests
+    UI/test_phase68_text_input_wiring.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase68Tests PRIVATE
+    NF::Workspace NF::UI NF::Core NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase68Tests)

@@ -244,7 +244,7 @@ private:
             ConsoleCommand cmd(name, scope, ConsoleCmdArgType::None);
             cmd.setDescription(description);
             cmd.setEnabled(enabled);
-            m_commandBus.registerCommand(cmd, std::move(handler));
+            (void)m_commandBus.registerCommand(cmd, std::move(handler));
         };
 
         // Project commands

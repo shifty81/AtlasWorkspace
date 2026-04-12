@@ -41,15 +41,46 @@ void TextInput::paint(IPaintContext& context) {
 bool TextInput::handleInput(IInputContext& context) {
     if (!m_visible) return false;
     bool inside = rectContains(m_bounds, context.mousePosition());
-    if (inside && context.primaryDown()) {
-        m_focused = true;
-        context.requestFocus(this);
-        return true;
+
+    // Focus management: click inside to gain focus, click outside to lose it.
+    if (context.primaryDown()) {
+        if (inside) {
+            m_focused = true;
+            context.requestFocus(this);
+        } else {
+            m_focused = false;
+        }
     }
-    if (!inside && context.primaryDown()) {
-        m_focused = false;
-        return false;
+
+    // Process typed text only when focused.
+    if (m_focused) {
+        std::string_view typed = context.typedText();
+        if (!typed.empty()) {
+            bool changed = false;
+            for (char ch : typed) {
+                if (ch == '\b') {
+                    // Backspace: remove character before cursor.
+                    if (m_cursor > 0) {
+                        m_text.erase(m_cursor - 1, 1);
+                        --m_cursor;
+                        changed = true;
+                    }
+                } else if (ch == '\r' || ch == '\n') {
+                    // Enter: unfocus (single-line widget).
+                    m_focused = false;
+                } else if (static_cast<unsigned char>(ch) >= 0x20) {
+                    // Printable character: insert at cursor.
+                    m_text.insert(m_cursor, 1, ch);
+                    ++m_cursor;
+                    changed = true;
+                }
+            }
+            if (changed && m_onChange) {
+                m_onChange(m_text);
+            }
+        }
     }
+
     return inside;
 }
 
