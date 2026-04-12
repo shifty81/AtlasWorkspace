@@ -31,58 +31,113 @@ public:
     void registerBuiltins() {
         registerType({
             NovaForgeDocumentType::ItemDefinition, "Item Definition",
-            "Items", ".item.json", "Items",
+            "Items", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::ItemDefinition, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::StructureArchetype, "Structure Archetype",
-            "Structures", ".structure.json", "Structures",
+            "Structures", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::StructureArchetype, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::BiomeDefinition, "Biome Definition",
-            "Biomes", ".biome.json", "Biomes",
+            "Biomes", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::BiomeDefinition, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::PlanetArchetype, "Planet Archetype",
-            "Planets", ".planet.json", "Planets",
+            "Planets", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::PlanetArchetype, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::FactionDefinition, "Faction Definition",
-            "Factions", ".faction.json", "Factions",
+            "Factions", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::FactionDefinition, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::MissionDefinition, "Mission Definition",
-            "Missions", ".mission.json", "Missions",
+            "Missions", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::MissionDefinition, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::ProgressionRules, "Progression Rules",
-            "Progression", ".progression.json", "Progression",
+            "Rules", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::ProgressionRules, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::CharacterRules, "Character Rules",
-            "Characters", ".character.json", "Characters",
+            "Rules", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::CharacterRules, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::EconomyRules, "Economy Rules",
-            "Economy", ".economy.json", "Economy",
+            "Rules", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::EconomyRules, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::CraftingDefinition, "Crafting Definition",
-            "Crafting", ".crafting.json", "Crafting",
+            "Crafting", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::CraftingDefinition, std::move(fp)); }
         });
         registerType({
             NovaForgeDocumentType::PCGRuleset, "PCG Ruleset",
-            "PCG", ".pcg.json", "PCG",
+            "PCG/RuleSets", ".json", "",
             [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::PCGRuleset, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::WorldDocument, "World Document",
+            "Worlds", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::WorldDocument, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::LevelInstance, "Level Instance",
+            "Levels", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::LevelInstance, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::EntityTemplate, "Entity Template",
+            "Entities", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::EntityTemplate, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::AssetDocument, "Asset Document",
+            "Assets", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::AssetDocument, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::MaterialDocument, "Material Document",
+            "Materials", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::MaterialDocument, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::AnimationDocument, "Animation Document",
+            "Animations", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::AnimationDocument, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::EncounterTemplate, "Encounter Template",
+            "Encounters", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::EncounterTemplate, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::SpawnProfile, "Spawn Profile",
+            "Spawns", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::SpawnProfile, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::PCGContext, "PCG Context",
+            "PCG/Contexts", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::PCGContext, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::PCGPreset, "PCG Preset",
+            "PCG/Presets", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::PCGPreset, std::move(fp)); }
+        });
+        registerType({
+            NovaForgeDocumentType::VisualLogicGraph, "Visual Logic Graph",
+            "Graphs", ".json", "",
+            [](std::string fp) { return std::make_unique<NovaForgeDocument>(NovaForgeDocumentType::VisualLogicGraph, std::move(fp)); }
         });
     }
 

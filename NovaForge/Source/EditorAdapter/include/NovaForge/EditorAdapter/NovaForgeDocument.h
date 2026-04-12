@@ -21,6 +21,18 @@ enum class NovaForgeDocumentType : uint8_t {
     EconomyRules,
     CraftingDefinition,
     PCGRuleset,
+    // v2 additions (Storage Path and Schema Map v1)
+    WorldDocument,
+    LevelInstance,
+    EntityTemplate,
+    AssetDocument,
+    MaterialDocument,
+    AnimationDocument,
+    EncounterTemplate,
+    SpawnProfile,
+    PCGContext,
+    PCGPreset,
+    VisualLogicGraph,
 };
 
 inline const char* documentTypeName(NovaForgeDocumentType t) {
@@ -36,6 +48,17 @@ inline const char* documentTypeName(NovaForgeDocumentType t) {
     case NovaForgeDocumentType::EconomyRules:       return "EconomyRules";
     case NovaForgeDocumentType::CraftingDefinition: return "CraftingDefinition";
     case NovaForgeDocumentType::PCGRuleset:         return "PCGRuleset";
+    case NovaForgeDocumentType::WorldDocument:     return "WorldDocument";
+    case NovaForgeDocumentType::LevelInstance:     return "LevelInstance";
+    case NovaForgeDocumentType::EntityTemplate:    return "EntityTemplate";
+    case NovaForgeDocumentType::AssetDocument:     return "AssetDocument";
+    case NovaForgeDocumentType::MaterialDocument:  return "MaterialDocument";
+    case NovaForgeDocumentType::AnimationDocument: return "AnimationDocument";
+    case NovaForgeDocumentType::EncounterTemplate: return "EncounterTemplate";
+    case NovaForgeDocumentType::SpawnProfile:      return "SpawnProfile";
+    case NovaForgeDocumentType::PCGContext:        return "PCGContext";
+    case NovaForgeDocumentType::PCGPreset:         return "PCGPreset";
+    case NovaForgeDocumentType::VisualLogicGraph:  return "VisualLogicGraph";
     }
     return "Unknown";
 }

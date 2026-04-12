@@ -207,11 +207,11 @@ TEST_CASE("B.2 bootstrap: valid project with Content/ and Data/ succeeds", "[pha
     REQUIRE(contract.isValid());
 }
 
-TEST_CASE("B.2 bootstrap: missing Schema/ produces warning entry", "[phase_b][b2]") {
+TEST_CASE("B.2 bootstrap: missing Schemas/ produces warning entry", "[phase_b][b2]") {
     auto root = makeTempDir("b2_no_schema");
     fs::create_directories(root / "Content");
     fs::create_directories(root / "Data");
-    // No Schema/
+    // No Schemas/
 
     NF::ProjectLoadContract contract;
     NovaForge::NovaForgeProjectBootstrap bs(root.string());
@@ -219,7 +219,7 @@ TEST_CASE("B.2 bootstrap: missing Schema/ produces warning entry", "[phase_b][b2
 
     bool hasSchemaWarning = false;
     for (const auto& e : contract.validationEntries) {
-        if (e.code == "missing_schema_dir") hasSchemaWarning = true;
+        if (e.code == "missing_schemas_dir") hasSchemaWarning = true;
     }
     REQUIRE(hasSchemaWarning);
 }
@@ -267,13 +267,13 @@ TEST_CASE("B.2 bootstrap: adapter assetCatalog() is accessible", "[phase_b][b2]"
 // B.3 — NovaForgeDocument + NovaForgeDocumentRegistry
 // ─────────────────────────────────────────────────────────────────────────────
 
-TEST_CASE("B.3 registry: registerBuiltins produces 11 registrations", "[phase_b][b3]") {
+TEST_CASE("B.3 registry: registerBuiltins produces 22 registrations", "[phase_b][b3]") {
     NovaForge::NovaForgeDocumentRegistry reg;
     reg.registerBuiltins();
-    REQUIRE(reg.count() == 11u);
+    REQUIRE(reg.count() == 22u);
 }
 
-TEST_CASE("B.3 registry: find() works for all 11 types", "[phase_b][b3]") {
+TEST_CASE("B.3 registry: find() works for all 22 types", "[phase_b][b3]") {
     NovaForge::NovaForgeDocumentRegistry reg;
     reg.registerBuiltins();
 
@@ -282,7 +282,12 @@ TEST_CASE("B.3 registry: find() works for all 11 types", "[phase_b][b3]") {
         T::ItemDefinition, T::StructureArchetype, T::BiomeDefinition,
         T::PlanetArchetype, T::FactionDefinition, T::MissionDefinition,
         T::ProgressionRules, T::CharacterRules, T::EconomyRules,
-        T::CraftingDefinition, T::PCGRuleset
+        T::CraftingDefinition, T::PCGRuleset,
+        // v2 types
+        T::WorldDocument, T::LevelInstance, T::EntityTemplate,
+        T::AssetDocument, T::MaterialDocument, T::AnimationDocument,
+        T::EncounterTemplate, T::SpawnProfile, T::PCGContext,
+        T::PCGPreset, T::VisualLogicGraph
     };
     for (auto t : types) {
         REQUIRE(reg.find(t) != nullptr);
@@ -302,6 +307,17 @@ TEST_CASE("B.3 documentTypeName: returns correct strings", "[phase_b][b3]") {
     REQUIRE(std::string(NovaForge::documentTypeName(T::EconomyRules))       == "EconomyRules");
     REQUIRE(std::string(NovaForge::documentTypeName(T::CraftingDefinition)) == "CraftingDefinition");
     REQUIRE(std::string(NovaForge::documentTypeName(T::PCGRuleset))         == "PCGRuleset");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::WorldDocument))     == "WorldDocument");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::LevelInstance))     == "LevelInstance");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::EntityTemplate))    == "EntityTemplate");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::AssetDocument))     == "AssetDocument");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::MaterialDocument))  == "MaterialDocument");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::AnimationDocument)) == "AnimationDocument");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::EncounterTemplate)) == "EncounterTemplate");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::SpawnProfile))      == "SpawnProfile");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::PCGContext))        == "PCGContext");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::PCGPreset))         == "PCGPreset");
+    REQUIRE(std::string(NovaForge::documentTypeName(T::VisualLogicGraph))  == "VisualLogicGraph");
 }
 
 TEST_CASE("B.3 document: dirty tracking markDirty/clearDirty/isDirty", "[phase_b][b3]") {
@@ -346,11 +362,11 @@ TEST_CASE("B.3 registry: createDocument produces valid document", "[phase_b][b3]
     REQUIRE(doc->filePath() == "/items/sword.item.json");
 }
 
-TEST_CASE("B.3 registry: all() returns all 11 registrations", "[phase_b][b3]") {
+TEST_CASE("B.3 registry: all() returns all 22 registrations", "[phase_b][b3]") {
     NovaForge::NovaForgeDocumentRegistry reg;
     reg.registerBuiltins();
     auto all = reg.all();
-    REQUIRE(all.size() == 11u);
+    REQUIRE(all.size() == 22u);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -463,4 +479,218 @@ TEST_CASE("B.4 InspectorPanel setSelectedAsset stores the descriptor pointer", "
     panel.setSelectedAsset(&desc);
     REQUIRE(panel.selectedAsset() == &desc);
     REQUIRE(panel.selectedAsset()->sourcePath == "/path/to/asset.png");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Storage Map v1 — New manifest format + document registry paths
+// ─────────────────────────────────────────────────────────────────────────────
+
+TEST_CASE("SM v1: v2 atlas format with projectId loads successfully", "[phase_b][storage_map]") {
+    auto dir = makeTempDir("smv1_v2_format");
+    auto atlasPath = (dir / "project.atlas").string();
+    {
+        std::ofstream f(atlasPath);
+        f << "{\n"
+          << "  \"projectId\": \"novaforge\",\n"
+          << "  \"projectName\": \"NovaForge\",\n"
+          << "  \"projectType\": \"NovaForge\",\n"
+          << "  \"projectVersion\": 1,\n"
+          << "  \"roots\": {\n"
+          << "    \"content\": \"Content\",\n"
+          << "    \"data\": \"Data\",\n"
+          << "    \"config\": \"Config\",\n"
+          << "    \"schemas\": \"Schemas\",\n"
+          << "    \"generated\": \"Generated\",\n"
+          << "    \"cache\": \"Cache\"\n"
+          << "  },\n"
+          << "  \"registries\": {\n"
+          << "    \"asset\": \"Data/Registries/AssetRegistry.json\",\n"
+          << "    \"document\": \"Data/Registries/DocumentRegistry.json\",\n"
+          << "    \"schema\": \"Data/Registries/SchemaRegistry.json\",\n"
+          << "    \"pcg\": \"Data/Registries/PCGRegistry.json\",\n"
+          << "    \"build\": \"Data/Registries/BuildTargetRegistry.json\",\n"
+          << "    \"launch\": \"Data/Registries/LaunchTargetRegistry.json\"\n"
+          << "  },\n"
+          << "  \"startup\": {\n"
+          << "    \"layout\": \"novaforge_default\",\n"
+          << "    \"tool\": \"scene\",\n"
+          << "    \"world\": \"Data/Worlds/DefaultWorld.json\"\n"
+          << "  },\n"
+          << "  \"config\": {\n"
+          << "    \"projectSettings\": \"Config/WorkspaceProjectSettings.json\",\n"
+          << "    \"pieSettings\": \"Config/PIESettings.json\",\n"
+          << "    \"pcgPreviewDefaults\": \"Config/PCGPreviewDefaults.json\"\n"
+          << "  }\n"
+          << "}\n";
+    }
+    NF::AtlasProjectFileLoader loader;
+    bool ok = loader.loadFromFile(atlasPath);
+    REQUIRE(ok);
+    const auto& m = loader.manifest();
+    REQUIRE(m.projectId == "novaforge");
+    REQUIRE(m.name == "NovaForge");
+    REQUIRE(m.adapterId == "novaforge");
+    REQUIRE(m.projectVersion == 1);
+    REQUIRE(m.dataRoot == "Data");
+    REQUIRE(m.configRoot == "Config");
+    REQUIRE(m.schemasRoot == "Schemas");
+    REQUIRE(m.generatedRoot == "Generated");
+    REQUIRE(m.cacheRoot == "Cache");
+    REQUIRE(m.registryAsset == "Data/Registries/AssetRegistry.json");
+    REQUIRE(m.registryDocument == "Data/Registries/DocumentRegistry.json");
+    REQUIRE(m.registrySchema == "Data/Registries/SchemaRegistry.json");
+    REQUIRE(m.registryPCG == "Data/Registries/PCGRegistry.json");
+    REQUIRE(m.registryBuild == "Data/Registries/BuildTargetRegistry.json");
+    REQUIRE(m.registryLaunch == "Data/Registries/LaunchTargetRegistry.json");
+    REQUIRE(m.startupLayout == "novaforge_default");
+    REQUIRE(m.startupTool == "scene");
+    REQUIRE(m.startupWorld == "Data/Worlds/DefaultWorld.json");
+    REQUIRE(m.configProjectSettings == "Config/WorkspaceProjectSettings.json");
+    REQUIRE(m.configPIESettings == "Config/PIESettings.json");
+    REQUIRE(m.configPCGPreviewDefaults == "Config/PCGPreviewDefaults.json");
+}
+
+TEST_CASE("SM v1: v2 atlas format bootstrap() succeeds with no errors", "[phase_b][storage_map]") {
+    auto dir = makeTempDir("smv1_bootstrap");
+    auto atlasPath = (dir / "project.atlas").string();
+    {
+        std::ofstream f(atlasPath);
+        f << "{\n"
+          << "  \"projectId\": \"testproject\",\n"
+          << "  \"projectName\": \"Test Project\",\n"
+          << "  \"projectType\": \"TestAdapter\",\n"
+          << "  \"projectVersion\": 1,\n"
+          << "  \"roots\": { \"content\": \"Content\", \"data\": \"Data\" }\n"
+          << "}\n";
+    }
+    NF::AtlasProjectFileLoader loader;
+    auto result = loader.bootstrap(atlasPath, false);
+    REQUIRE(result.success);
+    REQUIRE_FALSE(result.hasErrors());
+    REQUIRE(result.manifest.projectId == "testproject");
+    REQUIRE(result.manifest.name == "Test Project");
+    REQUIRE(result.manifest.adapterId == "testadapter"); // projectType lowercased
+}
+
+TEST_CASE("SM v1: document registry Rules/ path for CharacterRules", "[phase_b][storage_map]") {
+    NovaForge::NovaForgeDocumentRegistry reg;
+    reg.registerBuiltins();
+    const auto* r = reg.find(NovaForge::NovaForgeDocumentType::CharacterRules);
+    REQUIRE(r != nullptr);
+    REQUIRE(r->dataSubdir == "Rules");
+}
+
+TEST_CASE("SM v1: document registry Rules/ path for EconomyRules", "[phase_b][storage_map]") {
+    NovaForge::NovaForgeDocumentRegistry reg;
+    reg.registerBuiltins();
+    const auto* r = reg.find(NovaForge::NovaForgeDocumentType::EconomyRules);
+    REQUIRE(r != nullptr);
+    REQUIRE(r->dataSubdir == "Rules");
+}
+
+TEST_CASE("SM v1: document registry Rules/ path for ProgressionRules", "[phase_b][storage_map]") {
+    NovaForge::NovaForgeDocumentRegistry reg;
+    reg.registerBuiltins();
+    const auto* r = reg.find(NovaForge::NovaForgeDocumentType::ProgressionRules);
+    REQUIRE(r != nullptr);
+    REQUIRE(r->dataSubdir == "Rules");
+}
+
+TEST_CASE("SM v1: document registry PCG/RuleSets path for PCGRuleset", "[phase_b][storage_map]") {
+    NovaForge::NovaForgeDocumentRegistry reg;
+    reg.registerBuiltins();
+    const auto* r = reg.find(NovaForge::NovaForgeDocumentType::PCGRuleset);
+    REQUIRE(r != nullptr);
+    REQUIRE(r->dataSubdir == "PCG/RuleSets");
+}
+
+TEST_CASE("SM v1: document registry Worlds/ path for WorldDocument", "[phase_b][storage_map]") {
+    NovaForge::NovaForgeDocumentRegistry reg;
+    reg.registerBuiltins();
+    const auto* r = reg.find(NovaForge::NovaForgeDocumentType::WorldDocument);
+    REQUIRE(r != nullptr);
+    REQUIRE(r->dataSubdir == "Worlds");
+}
+
+TEST_CASE("SM v1: document registry PCG/Contexts path for PCGContext", "[phase_b][storage_map]") {
+    NovaForge::NovaForgeDocumentRegistry reg;
+    reg.registerBuiltins();
+    const auto* r = reg.find(NovaForge::NovaForgeDocumentType::PCGContext);
+    REQUIRE(r != nullptr);
+    REQUIRE(r->dataSubdir == "PCG/Contexts");
+}
+
+TEST_CASE("SM v1: bootstrap validates Config/ directory", "[phase_b][storage_map]") {
+    auto root = makeTempDir("smv1_config_check");
+    fs::create_directories(root / "Content");
+    fs::create_directories(root / "Data");
+    // No Config/ — should produce warning
+
+    NF::ProjectLoadContract contract;
+    NovaForge::NovaForgeProjectBootstrap bs(root.string());
+    bs.run(contract);
+
+    bool hasConfigWarning = false;
+    for (const auto& e : contract.validationEntries) {
+        if (e.code == "missing_config_dir") hasConfigWarning = true;
+    }
+    REQUIRE(hasConfigWarning);
+}
+
+TEST_CASE("SM v1: bootstrap validates Schemas/ directory (plural)", "[phase_b][storage_map]") {
+    auto root = makeTempDir("smv1_schemas_check");
+    fs::create_directories(root / "Content");
+    fs::create_directories(root / "Data");
+    fs::create_directories(root / "Config");
+    // No Schemas/ — should produce warning
+
+    NF::ProjectLoadContract contract;
+    NovaForge::NovaForgeProjectBootstrap bs(root.string());
+    bs.run(contract);
+
+    bool hasSchemasWarning = false;
+    for (const auto& e : contract.validationEntries) {
+        if (e.code == "missing_schemas_dir") hasSchemasWarning = true;
+    }
+    REQUIRE(hasSchemasWarning);
+}
+
+TEST_CASE("SM v1: bootstrap records Generated/ info entry when present", "[phase_b][storage_map]") {
+    auto root = makeTempDir("smv1_generated_check");
+    fs::create_directories(root / "Content");
+    fs::create_directories(root / "Data");
+    fs::create_directories(root / "Generated");
+
+    NF::ProjectLoadContract contract;
+    NovaForge::NovaForgeProjectBootstrap bs(root.string());
+    bs.run(contract);
+
+    bool hasGeneratedInfo = false;
+    for (const auto& e : contract.validationEntries) {
+        if (e.code == "generated_dir_found") hasGeneratedInfo = true;
+    }
+    REQUIRE(hasGeneratedInfo);
+}
+
+TEST_CASE("SM v1: full project dir layout passes bootstrap", "[phase_b][storage_map]") {
+    auto root = makeTempDir("smv1_full_layout");
+    fs::create_directories(root / "Content" / "Meshes");
+    fs::create_directories(root / "Data" / "Worlds");
+    fs::create_directories(root / "Data" / "Rules");
+    fs::create_directories(root / "Data" / "PCG" / "RuleSets");
+    fs::create_directories(root / "Data" / "Registries");
+    fs::create_directories(root / "Config");
+    fs::create_directories(root / "Schemas");
+    fs::create_directories(root / "Generated");
+    fs::create_directories(root / "Cache");
+
+    NF::ProjectLoadContract contract;
+    NovaForge::NovaForgeProjectBootstrap bs(root.string());
+    bool ok = bs.run(contract);
+
+    REQUIRE(ok);
+    REQUIRE(contract.isValid());
+    // Should have no errors or fatals
+    REQUIRE(contract.countBySeverity(NF::ProjectValidationSeverity::Error) == 0u);
+    REQUIRE(contract.countBySeverity(NF::ProjectValidationSeverity::Fatal) == 0u);
 }

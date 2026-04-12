@@ -58,14 +58,31 @@ public:
                 "Data/ directory validated: " + dataDir.string());
         }
 
-        // Check Schema/ directory (optional)
-        fs::path schemaDir = root / "Schema";
-        if (!fs::exists(schemaDir) || !fs::is_directory(schemaDir)) {
-            contract.addWarning("missing_schema_dir",
-                "NovaForge Schema/ directory not found (optional): " + schemaDir.string());
+        // Check Config/ directory (new in Storage Map v1)
+        fs::path configDir = root / "Config";
+        if (!fs::exists(configDir) || !fs::is_directory(configDir)) {
+            contract.addWarning("missing_config_dir",
+                "NovaForge Config/ directory not found at: " + configDir.string());
         } else {
-            contract.addInfo("schema_dir_ok",
-                "Schema/ directory validated: " + schemaDir.string());
+            contract.addInfo("config_dir_ok",
+                "Config/ directory validated: " + configDir.string());
+        }
+
+        // Check Schemas/ directory (plural - Storage Map v1 canonical name)
+        fs::path schemasDir = root / "Schemas";
+        if (!fs::exists(schemasDir) || !fs::is_directory(schemasDir)) {
+            contract.addWarning("missing_schemas_dir",
+                "NovaForge Schemas/ directory not found at: " + schemasDir.string());
+        } else {
+            contract.addInfo("schemas_dir_ok",
+                "Schemas/ directory validated: " + schemasDir.string());
+        }
+
+        // Check Generated/ directory (informational)
+        fs::path generatedDir = root / "Generated";
+        if (fs::exists(generatedDir) && fs::is_directory(generatedDir)) {
+            contract.addInfo("generated_dir_found",
+                "Generated/ directory found: " + generatedDir.string());
         }
 
         return contract.isValid();
