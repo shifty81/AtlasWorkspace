@@ -1,3 +1,6 @@
+> **HISTORICAL** — This document describes a completed foundation phase (Phases 0–71).
+> The canonical source of truth for current and future phases is [00_MASTER_ROADMAP.md](00_MASTER_ROADMAP.md).
+
 # Workspace Core Stabilization
 
 **Phase 1 of the Master Roadmap**

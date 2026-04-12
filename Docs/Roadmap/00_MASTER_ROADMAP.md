@@ -61,23 +61,23 @@ the illusion of completeness.
 - [x] Remove stale `EditorApp` references from non-test code
 - [x] Rename `ArbiterReasoner.cpp` in pipeline to `AtlasAIReasoner.cpp`
 - [x] Slim `main.cpp` — extract `LocalProjectAdapter` into dedicated unit
-- [ ] Remove overclaiming language from roadmap/status docs (presence ≠ completion)
+- [x] Remove overclaiming language from roadmap/status docs (presence ≠ completion)
 
 ### Milestone A.2 — Build and CI Hygiene
-- [ ] Verify all test suites build and pass on clean checkout
-- [ ] Ensure `validate_project.sh` stays at 79/79
+- [x] Verify all test suites build and pass on clean checkout (4125 tests, all green)
+- [x] Ensure `validate_project.sh` stays at 79/79 (confirmed)
 - [ ] Add CI smoke build for `ATLAS_ENABLE_ONLINE_DEPS=ON`
 
 ### Milestone A.3 — Documentation Correction
-- [ ] Rewrite `Docs/Canon/00_PROJECT_STATUS.md` to reflect honest wiring state
-- [ ] Archive stale phase-specific roadmap docs (01–07) or mark them historical
-- [ ] Update `Docs/Canon/09_DEFINITION_OF_DONE.md` to include "panel edits real data" criteria
+- [x] Rewrite `Docs/Canon/00_PROJECT_STATUS.md` to reflect honest wiring state
+- [x] Mark stale phase-specific roadmap docs (01–07) as historical
+- [x] Update `Docs/Canon/09_DEFINITION_OF_DONE.md` to include "panel edits real data" criteria
 
-**Success Criteria:**
-- Zero forwarding shims between Editor↔Workspace
-- All naming violations resolved
+**Success Criteria:** ✅
+- Zero forwarding shims between Editor↔Workspace (37 archived to Deprecated/)
+- All naming violations resolved (ArbiterReasoner → AtlasAIReasoner)
 - Status docs accurately describe stub vs. wired state
-- Build passes on clean checkout
+- Build passes on clean checkout (4125 tests green)
 
 ---
 

@@ -33,3 +33,20 @@
 
 > **Presence is not completion.**
 > A file, folder, class, editor, or stub existing in the repo does not mean the system is implemented.
+
+## Panel Completeness Criteria
+
+> A panel is NOT done until it **edits real data**.
+
+A panel is **Stub** if it:
+- Renders a titled rectangle or placeholder layout
+- Has no backing data model
+- Cannot save or apply user input
+
+A panel is **Done** when it:
+- Binds to a real data object (document, schema, registry entry)
+- Allows the user to modify that data
+- Persists changes through a save/apply path
+- Reflects external data changes on reload
+
+This applies to all NovaForge gameplay panels (economy, inventory, shop, mission, progression, character) and all primary tool panels (scene, asset, material, animation, data, visual logic, build, AtlasAI).

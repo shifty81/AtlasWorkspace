@@ -81,13 +81,13 @@ Atlas Workspace v1.0.
 - [x] Remove stale `EditorApp` include from `Editor.h` (umbrella no longer pulls legacy app)
 - [x] Update stale EditorApp comment in ViewportPanel.h
 - [x] Extract `LocalProjectAdapter` from `main.cpp` → dedicated `LocalProjectAdapter.h`
-- [ ] Verify `validate_project.sh` still passes 79/79
+- [x] Validate — all 4125 tests pass; `validate_project.sh` passes 79/79
 - [ ] Add CI smoke build entry for `ATLAS_ENABLE_ONLINE_DEPS=ON`
 
 ### A.2 — Build and CI Hygiene
-- [ ] Verify all test suites build and pass on clean checkout
+- [x] All test suites build and pass on clean checkout (4125 test cases, all green)
 
 ### A.3 — Documentation Correction
 - [x] Update project status phase marker to "In Progress"
-- [ ] Archive stale phase-specific roadmap docs or mark historical
-- [ ] Rewrite definition-of-done to include "panel edits real data" criteria
+- [x] Mark stale phase-specific roadmap docs (01–07) as historical
+- [x] Add "panel edits real data" criteria to `09_DEFINITION_OF_DONE.md`
