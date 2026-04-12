@@ -1998,3 +1998,69 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - Gizmo overlay lifecycle: add / renderToSurface / clear ✓
 - 46 test cases pass (128 assertions) ✓
 - Total test suite: ~3876 tests passing ✓
+
+---
+
+## Phase 66 – Viewport Wiring (End-to-End)
+
+**Status: Done**
+
+- [x] Fix `GDIViewportSurface::bind()` — `m_bound = true` was inside `#if defined(_WIN32)` block, failing on Linux/CI; moved outside platform guard
+- [x] Verify 9 wiring gaps (WorkspaceShell→tool→surface→panel) all covered by tests:
+  - [x] Gap 1: `WorkspaceShell::viewportManager()` accessor (mutable + const)
+  - [x] Gap 2: `IHostedTool::onAttachInput(InputSystem*)` / `onDetachInput()` hooks
+  - [x] Gap 3: `SceneEditorTool` implements `IViewportSceneProvider`; activate() requests slot + registers provider; suspend() releases both
+  - [x] Gap 4: `WorkspaceViewportBridge::connect()` sets panel handle + resize callback; `disconnect()` tears down
+  - [x] Gap 5: `WorkspaceViewportBridge::forwardFrameResults()` routes colorAttachmentId to matching panel
+  - [x] Gap 6: `ViewportFrameLoop::setGizmoRenderer()` / `gizmoRenderer()`; gizmo pass composited per rendered slot
+  - [x] Gap 7: `GDIViewportSurface` — default invalid, resize→valid, bind/unbind cycle, colorAttachment non-zero, zero-resize invalidates
+  - [x] Gap 8: `SceneEditorTool::update()` submits Translate/Rotate/Scale gizmos when selection > 0; no gizmo in Select mode or with no selection
+  - [x] Gap 9: Full round-trip: shell→tool→surface→frame loop→panel produces correct colorAttachment
+- [x] Add `Tests/Workspace/test_phase66_viewport_wiring.cpp` — 38 test cases / 80 assertions
+- [x] Wire `NF_Phase66Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- All 9 viewport wiring gaps verified with tests ✓
+- GDIViewportSurface bind/unbind works on non-Windows platforms ✓
+- Full round-trip: shell initialize → tool activate → surface register → renderFrame → panel updated ✓
+- 38 test cases pass (80 assertions) ✓
+
+---
+
+## Phase 67 – Workspace Asset Browser
+
+**Status: Done**
+
+- [x] Create `WorkspaceAssetBrowser.h` — query-driven asset browser model over AssetCatalog
+  - [x] `AssetBrowserSortMode` enum (ByName/ByType/ByPath/ByImportTime/BySize) + `assetBrowserSortModeName()`
+  - [x] `AssetBrowserFilter` — typeMask, importStateMask, namePattern (case-insensitive), pathPrefix, maxResults, sortMode; `acceptsType()`, `acceptsImportState()`, `isEmpty()`, `clear()`
+  - [x] `AssetBrowserEntry` — id, displayName, catalogPath, typeTag, importState, thumbnailCookie; `isValid()`
+  - [x] `AssetBrowserState` — filter + results (MAX_RESULTS=2048) + selectedId; `hasSelection()`, `selectedEntry()`, `clearSelection()`, `clear()`; dirty flag
+  - [x] `AssetBrowser` — non-owning catalog pointer; `setCatalog()`, `setFilter()`, `clearFilter()`, `refresh()` (applies all filter dimensions + sort + maxResults cap + deselects missing); `select()`, `clearSelection()`, `selectedEntry()`, `reset()`; refresh + selection observer callbacks (MAX_OBSERVERS=8 each)
+- [x] Add `Tests/Workspace/test_phase67_asset_browser.cpp` — 41 test cases / 102 assertions:
+  - [x] AssetBrowserSortMode (1 test): all 5 name helpers
+  - [x] AssetBrowserFilter (5 tests): default accepts all types, typeMask, importStateMask, default state mask, isEmpty/clear
+  - [x] AssetBrowserEntry (2 tests): default invalid, valid
+  - [x] AssetBrowserState (4 tests): default no selection, selectedEntry nullptr, clearSelection, clear
+  - [x] AssetBrowser construction/binding (3 tests): default state, setCatalog, setCatalog null
+  - [x] Refresh (3 tests): no catalog, empty catalog, all assets with empty filter, dirty cleared
+  - [x] Filter — type mask (1 test): only matching types
+  - [x] Filter — import state mask (1 test): dirty+error mask
+  - [x] Filter — name pattern (2 tests): case-insensitive displayName, catalogPath match
+  - [x] Filter — path prefix (1 test): subtree filter
+  - [x] Filter — maxResults (1 test): cap enforced
+  - [x] clearFilter (1 test): marks dirty + resets
+  - [x] Sort modes (3 tests): ByName ascending, ByType ascending, ByPath ascending
+  - [x] Selection (5 tests): select valid id, select missing id, clearSelection, selectedEntry, refresh deselects missing
+  - [x] Observers (4 tests): refresh fires with count, selection fires on select, clearObservers, MAX_OBSERVERS enforced
+  - [x] Reset (1 test): clears catalog + state + observers
+  - [x] Integration (2 tests): multi-filter pipeline, full selection round-trip
+- [x] Wire `NF_Phase67Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- `AssetBrowser::refresh()` applies type, state, name, prefix, and maxResults filters in combination ✓
+- Name pattern match is case-insensitive over both displayName and catalogPath ✓
+- Sort ByName/ByType/ByPath produces ascending ordered results ✓
+- Refresh deselects the selected asset if it is excluded by the new filter ✓
+- Observer callbacks fire on refresh (with count) and on select (with id) ✓
+- 41 test cases pass (102 assertions) ✓
