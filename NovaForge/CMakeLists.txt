@@ -76,6 +76,7 @@ if(NF_STANDALONE)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Source/GraphVM     ${CMAKE_BINARY_DIR}/ws_GraphVM)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Source/AI          ${CMAKE_BINARY_DIR}/ws_AI)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Source/Pipeline    ${CMAKE_BINARY_DIR}/ws_Pipeline)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Source/Workspace   ${CMAKE_BINARY_DIR}/ws_Workspace)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Source/Editor      ${CMAKE_BINARY_DIR}/ws_Editor)
 endif()
 
