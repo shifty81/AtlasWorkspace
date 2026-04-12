@@ -230,10 +230,9 @@ TEST_CASE("AssetBrowser typeMask filter returns only matching types", "[Phase67]
 
 TEST_CASE("AssetBrowser importStateMask filter includes only matching states", "[Phase67][Browser][Filter]") {
     AssetCatalog cat;
-    AssetId id1 = addAsset(cat, "a.png", AssetTypeTag::Texture, "", AssetImportState::Imported);
-    AssetId id2 = addAsset(cat, "b.png", AssetTypeTag::Texture, "", AssetImportState::Dirty);
-    AssetId id3 = addAsset(cat, "c.png", AssetTypeTag::Texture, "", AssetImportState::Error);
-    (void)id1; (void)id2; (void)id3;
+    addAsset(cat, "a.png", AssetTypeTag::Texture, "", AssetImportState::Imported);
+    addAsset(cat, "b.png", AssetTypeTag::Texture, "", AssetImportState::Dirty);
+    addAsset(cat, "c.png", AssetTypeTag::Texture, "", AssetImportState::Error);
 
     AssetBrowserFilter f;
     f.importStateMask = 1u << static_cast<uint8_t>(AssetImportState::Dirty)
@@ -465,8 +464,7 @@ TEST_CASE("AssetBrowser selectedEntry returns correct entry", "[Phase67][Browser
 TEST_CASE("AssetBrowser refresh deselects entry no longer in results", "[Phase67][Browser][Selection]") {
     AssetCatalog cat;
     AssetId id1 = addAsset(cat, "rock.png", AssetTypeTag::Texture);
-    AssetId id2 = addAsset(cat, "cube.obj", AssetTypeTag::Mesh);
-    (void)id2;
+    addAsset(cat, "cube.obj", AssetTypeTag::Mesh);
 
     AssetBrowser b;
     b.setCatalog(&cat);

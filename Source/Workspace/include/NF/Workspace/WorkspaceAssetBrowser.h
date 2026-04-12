@@ -310,9 +310,12 @@ public:
     [[nodiscard]] bool    hasResults()  const { return !m_state.results.empty(); }
 
     // ── Observers ─────────────────────────────────────────────────────────────
-    // Refresh observer: called with result count after each successful refresh.
+    /// Fired after each `refresh()` call with the number of results produced.
+    /// Receives: (uint32_t resultCount) — zero when the catalog is empty or null.
     using RefreshCallback   = std::function<void(uint32_t resultCount)>;
-    // Selection observer: called with the newly selected id.
+
+    /// Fired after each successful `select()` call.
+    /// Receives: (AssetId id) — the id that was just selected.
     using SelectionCallback = std::function<void(AssetId id)>;
 
     bool addRefreshObserver(RefreshCallback cb) {
