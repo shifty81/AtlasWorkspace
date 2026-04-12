@@ -1956,3 +1956,45 @@ This is the execution ladder. Every line is tied to a real milestone. No brainst
 - serialize()/deserializeMetadata() round-trip updates label/shortcut/category/enabled ✓
 - 48 test cases pass (106 assertions) ✓
 - Total test suite: ~3830 tests passing ✓
+
+---
+
+## Phase 65 – Workspace Viewport Manager
+
+**Status: Done**
+
+- [x] Create `WorkspaceViewportManager.h` — viewport subsystem orchestrator (Phase 64 integration facade)
+  - [x] Owns ViewportHostRegistry, ViewportSurfaceRegistry, ViewportSceneProviderRegistry, ViewportFrameLoop, ViewportCompositor, GizmoRenderer
+  - [x] `requestViewport(toolId, bounds)` / `releaseViewport(handle)` — slot lifecycle (release also unregisters surface)
+  - [x] `activateViewport(handle)` / `pauseViewport(handle)` / `resumeViewport(handle)` — state transitions
+  - [x] `updateBounds(handle, bounds)` / `setRenderMode(handle, mode)` / `setCamera(handle, cam)` — slot configuration
+  - [x] `registerSurface(handle, surface*)` / `unregisterSurface(handle)` — GPU surface binding (not owned)
+  - [x] `registerSceneProvider(toolId, provider*)` / `unregisterSceneProvider(toolId)` — scene injection (not owned)
+  - [x] `setLayoutMode(mode)` / `computeLayout(fullBounds, handles)` — multi-viewport compositor delegation
+  - [x] `addGizmo(cmd)` / `renderGizmos(surface, handle)` / `clearGizmos()` — gizmo overlay pass
+  - [x] `renderFrame()` → `vector<ViewportFrameResult>` — full per-frame dispatch (active slots only)
+  - [x] `frameStats()` — access to ViewportFrameStats (activeSlots, renderedSlots, skippedSlots, frameNumber)
+  - [x] `activeHandles()` — collect active slot handles (useful for computeLayout call)
+  - [x] Sub-registry accessors: `viewportRegistry()`, `surfaceRegistry()`, `sceneRegistry()`, `compositor()`, `frameLoop()`, `gizmoRenderer()`
+- [x] Add `Tests/Workspace/test_phase65_viewport_manager.cpp` — 46 test cases / 128 assertions:
+  - [x] Construction (3 tests): default state, default layout, sub-registry accessors
+  - [x] requestViewport/releaseViewport (8 tests): valid handle, invalid bounds, empty toolId, multiple slots, release, unknown release, findSlot null, findSlot after request
+  - [x] Lifecycle (6 tests): Idle→Active, activate unknown, pause/resume, pause unknown, resume unknown
+  - [x] Slot configuration (5 tests): updateBounds, invalid bounds, setRenderMode, setCamera, setCamera round-trip
+  - [x] Surface registration (4 tests): register increments, null rejected, unregister decrements, release unregisters
+  - [x] Scene provider registration (5 tests): register increments, null rejected, empty toolId rejected, unregister decrements, unknown unregister fails
+  - [x] renderFrame (7 tests): no active slots, active without surface, active with valid surface, frameCount increment, paused slot skipped, provider dispatched, frameStats across frames
+  - [x] Layout/compositor (3 tests): setLayoutMode, Single fills full bounds, SideBySide splits, TwoByTwo quad
+  - [x] Gizmo renderer (3 tests): add/clear lifecycle, renderGizmos valid surface, renderGizmos invalid surface
+  - [x] activeHandles (1 test): returns only Active slots
+  - [x] Integration (2 tests): full single-viewport frame, multi-viewport frame
+- [x] Wire `NF_Phase65Tests` into Tests/CMakeLists.txt
+
+**Success Criteria:**
+- WorkspaceViewportManager assembles all Phase 64 viewport infrastructure ✓
+- releaseViewport() also unregisters the associated surface ✓
+- renderFrame() dispatches to scene providers and binds/unbinds surfaces ✓
+- computeLayout() delegates correctly to ViewportCompositor for all layout modes ✓
+- Gizmo overlay lifecycle: add / renderToSurface / clear ✓
+- 46 test cases pass (128 assertions) ✓
+- Total test suite: ~3876 tests passing ✓

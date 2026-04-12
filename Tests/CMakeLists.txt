@@ -877,3 +877,14 @@ target_link_libraries(NF_Phase64Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_Phase64Tests)
+
+# Phase 65 — WorkspaceViewportManager
+add_executable(NF_Phase65Tests
+    Workspace/test_phase65_viewport_manager.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase65Tests PRIVATE
+    NF::Workspace NF::UI NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase65Tests)
