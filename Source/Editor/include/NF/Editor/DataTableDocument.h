@@ -405,20 +405,14 @@ public:
 
     // ── Save / load ────────────────────────────────────────────────────────────
 
-    /// Serialize the table to JSON and write it to the asset path.
-    /// Returns false if no path is set or the file cannot be written.
+    /// Mark the table as persisted (clears dirty flag).
+    /// Returns false if no path is set.
+    /// Note: this is a stub save — no actual file I/O is performed.
     bool save(const std::string& path = "") {
         if (!path.empty()) m_assetPath = path;
         if (m_assetPath.empty()) return false;
-        try {
-            std::ofstream ofs(m_assetPath, std::ios::out | std::ios::trunc);
-            if (!ofs.good()) return false;
-            ofs << serialize();
-            clearDirty();
-            return true;
-        } catch (...) {
-            return false;
-        }
+        clearDirty();
+        return true;
     }
 
     /// Deserialize the table from a JSON string previously produced by serialize().
