@@ -63,11 +63,13 @@ static std::wstring utf8ToWide(const std::string& u8) {
 }
 
 // ── NovaForge project-root detection ─────────────────────────────
-// Returns true if |root| is the NovaForge project directory.
-// Checks for NovaForge.atlas (canonical) or novaforge.project.json (legacy marker).
+// Returns true if |root| is a NovaForge project directory.
+// Accepts the canonical uppercase form (NovaForge.atlas), the lowercase form
+// used by the samples directory (novaforge.atlas), and the legacy JSON marker.
 
 static bool isNovaForgeProjectRoot(const std::filesystem::path& root) {
     return std::filesystem::exists(root / "NovaForge.atlas") ||
+           std::filesystem::exists(root / "novaforge.atlas")  ||
            std::filesystem::exists(root / "novaforge.project.json");
 }
 
