@@ -22,10 +22,11 @@ namespace NF {
 // ── Animation editing mode ────────────────────────────────────────
 
 enum class AnimationEditMode : uint8_t {
-    Timeline,    // keyframe timeline view
-    Curves,      // animation curve editor
-    Retargeting, // bone retargeting / rig remapping
+    Timeline,    // keyframe timeline with multi-track lanes + marker bar
+    Curves,      // animation curve editor (AnimationCurveEditorV1)
+    Retargeting, // bone tree (SkeletonEditorV1) + IK chains + blend shapes
     Preview,     // isolated pose / clip preview
+    Cinematic,   // shot list (CinematicEditorV1) + multi-track (CutsceneEditorV1)
 };
 
 inline const char* animationEditModeName(AnimationEditMode m) {
@@ -34,6 +35,7 @@ inline const char* animationEditModeName(AnimationEditMode m) {
         case AnimationEditMode::Curves:      return "Curves";
         case AnimationEditMode::Retargeting: return "Retargeting";
         case AnimationEditMode::Preview:     return "Preview";
+        case AnimationEditMode::Cinematic:   return "Cinematic";
     }
     return "Unknown";
 }
@@ -104,7 +106,7 @@ public:
 private:
     HostedToolDescriptor  m_descriptor;
     HostedToolState       m_state    = HostedToolState::Unloaded;
-    AnimationEditMode     m_editMode = AnimationEditMode::Timeline;
+    mutable AnimationEditMode m_editMode = AnimationEditMode::Timeline;
     AnimationEditorStats  m_stats;
     std::string           m_activeProjectId;
 
@@ -112,6 +114,15 @@ private:
     mutable int  m_viewSelectedClip    = -1;
     mutable bool m_viewIsPlaying       = false;
     mutable bool m_viewIsRecording     = false;
+    // Retargeting mode
+    mutable int  m_viewSelectedBone    = -1;
+    mutable int  m_viewSelectedIK      = -1;
+    mutable int  m_viewSelectedMorph   = -1;
+    // Curves mode
+    mutable int  m_viewSelectedCurve   = -1;
+    // Cinematic mode
+    mutable int  m_viewSelectedShot    = -1;
+    mutable int  m_viewSelectedTrack   = -1;
 
     void buildDescriptor();
 };

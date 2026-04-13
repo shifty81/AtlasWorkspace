@@ -124,25 +124,67 @@ void BuildTool::renderToolView(const ToolViewRenderContext& ctx) const {
         {"ShaderOnly",  BuildMode::ShaderOnly},
     };
 
+    // Platform targets (DeploymentTargetEditorV1)
+    static constexpr struct { const char* name; uint32_t color; } kPlatforms[] = {
+        {"Win64",   0x4488CCFF},
+        {"Mac",     0x88AABBFF},
+        {"Linux",   0xCCAA44FF},
+        {"iOS",     0x44AACCFF},
+        {"Android", 0x4EC94EFF},
+        {"Console", 0xAA6633FF},
+    };
+    static constexpr int kPlatCount = 6;
+
+    // Pipeline stages (BuildPipelineEditorV1: Compile/Link/Package/Cook/Deploy)
+    static constexpr struct {
+        const char* name;
+        bool        enabled;
+        uint32_t    color;
+    } kStages[] = {
+        {"Compile",  true,  0x4488CCFF},
+        {"Link",     true,  0x44CC88FF},
+        {"Cook",     true,  0xCCAA44FF},
+        {"Package",  true,  0x884488FF},
+        {"Sign",     false, 0x886644FF},
+        {"Deploy",   false, 0xCC4466FF},
+    };
+    static constexpr int kStageCount = 6;
+
     // ── Build Config panel ────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, configW, ctx.h, "Build Config");
-    ctx.drawStatRow(ctx.x + 8.f, ctx.y + 30.f, "Mode:", buildModeName(m_buildMode));
-    if (!m_activeTarget.empty()) {
-        std::string tgt = m_activeTarget;
-        if (tgt.size() > 20) tgt = tgt.substr(0, 17) + "...";
-        ctx.drawStatRow(ctx.x + 8.f, ctx.y + 48.f, "Target:", tgt.c_str());
-    }
-
-    // Build mode selector buttons
-    float mbY = ctx.y + 72.f;
-    for (const auto& m : kModes) {
-        if (mbY + 20.f > ctx.y + ctx.h - 36.f) break;
-        bool active = (m_buildMode == m.mode);
-        uint32_t bg = active ? ctx.kAccentBlue : ctx.kButtonBg;
-        if (ctx.drawButton(ctx.x + 8.f, mbY, configW - 16.f, 18.f, m.label, bg)) {
-            m_buildMode = m.mode;
+    {
+        ctx.drawStatRow(ctx.x + 8.f, ctx.y + 28.f, "Mode:", buildModeName(m_buildMode));
+        if (!m_activeTarget.empty()) {
+            std::string tgt = m_activeTarget;
+            if (tgt.size() > 20) tgt = tgt.substr(0, 17) + "...";
+            ctx.drawStatRow(ctx.x + 8.f, ctx.y + 46.f, "Target:", tgt.c_str());
         }
-        mbY += 22.f;
+
+        // Build mode selector buttons
+        float mbY = ctx.y + 68.f;
+        ctx.ui.drawText(ctx.x + 8.f, mbY - 10.f, "Mode:", ctx.kTextMuted);
+        for (const auto& m : kModes) {
+            if (mbY + 18.f > ctx.y + ctx.h - 90.f) break;
+            bool active = (m_buildMode == m.mode);
+            uint32_t bg = active ? ctx.kAccentBlue : ctx.kButtonBg;
+            if (ctx.drawButton(ctx.x + 8.f, mbY, configW - 16.f, 16.f, m.label, bg))
+                m_buildMode = m.mode;
+            mbY += 20.f;
+        }
+
+        // Platform selector (DeploymentTargetEditorV1)
+        mbY += 6.f;
+        ctx.ui.drawText(ctx.x + 8.f, mbY, "Platform:", ctx.kTextMuted);
+        mbY += 14.f;
+        float pbx = ctx.x + 8.f;
+        for (int i = 0; i < kPlatCount; ++i) {
+            if (pbx + 40.f > ctx.x + configW - 4.f) { pbx = ctx.x + 8.f; mbY += 20.f; }
+            if (mbY + 18.f > ctx.y + ctx.h - 36.f) break;
+            ctx.ui.drawRect({pbx, mbY, 36.f, 16.f}, kPlatforms[i].color);
+            ctx.ui.drawRectOutline({pbx, mbY, 36.f, 16.f}, ctx.kBorder, 1.f);
+            ctx.ui.drawText(pbx + 4.f, mbY + 2.f, kPlatforms[i].name, ctx.kTextPrimary);
+            pbx += 40.f;
+        }
     }
 
     // Build button at the bottom of the config panel
@@ -162,7 +204,30 @@ void BuildTool::renderToolView(const ToolViewRenderContext& ctx) const {
     // ── Build Log panel ───────────────────────────────────────────
     ctx.drawPanel(ctx.x + configW, ctx.y, logW, ctx.h, "Build Log");
     {
-        float ly = ctx.y + 30.f;
+        float ly = ctx.y + 10.f;
+
+        // Pipeline stage list (BuildPipelineEditorV1)
+        ctx.ui.drawText(ctx.x + configW + 8.f, ly, "Pipeline stages:", ctx.kTextMuted);
+        ly += 14.f;
+        float stX = ctx.x + configW + 8.f;
+        for (int i = 0; i < kStageCount; ++i) {
+            float stW = static_cast<float>(std::strlen(kStages[i].name)) * 6.f + 14.f;
+            if (stX + stW > ctx.x + configW + logW - 4.f) { stX = ctx.x + configW + 8.f; ly += 18.f; }
+            uint32_t stageBg = kStages[i].enabled ? kStages[i].color : 0x333333FF;
+            ctx.ui.drawRect({stX, ly, stW, 14.f}, stageBg);
+            ctx.ui.drawRectOutline({stX, ly, stW, 14.f}, ctx.kBorder, 1.f);
+            ctx.ui.drawText(stX + 4.f, ly + 1.f, kStages[i].name,
+                            kStages[i].enabled ? ctx.kTextPrimary : ctx.kTextMuted);
+            // Arrow between stages
+            if (i < kStageCount - 1 && kStages[i].enabled && kStages[i + 1].enabled)
+                ctx.ui.drawText(stX + stW + 2.f, ly + 1.f, ">", ctx.kTextMuted);
+            stX += stW + 18.f;
+        }
+        ly += 22.f;
+        ctx.ui.drawRect({ctx.x + configW + 4.f, ly, logW - 8.f, 1.f}, ctx.kBorder);
+        ly += 8.f;
+
+        // Build status & log lines
         if (m_stats.errorCount > 0) {
             char errBuf[32];
             std::snprintf(errBuf, sizeof(errBuf), "%u errors", m_stats.errorCount);
@@ -180,7 +245,7 @@ void BuildTool::renderToolView(const ToolViewRenderContext& ctx) const {
             ly += 18.f;
         }
 
-        // Static stub log lines
+        // Stub log lines
         static const char* kLogLines[] = {
             "[INFO]  Build system ready",
             "[INFO]  Target: Windows x64",

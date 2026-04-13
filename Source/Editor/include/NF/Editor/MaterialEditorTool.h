@@ -22,16 +22,18 @@ namespace NF {
 // ── Material editing mode ─────────────────────────────────────────
 
 enum class MaterialEditMode : uint8_t {
-    Properties, // flat property sheet for parameters
-    NodeGraph,  // node-based shader graph
+    Properties, // flat property sheet for parameters + gradient widget
+    NodeGraph,  // typed shader-graph with port connections (MaterialNodeEditorV1)
     Preview,    // fullscreen material preview
+    PostProcess,// post-process effect stack (PostProcessEditorV1)
 };
 
 inline const char* materialEditModeName(MaterialEditMode m) {
     switch (m) {
-        case MaterialEditMode::Properties: return "Properties";
-        case MaterialEditMode::NodeGraph:  return "NodeGraph";
-        case MaterialEditMode::Preview:    return "Preview";
+        case MaterialEditMode::Properties:  return "Properties";
+        case MaterialEditMode::NodeGraph:   return "NodeGraph";
+        case MaterialEditMode::Preview:     return "Preview";
+        case MaterialEditMode::PostProcess: return "PostProcess";
     }
     return "Unknown";
 }
@@ -108,7 +110,7 @@ public:
 private:
     HostedToolDescriptor  m_descriptor;
     HostedToolState       m_state        = HostedToolState::Unloaded;
-    MaterialEditMode      m_editMode     = MaterialEditMode::Properties;
+    mutable MaterialEditMode m_editMode  = MaterialEditMode::Properties;
     MaterialEditorStats   m_stats;
     std::string           m_openAssetPath;
     std::string           m_activeProjectId;
@@ -117,7 +119,8 @@ private:
     IViewportSceneProvider* m_materialPreviewProvider = nullptr;
 
     // ── Mutable per-view UI state (safe from const renderToolView) ─
-    mutable int m_viewSelectedNode = -1;
+    mutable int m_viewSelectedNode    = -1;
+    mutable int m_viewSelectedEffect  = -1; // PostProcess mode
 
     void buildDescriptor();
 };
