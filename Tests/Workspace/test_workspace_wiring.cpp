@@ -299,6 +299,10 @@ TEST_CASE("ProjectSystemsTool: notifyProjectUnloaded clears stored root", "[wiri
 
     // After unload, a newly-created panel should NOT get onProjectLoaded.
     tool.reset();
+    // Reset tracker so state from the first cycle's pre-instantiated panel
+    // does not bleed into the second cycle's assertions.
+    tracker.lastProjectRoot.clear();
+    tracker.unloaded = false;
     // adapter.descs already contains d from the first push; reload without adding again.
     tool.loadFromAdapter(adapter);
 

@@ -22,7 +22,7 @@ struct ToolDescriptor {
     std::string name;
     std::string executable;
     std::string icon;
-    ToolLaunchMode mode = ToolLaunchMode::External;
+    ToolLaunchMode mode = ToolLaunchMode::Docked;
     bool isRunning = false;
 };
 

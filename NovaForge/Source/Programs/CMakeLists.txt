@@ -10,6 +10,19 @@ if(NF_BUILD_EDITOR)
         NF::Input NF::Networking NF::UI NF::Engine NF::Core
         NF_CompileOptions
     )
+    # On Windows, suppress the console window by using the WINDOWS subsystem.
+    # The editor already creates its own Win32 window via CreateWindowExW.
+    if(WIN32)
+        set_target_properties(NovaForgeEditor PROPERTIES
+            WIN32_EXECUTABLE TRUE
+        )
+        # Redirect main() to WinMain via /ENTRY:mainCRTStartup so the existing
+        # int main(int, char**) entry point works with the WINDOWS subsystem.
+        target_link_options(NovaForgeEditor PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/ENTRY:mainCRTStartup>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wl,--subsystem,windows>
+        )
+    endif()
 endif()
 
 # Game Client
