@@ -715,3 +715,158 @@ TEST_CASE("PIELaunchConfig isValid requires both paths", "[phase_f][f3][external
     cfg.projectFilePath = "proj.atlas";
     REQUIRE(cfg.isValid());
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PIEExternalLaunch — POSIX real process launch integration tests
+//
+// These tests require a real POSIX environment and run the system 'echo'
+// binary as the child process, verifying that fork/execv, stdout piping,
+// exit detection, and terminate() all work correctly against a live process.
+// ─────────────────────────────────────────────────────────────────────────────
+
+#ifndef _WIN32
+#include <chrono>
+#include <thread>
+
+static bool waitForCondition(std::function<bool()> pred, int timeoutMs = 2000) {
+    const int stepMs = 20;
+    for (int elapsed = 0; elapsed < timeoutMs; elapsed += stepMs) {
+        if (pred()) return true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(stepMs));
+    }
+    return pred();
+}
+
+TEST_CASE("PIEExternalLaunch POSIX: real launch of /bin/echo succeeds",
+          "[phase_f][f3][posix_launch]") {
+    PIEExternalLaunch el;
+    PIELaunchConfig cfg;
+    cfg.executablePath  = "/bin/echo";
+    cfg.projectFilePath = "test.atlas";
+    el.setConfig(cfg);
+
+    auto result = el.launch();
+    REQUIRE(result.ok());
+    REQUIRE(el.isRunning());
+    // Real PID — not a synthetic stub value (stub uses 1000+launchCount).
+    REQUIRE(el.processId() > 0);
+}
+
+TEST_CASE("PIEExternalLaunch POSIX: process exits naturally with code 0",
+          "[phase_f][f3][posix_launch]") {
+    PIEExternalLaunch el;
+    PIELaunchConfig cfg;
+    cfg.executablePath  = "/bin/echo";
+    cfg.projectFilePath = "test.atlas";
+    el.setConfig(cfg);
+
+    int32_t receivedCode = -999;
+    el.setOnExited([&](int32_t code) { receivedCode = code; });
+
+    el.launch();
+
+    REQUIRE(waitForCondition([&] { return el.hasExited(); }));
+    CHECK(el.hasExited());
+    CHECK_FALSE(el.hasCrashed());
+    CHECK(el.lastExitCode() == 0);
+    CHECK(receivedCode == 0);
+}
+
+TEST_CASE("PIEExternalLaunch POSIX: stdout lines captured from child process",
+          "[phase_f][f3][posix_launch]") {
+    PIEExternalLaunch el;
+    PIELaunchConfig cfg;
+    // echo outputs its arguments followed by a newline.
+    cfg.executablePath  = "/bin/echo";
+    cfg.projectFilePath = "hello";
+    el.setConfig(cfg);
+
+    std::vector<std::string> captured;
+    el.setOnStdoutLine([&](const std::string& line) { captured.push_back(line); });
+
+    el.launch();
+
+    REQUIRE(waitForCondition([&] { return el.hasExited(); }));
+    // echo should have produced at least one output line.
+    REQUIRE(el.stdoutLineCount() >= 1);
+    REQUIRE(captured.size() >= 1);
+    // The first token in the output must contain "hello" (or "test.atlas hello" etc.)
+    CHECK(captured[0].find("hello") != std::string::npos);
+}
+
+TEST_CASE("PIEExternalLaunch POSIX: launchCount increments for real launches",
+          "[phase_f][f3][posix_launch]") {
+    PIEExternalLaunch el;
+    PIELaunchConfig cfg;
+    cfg.executablePath  = "/bin/echo";
+    cfg.projectFilePath = "p.atlas";
+    el.setConfig(cfg);
+
+    el.launch();
+    REQUIRE(waitForCondition([&] { return el.hasExited(); }));
+    el.launch();
+    REQUIRE(waitForCondition([&] { return el.hasExited(); }));
+
+    CHECK(el.launchCount() == 2);
+}
+
+TEST_CASE("PIEExternalLaunch POSIX: onExited fires exactly once per launch",
+          "[phase_f][f3][posix_launch]") {
+    PIEExternalLaunch el;
+    PIELaunchConfig cfg;
+    cfg.executablePath  = "/bin/echo";
+    cfg.projectFilePath = "p.atlas";
+    el.setConfig(cfg);
+
+    int fireCount = 0;
+    el.setOnExited([&](int32_t) { ++fireCount; });
+
+    el.launch();
+    REQUIRE(waitForCondition([&] { return el.hasExited(); }));
+
+    CHECK(fireCount == 1);
+}
+
+TEST_CASE("PIEExternalLaunch POSIX: terminate() kills long-running process",
+          "[phase_f][f3][posix_launch]") {
+    PIEExternalLaunch el;
+    PIELaunchConfig cfg;
+    // 'sleep' runs indefinitely until killed.
+    cfg.executablePath  = "/bin/sleep";
+    cfg.projectFilePath = "60";   // treated as argv[1] so: sleep 60
+    el.setConfig(cfg);
+
+    int32_t receivedCode = -999;
+    el.setOnExited([&](int32_t code) { receivedCode = code; });
+
+    el.launch();
+    REQUIRE(el.isRunning());
+
+    bool ok = el.terminate();
+    CHECK(ok);
+    CHECK(el.hasExited());
+    CHECK(el.lastExitCode() == -1);
+    CHECK(receivedCode == -1);
+}
+
+TEST_CASE("PIEExternalLaunch POSIX: stdout cleared between launches",
+          "[phase_f][f3][posix_launch]") {
+    PIEExternalLaunch el;
+    PIELaunchConfig cfg;
+    cfg.executablePath  = "/bin/echo";
+    cfg.projectFilePath = "first";
+    el.setConfig(cfg);
+
+    el.launch();
+    REQUIRE(waitForCondition([&] { return el.hasExited(); }));
+    uint32_t afterFirst = el.stdoutLineCount();
+    CHECK(afterFirst >= 1);
+
+    el.launch();
+    // Immediately after the second launch stdoutLines should be cleared.
+    CHECK(el.stdoutLineCount() == 0);
+
+    REQUIRE(waitForCondition([&] { return el.hasExited(); }));
+}
+
+#endif // !_WIN32
