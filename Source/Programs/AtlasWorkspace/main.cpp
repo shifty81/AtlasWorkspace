@@ -257,11 +257,15 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
         g_clientH = HIWORD(lParam);
         InvalidateRect(hwnd, nullptr, FALSE);
         return 0;
-    // Trigger repaints on mouse activity so hover states update immediately.
-    case WM_MOUSEMOVE:
+    // Mouse-button state changes need an immediate repaint for click feedback.
     case WM_LBUTTONDOWN:
     case WM_LBUTTONUP:
         InvalidateRect(hwnd, nullptr, FALSE);
+        break;
+    // WM_MOUSEMOVE does NOT request an extra repaint: the frame loop already
+    // calls InvalidateRect once per tick (~60 FPS), which is sufficient to
+    // refresh hover states without flooding the paint queue.
+    case WM_MOUSEMOVE:
         break;
     // Dispatch workspace hotkeys from keyboard events, then repaint.
     case WM_KEYDOWN:

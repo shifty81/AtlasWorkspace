@@ -17,13 +17,20 @@ Current Phase: **All Phases A–I Complete** — Atlas Workspace v1.0 Milestone 
 - **UI rendering pipeline:** DrawList → DrawListDispatcher → UIRenderer → GDIBackend (Windows)
 - **Panel chrome:** 8 core panels render labeled UI layouts with placeholder content
 - **8 hosted tools:** SceneEditor, AssetEditor, MaterialEditor, AnimationEditor, DataEditor, VisualLogic, BuildTool, AtlasAI — all registered and render tool views
-- **Command system:** CommandRegistry, CommandHistory, ActionMap, ShortcutRouter — infrastructure exists with 3 stub commands (Save, Command Palette, Build)
+- **Command system:** CommandRegistry, CommandHistory, ActionMap, ShortcutRouter — real handlers wired for Save, Build, Undo, Redo, Close Document, Command Palette, AtlasAI launch, and file import; `build.start` drives BuildTool directly
 - **Event system:** WorkspaceEventBus, NotificationBus, WorkspaceEventQueue — all functional
 - **Project loading:** .atlas file parsing, NovaForgeAdapter selection, panel descriptor registration
 - **Asset catalog:** AssetCatalogPopulator with 50+ extension classification, catalog population
 - **Settings/preferences:** SettingsStore (3-layer), PreferenceRegistry, PreferenceController
 - **Undo/redo:** UndoStack, UndoManager, UndoTransaction
-- **Persistence:** WorkspaceProjectFile, ProjectSerializer, AssetCatalogSerializer, SettingsStore serialization
+- **Persistence:** WorkspaceProjectFile, ProjectSerializer, AssetCatalogSerializer, SettingsStore serialization; layout presets and user settings saved on clean exit and restored on startup via `WorkspaceShell::shutdown()`
+- **PIE:** PIEService state machine (Stopped/Playing/Paused), PIEInputRouter, PIEExternalLaunch — contract layer complete; toolbar controller and console bridge wired in Phase G
+- **Document models:** All 8 core tool documents — SceneDocument, AssetDocument, MaterialDocument, AnimationDocument, GraphDocument, BuildTaskGraph, AIRequestContext, DataTableDocument — with dirty tracking, save/revert, and open-document registry (WorkspaceProjectState)
+- **Preferences UI:** PreferenceRegistry, PreferenceController, user-facing preferences panel (Phase H)
+- **Keybind editor:** Keybind editor panel wired (Phase H)
+- **Command palette:** Ctrl+P opens fuzzy-search command palette with context filtering (Phase H)
+- **Notification center:** History, toast notifications, severity filtering, click-to-navigate (Phase H)
+- **Project open flow:** Recent projects list, file picker, validation, new project wizard (Phase H)
 - **Session management:** SessionManager, SessionHistory
 - **Search:** SearchEngine, SearchIndex
 - **Scripting:** ScriptEngine, AutomationTask
@@ -41,20 +48,19 @@ Current Phase: **All Phases A–I Complete** — Atlas Workspace v1.0 Milestone 
 - **Project load depth:** Loading .atlas selects the adapter and registers descriptors, but does not load asset registries, gameplay data, or documents.
 - **PCG pipeline → editor:** Pipeline exists as file-based event system but is completely disconnected from viewport and panels.
 - **D3D11 backend:** Architecturally complete headers but not executing — GDI is still the active renderer.
-- **Play-In-Editor:** Does not exist. No embedded runtime, no PIE lifecycle.
-- **Preferences UI:** Infrastructure exists but no user-facing preferences window.
-- **Keybind UI:** No keybinding editor panel. Shortcuts are hardcoded stubs.
-- **Command palette:** Ctrl+P defined but handler is empty.
-- **Layout persistence to disk:** LayoutPersistenceManager exists but not wired to actual disk I/O.
-- **Real document editing:** No document model. No dirty tracking in practice. No save/apply path from panels.
+- **PIE real process launch:** `PIEExternalLaunch` contract is complete but `CreateProcess`/`fork+exec` is not wired — no real child process is spawned.
+- **PIE performance counters UI:** Panel for live PIE perf counters (frame time, tick count) is not implemented.
+- **Keybind persistence:** Keybind editor exists but key mappings are not saved to disk.
 
 ## Honest Summary
 
-The repository has excellent infrastructure — contracts, registries, event buses,
-serialization, undo/redo, and a clean module architecture. Phases A–I of the roadmap
-are complete, reaching the Atlas Workspace v1.0 milestone.
-
-The new roadmap (Phases A–I) addressed all of these gaps. Atlas Workspace v1.0 is reached.
+The repository has solid, runtime-verified infrastructure across most phases: contracts,
+registries, event buses, serialization, undo/redo, document models, PIE lifecycle,
+preferences/keybind UI, command palette, notification center, project open flow, and
+layout/settings persistence on exit. The software viewport pipeline renders a grid
+end-to-end through `SoftwareViewportRenderer → GDIBackend`. The remaining open items
+are all explicitly deferred platform-specific work: D3D11/DirectWrite GPU backend,
+real `CreateProcess` PIE launch, and a performance-counters UI panel.
 
 ## Phase Summary
 
@@ -64,9 +70,9 @@ The new roadmap (Phases A–I) addressed all of these gaps. Atlas Workspace v1.0
 | A | Truth and Cleanup Lock | ✅ Complete |
 | B | Real Project Load | ✅ Complete |
 | C | Panels Edit Real Data | ✅ Complete |
-| D | Runtime-Backed Viewport | 🔄 In Progress (D.5 deferred — real GPU init) |
+| D | Runtime-Backed Viewport | 🔄 In Progress (D.1–D.4 + software renderer pipeline wired; D.5 deferred — real GPU init) |
 | E | Shared PCG Preview Pipeline | ✅ Complete |
-| F | Play-In-Editor (PIE) | 🔄 In Progress (contract layer done; runtime wiring in G) |
+| F | Play-In-Editor (PIE) | 🔄 In Progress (runtime wiring done in G/H; real process launch + perf counters UI panel pending) |
 | G | Full Tool Wiring | ✅ Complete |
 | H | UX Completion | ✅ Complete |
 | I | NovaForge End-to-End Project Load Integration | ✅ Complete |
@@ -81,7 +87,7 @@ The new roadmap (Phases A–I) addressed all of these gaps. Atlas Workspace v1.0
 - [x] Update stale EditorApp comment in ViewportPanel.h
 - [x] Extract `LocalProjectAdapter` from `main.cpp` → dedicated `LocalProjectAdapter.h`
 - [x] Validate — all 4125 tests pass; `validate_project.sh` passes 79/79
-- [ ] Add CI smoke build entry for `ATLAS_ENABLE_ONLINE_DEPS=ON`
+- [x] Add CI smoke build entry for `ATLAS_ENABLE_ONLINE_DEPS=ON`
 
 ### A.2 — Build and CI Hygiene
 - [x] All test suites build and pass on clean checkout (4469 test cases, all green)
@@ -97,7 +103,7 @@ The new roadmap (Phases A–I) addressed all of these gaps. Atlas Workspace v1.0
 ## Phase C Progress (Complete)
 - 58 tests, 104 assertions, all green (test_phase_c.cpp)
 
-## Phase D Progress (In Progress — D.1–D.4 complete, D.5 pending)
+## Phase D Progress (In Progress — D.1–D.4 complete, software renderer pipeline wired; D.5 GPU backend deferred)
 ### D.1 — NovaForge Preview Runtime Bridge ✅
 - [x] `NovaForgePreviewWorld` — entity lifecycle, transform, mesh/material, selection, dirty tracking
 - [x] `NovaForgePreviewRuntime` — IViewportSceneProvider, fly-camera, gizmo state, inspector data, hierarchy order
@@ -125,7 +131,8 @@ The new roadmap (Phases A–I) addressed all of these gaps. Atlas Workspace v1.0
 - [x] `MaterialEditorTool::attachMaterialPreviewProvider()` + `provideScene()` delegation
 
 ### D.5 — D3D11 Backend Activation (pending)
-- [ ] Activate D3D11 backend as primary
+- [x] `SoftwareViewportRenderer` installed as active baseline — `SceneEditorTool` attaches to `WorkspaceViewportManager`, viewport handle requested and activated at startup; software grid renders end-to-end through GDIBackend
+- [ ] Activate D3D11 backend as primary (requires Windows SDK + d3d11.lib)
 - [ ] Wire DirectWrite text rendering
 - 161 D completion tests (79 test cases, 155 assertions), all green (test_phase_d_completion.cpp)
 - D.5 partial: `createD3D11WithDirectWrite()` factory + contract tests (NF_PhaseD5Tests), real GPU init deferred
@@ -154,33 +161,33 @@ The new roadmap (Phases A–I) addressed all of these gaps. Atlas Workspace v1.0
 - [x] `attachPCGPreviewService()` / `pcgRegenTriggerCount()` — wired event loop
 - 82 Phase E core tests + 46 E-completion tests, all green
 
-## Phase F Progress (In Progress — F.1–F.4 contract layer complete)
-### F.1 — Embedded PIE Runtime ✅ (contract layer)
+## Phase F Progress (In Progress — F.1–F.4 contract layer complete; runtime wiring done in G/H)
+### F.1 — Embedded PIE Runtime ✅ (contract layer + runtime wired)
 - [x] `PIEService` — enter/exit/pause/resume/step/reset with full state machine
 - [x] `PIEState` (Stopped/Playing/Paused) + `PIEDiagnosticSeverity` + `PIEPerformanceCounters`
 - [x] `PIESessionRecord` — sessionId/durationMs/totalTicks/errorCount/events
 - [x] `pushDiagnostic()` / `diagnosticCount()` / `errorCount()` / `countBySeverity()`
 - [x] `tickFrame()` updates perf counters (no-op when not Playing)
 - [x] All lifecycle callbacks: onEnter/onExit/onPause/onResume/onStep/onReset/onDiagnostic
-- [ ] Runtime runs in real viewport panel (Phase G)
+- [x] PIE toolbar controller and console bridge wired (Phase G)
 
-### F.2 — PIE Input Mode ✅ (contract layer)
+### F.2 — PIE Input Mode ✅ (contract layer + toolbar wired)
 - [x] `PIEInputRouter` — routeToGame/routeToEditor + mode query
 - [x] processKey/processMouseButton/processMouseMove dispatch to mode-correct sink
 - [x] `isExitKey()` — escape detection in game mode (configurable `exitKeyCode`)
 - [x] `modeSwitchCount` / `keyEventCount` / event counters; `onModeChange` callback
-- [ ] PIE toolbar buttons wired to PIEService (Phase H)
+- [x] PIE toolbar buttons wired to PIEService (Phase H)
 
 ### F.3 — External Game Launch ✅ (contract layer)
 - [x] `PIEExternalLaunch` — launch/terminate/simulateExit lifecycle
 - [x] `PIELaunchConfig` — executablePath/projectFilePath/args/buildConfiguration
 - [x] `pushStdoutLine()` / `onStdoutLine` — console output routing
 - [x] `onLaunched` / `onExited` callbacks; `launchCount` / `processId` / `lastExitCode`
-- [ ] Real process launch (CreateProcess/fork+exec) — platform-specific activation (Phase G)
+- [ ] Real process launch (CreateProcess/fork+exec) — platform-specific, explicitly deferred
 
 ### F.4 — PIE Diagnostics ✅ (contract layer)
 - [x] Severity-filtered diagnostics, session history capture, onDiagnostic callback
-- [ ] Performance counters UI panel (Phase G/H)
+- [ ] Performance counters UI panel — explicitly deferred
 - All Phase F tests: 76 test cases, all green (test_phase_f.cpp)
 
 ## Phase G Progress (Complete ✅)
