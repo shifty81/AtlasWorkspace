@@ -47,7 +47,10 @@
 #include "NF/Workspace/ToolViewRenderContext.h"
 #include <array>
 #include <cctype>
+#include <cstdint>
 #include <cstring>
+#include <deque>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -76,7 +79,31 @@ struct WorkspacePendingError {
 
 class WorkspaceRenderer {
 public:
-    WorkspaceRenderer() { initTheme(); initMenus(); }
+    WorkspaceRenderer() {
+        initTheme();
+        initMenus();
+        // Register a Logger sink so every NF_LOG_* line feeds the System tab.
+        m_logSinkId = Logger::instance().addSink(
+            [this](LogLevel level, std::string_view category, std::string_view message) {
+                // Build a display line matching the console window format.
+                const char* lvlStr =
+                    (level == LogLevel::Warn)  ? "WARN" :
+                    (level == LogLevel::Error)  ? "ERR " :
+                    (level == LogLevel::Fatal)  ? "FATL" : "INFO";
+                std::string line = std::string("[") + lvlStr + "] [";
+                line += category;
+                line += "] ";
+                line += message;
+                std::lock_guard<std::mutex> lk(m_sysLogMutex);
+                m_sysLog.push_back(std::move(line));
+                if (m_sysLog.size() > kSysLogMax)
+                    m_sysLog.pop_front();
+            });
+    }
+
+    ~WorkspaceRenderer() {
+        Logger::instance().removeSink(m_logSinkId);
+    }
 
     // ── Layout constants (pixels) ─────────────────────────────────
     static constexpr float kTitleH   = 28.f;
@@ -817,7 +844,7 @@ private:
         }
 
         // ── Bottom strip: Console + Metrics ───────────────────────
-        renderBottomStrip(ui, x, y + kHeaderH + kMainH, w, kBottomH, shell);
+        renderBottomStrip(ui, x, y + kHeaderH + kMainH, w, kBottomH, shell, mouse);
 
         // ── Click handling ─────────────────────────────────────────
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
@@ -916,7 +943,7 @@ private:
         }
 
         // ── Bottom strip ───────────────────────────────────────────────
-        renderBottomStrip(ui, x, cy + kContentH, w, kBottomH, shell);
+        renderBottomStrip(ui, x, cy + kContentH, w, kBottomH, shell, mouse);
 
         // ── Back button click ──────────────────────────────────────────
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
@@ -1443,7 +1470,7 @@ private:
     // Console shows project-context log lines; Metrics shows live shell stats
     // and the most recent workspace notification.
     void renderBottomStrip(UIRenderer& ui, float x, float y, float w, float h,
-                           const WorkspaceShell& shell)
+                           const WorkspaceShell& shell, const UIMouseState& mouse)
     {
         float consoleW  = w * 0.65f;
         float metricsW  = w - consoleW;
@@ -1453,32 +1480,100 @@ private:
         ui.drawRectOutline({x, y, consoleW, h}, kBorder, 1.f);
         ui.drawRect({x, y, consoleW, 22.f}, kSurface);
         ui.drawRect({x, y + 22.f, consoleW, 1.f}, kBorder);
-        ui.drawText(x + 8.f, y + 4.f, "CONSOLE", kTextSecondary);
 
+        // ── Tab buttons: CONSOLE | SYSTEM ─────────────────────────
+        constexpr float kTabW = 72.f;
+        constexpr float kTabH = 22.f;
+        const NF::Rect consoleTabR = {x,           y, kTabW,      kTabH};
+        const NF::Rect systemTabR  = {x + kTabW,   y, kTabW,      kTabH};
+
+        // Detect clicks — switch active tab.
+        if (systemTabR.contains(mouse.x, mouse.y) && mouse.leftReleased)
+            m_consoleTab = 1;
+        if (consoleTabR.contains(mouse.x, mouse.y) && mouse.leftReleased)
+            m_consoleTab = 0;
+
+        // Draw CONSOLE tab
+        const uint32_t consoleTabBg = (m_consoleTab == 0) ? kSurface : 0x1A1A1AFFu;
+        const uint32_t consoleTabFg = (m_consoleTab == 0) ? kAccentBlue : kTextSecondary;
+        ui.drawRect(consoleTabR, consoleTabBg);
+        ui.drawText(x + 8.f, y + 4.f, "CONSOLE", consoleTabFg);
+        if (m_consoleTab == 0)
+            ui.drawRect({x, y + kTabH - 2.f, kTabW, 2.f}, kAccentBlue);
+
+        // Draw SYSTEM tab
+        const uint32_t sysTabBg = (m_consoleTab == 1) ? kSurface : 0x1A1A1AFFu;
+        const uint32_t sysTabFg = (m_consoleTab == 1) ? kAccentBlue : kTextSecondary;
+        ui.drawRect(systemTabR, sysTabBg);
+        ui.drawText(x + kTabW + 8.f, y + 4.f, "SYSTEM", sysTabFg);
+        if (m_consoleTab == 1)
+            ui.drawRect({x + kTabW, y + kTabH - 2.f, kTabW, 2.f}, kAccentBlue);
+
+        // Divider between tabs and the rest of the title area.
+        ui.drawRect({x + kTabW * 2.f, y, consoleW - kTabW * 2.f, kTabH}, kSurface);
+
+        // ── Console content ────────────────────────────────────────
         float cy = y + 28.f;
-        if (shell.hasProject() && shell.projectAdapter()) {
-            std::string projMsg = "[INFO]  Project: "
-                + shell.projectAdapter()->projectDisplayName()
-                + "  (id=" + shell.projectAdapter()->projectId() + ")";
-            ui.drawText(x + 8.f, cy, projMsg, kGreen);
-            cy += 18.f;
-            for (const auto& root : shell.projectAdapter()->contentRoots()) {
-                std::string rootMsg = "[INFO]  Content root: " + root;
-                if (rootMsg.size() > 72) rootMsg = rootMsg.substr(0, 69) + "...";
-                ui.drawText(x + 8.f, cy, rootMsg, kTextSecondary);
-                cy += 16.f;
-                if (cy + 16.f > y + h - 4.f) break;
+        if (m_consoleTab == 0) {
+            // Project context messages.
+            if (shell.hasProject() && shell.projectAdapter()) {
+                std::string projMsg = "[INFO]  Project: "
+                    + shell.projectAdapter()->projectDisplayName()
+                    + "  (id=" + shell.projectAdapter()->projectId() + ")";
+                ui.drawText(x + 8.f, cy, projMsg, kGreen);
+                cy += 18.f;
+                for (const auto& root : shell.projectAdapter()->contentRoots()) {
+                    std::string rootMsg = "[INFO]  Content root: " + root;
+                    if (rootMsg.size() > 72) rootMsg = rootMsg.substr(0, 69) + "...";
+                    ui.drawText(x + 8.f, cy, rootMsg, kTextSecondary);
+                    cy += 16.f;
+                    if (cy + 16.f > y + h - 4.f) break;
+                }
+            } else {
+                ui.drawText(x + 8.f, cy, "[INFO]  No project loaded", kTextMuted);
+                cy += 18.f;
+            }
+            if (const auto* tool = shell.toolRegistry().activeTool()) {
+                if (cy + 14.f < y + h - 4.f) {
+                    std::string toolMsg = "[INFO]  Active tool: "
+                        + tool->descriptor().displayName
+                        + "  (" + tool->toolId() + ")";
+                    ui.drawText(x + 8.f, cy, toolMsg, kTextSecondary);
+                }
             }
         } else {
-            ui.drawText(x + 8.f, cy, "[INFO]  No project loaded", kTextMuted);
-            cy += 18.f;
-        }
-        if (const auto* tool = shell.toolRegistry().activeTool()) {
-            if (cy + 14.f < y + h - 4.f) {
-                std::string toolMsg = "[INFO]  Active tool: "
-                    + tool->descriptor().displayName
-                    + "  (" + tool->toolId() + ")";
-                ui.drawText(x + 8.f, cy, toolMsg, kTextSecondary);
+            // System log — show most-recent lines that fit.
+            std::vector<std::string> lines;
+            {
+                std::lock_guard<std::mutex> lk(m_sysLogMutex);
+                lines.assign(m_sysLog.begin(), m_sysLog.end());
+            }
+            // Determine how many rows fit and show tail.
+            const float rowH   = 14.f;
+            const float bottom = y + h - 4.f;
+            const int   maxRows = static_cast<int>((bottom - cy) / rowH);
+            const int   start   = static_cast<int>(lines.size()) > maxRows
+                                    ? static_cast<int>(lines.size()) - maxRows : 0;
+            for (int i = start; i < static_cast<int>(lines.size()); ++i) {
+                if (cy + rowH > bottom) break;
+                // Colour by level prefix.
+                const std::string& ln = lines[static_cast<size_t>(i)];
+                uint32_t fg = kTextSecondary;
+                if (ln.size() >= 5) {
+                    std::string_view tag(ln.data() + 1, 4);
+                    if (tag == "WARN") fg = 0xFFE8A435;
+                    else if (tag == "ERR " || tag == "FATL") fg = 0xFFF44747;
+                    else if (tag == "INFO") fg = kTextSecondary;
+                }
+                // Truncate long lines to panel width.
+                const size_t maxChars = static_cast<size_t>((consoleW - 16.f) / 7.f);
+                const std::string display = ln.size() > maxChars
+                    ? ln.substr(0, maxChars - 1) + "…" : ln;
+                ui.drawText(x + 8.f, cy, display, fg);
+                cy += rowH;
+            }
+            if (lines.empty()) {
+                ui.drawText(x + 8.f, cy, "(no system output yet)", kTextMuted);
             }
         }
 
@@ -1561,6 +1656,16 @@ private:
     // Last frame time in milliseconds — set by the main loop via setLastFrameMs().
     // Displayed in the status bar as an FPS indicator.
     float m_lastFrameMs = 0.f;
+
+    // ── Console / System tab state ────────────────────────────────
+    // 0 = Console (project context), 1 = System (full Logger stream).
+    int m_consoleTab = 0;
+
+    // System log: all NF_LOG_* lines captured via Logger sink.
+    static constexpr size_t kSysLogMax = 500;
+    std::deque<std::string> m_sysLog;
+    mutable std::mutex      m_sysLogMutex;
+    size_t                  m_logSinkId = static_cast<size_t>(-1);
 };
 
 } // namespace NF
