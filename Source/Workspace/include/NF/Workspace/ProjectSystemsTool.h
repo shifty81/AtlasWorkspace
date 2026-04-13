@@ -105,7 +105,20 @@ public:
 
     // ── Project lifecycle ─────────────────────────────────────────
     // Notify all live panels when a project is loaded or unloaded.
+    // Also pre-instantiate all panels with factories so they receive the
+    // onProjectLoaded() call immediately rather than waiting for lazy
+    // creation when the user navigates to them.
     void notifyProjectLoaded(const std::string& projectRoot) {
+        // Pre-instantiate all enabled panels that have factories.
+        // m_currentProjectRoot is NOT yet set so getOrCreatePanel() will
+        // NOT call onProjectLoaded() — we do a single broadcast below.
+        for (const auto& desc : m_panels) {
+            if (desc.createPanel && desc.enabled) {
+                (void)getOrCreatePanel(desc.id);
+            }
+        }
+
+        // Now set the project root and broadcast to all live panels.
         m_currentProjectRoot = projectRoot;
         for (auto& [id, panel] : m_livePanels) {
             if (panel) panel->onProjectLoaded(projectRoot);

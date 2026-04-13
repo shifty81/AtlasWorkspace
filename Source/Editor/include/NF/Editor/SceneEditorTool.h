@@ -51,7 +51,7 @@ struct SceneEditorStats {
     uint32_t entityCount      = 0; // entities in the active scene
     uint32_t selectionCount   = 0; // currently selected entities
     float    lastFrameMs      = 0.0f;
-    bool     isDirty          = false; // unsaved changes
+    mutable bool isDirty      = false; // unsaved changes (mutable: set from const renderToolView)
 };
 
 // ── SceneEditorTool ───────────────────────────────────────────────
@@ -113,8 +113,8 @@ public:
 
     [[nodiscard]] const SceneEditorStats& stats()   const { return m_stats; }
     [[nodiscard]] bool                    isDirty() const { return m_stats.isDirty; }
-    void                                  markDirty();
-    void                                  clearDirty();
+    void                                  markDirty() const;
+    void                                  clearDirty() const;
 
     // Entity selection (counts only — scene data lives in the runtime)
     [[nodiscard]] uint32_t selectionCount() const { return m_stats.selectionCount; }
@@ -131,7 +131,7 @@ public:
 private:
     HostedToolDescriptor     m_descriptor;
     HostedToolState          m_state      = HostedToolState::Unloaded;
-    SceneEditorStats         m_stats;
+    SceneEditorStats         m_stats;     // isDirty is mutable within the struct
     std::string              m_activeProjectId;
 
     // Viewport slot owned by this tool while Active
@@ -150,6 +150,32 @@ private:
     // Current edit mode — set directly from renderToolView hit regions so that
     // button clicks take effect immediately without a command bus round-trip.
     mutable SceneEditMode m_editMode           = SceneEditMode::Select;
+
+    // ── Mutable per-entity transform state ────────────────────────
+    // Backing storage for interactive inspector sliders.  Each entity has
+    // 9 transform floats (pos xyz, rot xyz, scale xyz) and type-specific
+    // component floats.  Declared mutable so renderToolView() can update
+    // them through slider interactions.
+    static constexpr size_t kMaxEntities = 5;
+    struct EntityTransform {
+        float pos[3]   = {0.f, 0.f, 0.f};
+        float rot[3]   = {0.f, 0.f, 0.f};
+        float scale[3] = {1.f, 1.f, 1.f};
+    };
+    mutable EntityTransform m_entityTransforms[kMaxEntities];
+
+    // Per-entity component state (Camera, Light, RigidBody, etc.)
+    mutable float m_cameraFov = 60.f;
+    mutable float m_cameraNear = 0.1f;
+    mutable float m_cameraFar = 1000.f;
+    mutable float m_lightIntensity = 1.f;
+    mutable float m_lightAngle = 45.f;
+    mutable float m_playerMass = 80.f;
+    mutable float m_playerDrag = 0.05f;
+    mutable float m_colliderRadius = 0.4f;
+    mutable float m_colliderHeight = 1.8f;
+    mutable float m_envAmbient = 0.05f;
+    mutable float m_envFogStart = 50.f;
 
     void buildDescriptor();
 };

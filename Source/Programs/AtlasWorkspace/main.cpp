@@ -504,6 +504,13 @@ int main(int argc, char* argv[]) {
     // a real scene view instead of placeholder geometry.
     {
         using namespace NF;
+
+        // Install the software renderer as a baseline — provides a visible
+        // grid overlay into each viewport so the pipeline works end-to-end
+        // even without a GPU backend (D3D11/OpenGL) connected yet.
+        shell.viewportManager().installSoftwareRenderer();
+        NF_LOG_INFO("AtlasWorkspace", "Software viewport renderer installed");
+
         IHostedTool* rawTool = shell.toolRegistry().find(HostToolId::SceneEditor);
         if (auto* sceneTool = dynamic_cast<SceneEditorTool*>(rawTool)) {
             // Request a full-window primary viewport slot for the scene editor.

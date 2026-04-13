@@ -804,7 +804,12 @@ private:
 
         static constexpr float kHeaderH = 38.f;
         static constexpr float kBottomH = 130.f;
-        const float kMainH = h - kHeaderH - kBottomH;
+
+        // Respect PanelRegistry visibility — when console is hidden the tool
+        // gets the full remaining height instead of a fixed 130px bottom strip.
+        const bool consoleVisible = shell.panelRegistry().isPanelVisible("console");
+        const float effectiveBottomH = consoleVisible ? kBottomH : 0.f;
+        const float kMainH = h - kHeaderH - effectiveBottomH;
 
         // ── Tool header bar ────────────────────────────────────────
         ui.drawRect({x, y, w, kHeaderH}, kSurface);
@@ -844,7 +849,9 @@ private:
         }
 
         // ── Bottom strip: Console + Metrics ───────────────────────
-        renderBottomStrip(ui, x, y + kHeaderH + kMainH, w, kBottomH, shell, mouse);
+        // Only rendered when the console panel is visible in PanelRegistry.
+        if (consoleVisible)
+            renderBottomStrip(ui, x, y + kHeaderH + kMainH, w, kBottomH, shell, mouse);
 
         // ── Click handling ─────────────────────────────────────────
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
@@ -868,7 +875,11 @@ private:
 
         static constexpr float kHeaderH = 38.f;
         static constexpr float kBottomH = 130.f;
-        const float kContentH = h - kHeaderH - kBottomH;
+
+        // Respect PanelRegistry visibility for the console bottom strip.
+        const bool consoleVisible = shell.panelRegistry().isPanelVisible("console");
+        const float effectiveBottomH = consoleVisible ? kBottomH : 0.f;
+        const float kContentH = h - kHeaderH - effectiveBottomH;
 
         // ── Header bar ────────────────────────────────────────────────
         ui.drawRect({x, y, w, kHeaderH}, kSurface);
@@ -943,7 +954,9 @@ private:
         }
 
         // ── Bottom strip ───────────────────────────────────────────────
-        renderBottomStrip(ui, x, cy + kContentH, w, kBottomH, shell, mouse);
+        // Only rendered when the console panel is visible in PanelRegistry.
+        if (consoleVisible)
+            renderBottomStrip(ui, x, cy + kContentH, w, kBottomH, shell, mouse);
 
         // ── Back button click ──────────────────────────────────────────
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);

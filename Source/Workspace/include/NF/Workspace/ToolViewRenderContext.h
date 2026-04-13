@@ -20,6 +20,7 @@
 
 #include "NF/UI/UI.h"
 #include "NF/UI/UIWidgets.h"
+#include <cstdio>
 #include <cstring>
 
 namespace NF {
@@ -111,6 +112,73 @@ struct ToolViewRenderContext {
     void drawStatRow(float px, float py, const char* key, const char* value) const {
         ui.drawText(px,       py, key,   kTextSecond);
         ui.drawText(px + 110.f, py, value, kTextPrimary);
+    }
+
+    // ── Interactive slider helper ──────────────────────────────────
+    // Draws a labeled slider at (px, py) with the given label and a mutable
+    // float value clamped to [minVal, maxVal].  Returns true when the value
+    // was changed by the user.  The slider is 14px tall and uses the full
+    // row width (rowW).  Label occupies 48px; value display occupies 48px;
+    // the track fills the remainder.
+    //
+    // This is a self-contained immediate-mode slider — it does NOT require
+    // UIContext layout or begin()/end().  It reads mouse state directly from
+    // the context's mouse snapshot.
+    bool drawSlider(float px, float py, float rowW, const char* label,
+                    float& value, float minVal, float maxVal) const {
+        // Layout
+        constexpr float kLabelW  = 48.f;
+        constexpr float kValueW  = 48.f;
+        constexpr float kTrackH  = 6.f;
+        constexpr float kHandleW = 8.f;
+        constexpr float kHandleH = 14.f;
+        constexpr float kRowH    = 16.f;
+
+        const float trackX = px + kLabelW;
+        const float trackW = rowW - kLabelW - kValueW;
+        const float trackY = py + (kRowH - kTrackH) * 0.5f;
+
+        // Label
+        ui.drawText(px, py, label, kTextSecond);
+
+        // Track background
+        ui.drawRect({trackX, trackY, trackW, kTrackH}, 0x404040FF);
+        ui.drawRectOutline({trackX, trackY, trackW, kTrackH}, kBorder, 1.f);
+
+        // Fill portion
+        constexpr float kMinRange = 0.001f; // minimum valid range to avoid division by zero
+        float range = maxVal - minVal;
+        float frac  = (range > kMinRange) ? (value - minVal) / range : 0.f;
+        if (frac < 0.f) frac = 0.f;
+        if (frac > 1.f) frac = 1.f;
+        ui.drawRect({trackX, trackY, trackW * frac, kTrackH}, kAccentBlue);
+
+        // Handle
+        float handleX = trackX + (trackW - kHandleW) * frac;
+        float handleY = py + (kRowH - kHandleH) * 0.5f;
+        bool  handleHov = Rect{handleX, handleY, kHandleW, kHandleH}.contains(mouse.x, mouse.y);
+        ui.drawRect({handleX, handleY, kHandleW, kHandleH},
+                    handleHov ? 0xCCCCCCFF : kTextPrimary);
+
+        // Value text
+        char valBuf[16];
+        std::snprintf(valBuf, sizeof(valBuf), "%.1f", value);
+        ui.drawText(px + kLabelW + trackW + 4.f, py, valBuf, kTextPrimary);
+
+        // Interaction — drag on track or handle changes value
+        bool changed = false;
+        Rect trackHitR{trackX, py - 2.f, trackW, kRowH + 4.f};
+        if (trackHitR.contains(mouse.x, mouse.y) && mouse.leftDown) {
+            float newFrac = (mouse.x - trackX) / trackW;
+            if (newFrac < 0.f) newFrac = 0.f;
+            if (newFrac > 1.f) newFrac = 1.f;
+            float newVal = minVal + newFrac * range;
+            if (newVal != value) {
+                value   = newVal;
+                changed = true;
+            }
+        }
+        return changed;
     }
 };
 
