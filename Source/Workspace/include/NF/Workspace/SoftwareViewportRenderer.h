@@ -66,8 +66,8 @@ public:
     // Background and grid colours (BGRA format).
     uint32_t bgColor    = 0xFF1C1C1C;  // dark grey
     uint32_t gridColor  = 0xFF3A3A3A;  // lighter grey
-    uint32_t axisXColor = 0xFF4444FF;  // red (BGRA: blue channel = red)
-    uint32_t axisYColor = 0xFF44FF44;  // green
+    uint32_t axisXColor = 0xFF4444FF;  // blue-ish (BGRA: B=0xFF, G=0x44, R=0x44)
+    uint32_t axisYColor = 0xFF44FF44;  // green   (BGRA: B=0x44, G=0xFF, R=0x44)
     uint32_t gridSpacing = 32;         // pixels between grid lines
 
 private:
