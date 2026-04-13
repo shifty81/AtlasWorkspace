@@ -51,7 +51,7 @@ struct SceneEditorStats {
     uint32_t entityCount      = 0; // entities in the active scene
     uint32_t selectionCount   = 0; // currently selected entities
     float    lastFrameMs      = 0.0f;
-    bool     isDirty          = false; // unsaved changes
+    mutable bool isDirty      = false; // unsaved changes (mutable: set from const renderToolView)
 };
 
 // ── SceneEditorTool ───────────────────────────────────────────────
@@ -131,7 +131,7 @@ public:
 private:
     HostedToolDescriptor     m_descriptor;
     HostedToolState          m_state      = HostedToolState::Unloaded;
-    mutable SceneEditorStats m_stats;     // mutable: renderToolView() marks dirty via sliders
+    SceneEditorStats         m_stats;     // isDirty is mutable within the struct
     std::string              m_activeProjectId;
 
     // Viewport slot owned by this tool while Active

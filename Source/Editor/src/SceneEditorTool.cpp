@@ -409,9 +409,11 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             ctx.ui.drawText(ix + 8.f, ctx.y + 50.f, selName, ctx.kTextPrimary);
             ctx.ui.drawRect({ix + 4.f, ctx.y + 64.f, inspW - 8.f, 1.f}, ctx.kBorder);
 
-            // Resolve entity index for mutable state access
-            uint32_t eidx = (primarySel != INVALID_ENTITY && primarySel <= kMaxEntities)
-                            ? (primarySel - 1u) : 0u;
+            // Resolve entity index for mutable state access — guard against
+            // INVALID_ENTITY or out-of-range values to avoid modifying entity 0.
+            const bool validEntity = (primarySel != INVALID_ENTITY && primarySel >= 1u
+                                      && primarySel <= kMaxEntities);
+            const uint32_t eidx = validEntity ? (primarySel - 1u) : 0u;
             auto& xform = m_entityTransforms[eidx];
             const float sliderW = inspW - 16.f;
 

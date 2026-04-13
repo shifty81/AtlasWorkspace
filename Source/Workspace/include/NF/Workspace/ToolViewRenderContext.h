@@ -146,8 +146,9 @@ struct ToolViewRenderContext {
         ui.drawRectOutline({trackX, trackY, trackW, kTrackH}, kBorder, 1.f);
 
         // Fill portion
+        constexpr float kMinRange = 0.001f; // minimum valid range to avoid division by zero
         float range = maxVal - minVal;
-        float frac  = (range > 0.001f) ? (value - minVal) / range : 0.f;
+        float frac  = (range > kMinRange) ? (value - minVal) / range : 0.f;
         if (frac < 0.f) frac = 0.f;
         if (frac > 1.f) frac = 1.f;
         ui.drawRect({trackX, trackY, trackW * frac, kTrackH}, kAccentBlue);
