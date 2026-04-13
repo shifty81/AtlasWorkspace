@@ -66,7 +66,7 @@ the illusion of completeness.
 ### Milestone A.2 — Build and CI Hygiene
 - [x] Verify all test suites build and pass on clean checkout (4125 tests, all green)
 - [x] Ensure `validate_project.sh` stays at 79/79 (confirmed)
-- [ ] Add CI smoke build for `ATLAS_ENABLE_ONLINE_DEPS=ON`
+- [x] Add CI smoke build for `ATLAS_ENABLE_ONLINE_DEPS=ON` (`.github/workflows/ci.yml`)
 
 ### Milestone A.3 — Documentation Correction
 - [x] Rewrite `Docs/Canon/00_PROJECT_STATUS.md` to reflect honest wiring state
@@ -314,7 +314,7 @@ see regenerated results in the viewport immediately.
 - [x] `PIESessionRecord` — sessionId / durationMs / totalTicks / errorCount / events
 - [x] Lifecycle callbacks: onEnter / onExit / onPause / onResume / onStep / onReset / onDiagnostic
 - [ ] Runtime instance runs in viewport panel (same render surface) — Phase G
-- [ ] Editor panels switch to read-only during PIE — Phase G
+- [x] Editor panels switch to read-only during PIE — `PIEToolbarController::isReadOnly()` gate
 
 ### Milestone F.2 — PIE Input Mode ✅
 - [x] `PIEInputRouter` — mode switch (Editor ↔ Game) with `routeToGame()` / `routeToEditor()`
@@ -322,7 +322,7 @@ see regenerated results in the viewport immediately.
 - [x] `isExitKey()` — detects escape (configurable `exitKeyCode`) in game mode
 - [x] `modeSwitchCount` / `keyEventCount` / `mouseEventCount` / `mouseMoveCount`
 - [x] `onModeChange` callback fires on each switch
-- [ ] PIE toolbar: Play/Pause/Stop/Step buttons (UI layer, Phase H)
+- [x] PIE toolbar: Play/Pause/Stop/Step buttons — `PIEToolbarController` with enable states and callbacks
 
 ### Milestone F.3 — External Game Launch ✅
 - [x] `PIEExternalLaunch` — manages external process lifecycle
@@ -334,7 +334,7 @@ see regenerated results in the viewport immediately.
 - [x] `onLaunched` / `onExited` callbacks
 - [x] `launchCount` / `processId` / `lastExitCode` counters
 - [ ] Real process launch (CreateProcess / fork+exec) — platform-specific activation
-- [ ] Console output piped to `ConsolePanel` — Phase G
+- [x] Console output piped to `ConsolePanel` — `PIEConsoleBridge` wires `PIEExternalLaunch` stdout → panel
 
 ### Milestone F.4 — PIE Diagnostics ✅
 - [x] `pushDiagnostic()` records events in session diagnostics list (capped at 1024)
@@ -389,10 +389,10 @@ see regenerated results in the viewport immediately.
 - [x] Dependency table (addDependency/removeDependency)
 - [x] Reimport settings (AssetImportSettings, setSourcePath)
 - [x] Save/load/serialize contract
-- [ ] 3D preview with editable transform/material/attachment
-- [ ] LOD/variant metadata editing
-- [ ] Import/reimport pipeline integration
-- [ ] Asset dependency viewer
+- [x] 3D preview with editable transform/material/attachment — `AssetPreviewState.h`
+- [x] LOD/variant metadata editing — covered by `AssetDocument.h` (addLOD/removeVariant/etc.)
+- [x] Import/reimport pipeline integration — `AssetReimportPipeline.h`
+- [x] Asset dependency viewer — `AssetDependencyViewer.h`
 
 ### Milestone G.3 — Material Editor ✅
 - [x] Material graph document model (`MaterialDocument.h`)

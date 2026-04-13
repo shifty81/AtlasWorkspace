@@ -1095,6 +1095,19 @@ target_link_libraries(NF_PhaseFTests PRIVATE
 )
 catch_discover_tests(NF_PhaseFTests)
 
+# Phase F — PIE wiring: toolbar controller + console output bridge
+#   F.PIE_TOOLBAR: PIEToolbarController — Play/Pause/Stop/Step, read-only gate, callbacks
+#   F.PIE_CONSOLE: PIEConsoleBridge — wires PIEExternalLaunch stdout → ConsolePanel
+add_executable(NF_PhaseFPIEWiringTests
+    Workspace/test_phase_f_pie_wiring.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_PhaseFPIEWiringTests PRIVATE
+    NF::Editor NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_PhaseFPIEWiringTests)
+
 # WorkspaceProjectState normalization tests (Phase G ownership wiring)
 #   Tests WorkspaceProjectState as the workspace-level project session spine:
 #   document registry, dirty tracking, save/revert, panel binding context,
@@ -1127,6 +1140,20 @@ target_link_libraries(NF_PhaseGTests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_PhaseGTests)
+
+# Phase G.2 — Asset Editor full wiring (3D preview, dependency viewer, reimport pipeline)
+#   AssetPreviewState   — transform/material slot/attachment editing
+#   AssetDependencyViewer — dependency list with filter and highlight
+#   AssetReimportPipeline — import job queue, processing, status, callbacks
+add_executable(NF_PhaseG2AssetEditorTests
+    Workspace/test_phase_g2_asset_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_PhaseG2AssetEditorTests PRIVATE
+    NF::Editor NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_PhaseG2AssetEditorTests)
 
 # Phase H — UX Completion (H.1–H.6)
 #   H.1: PreferencesUIController — category nav, editable settings, import/export/reset, scope
