@@ -21,6 +21,7 @@
 #include "NF/Editor/VisualLogicEditorTool.h"
 #include "NF/Editor/BuildTool.h"
 #include "NF/Editor/AtlasAITool.h"
+#include "NF/Editor/IDETool.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include <memory>
 
@@ -38,6 +39,7 @@ inline void registerCoreTools(WorkspaceShell& shell) {
     shell.registerToolFactory([] { return std::make_unique<VisualLogicEditorTool>(); });
     shell.registerToolFactory([] { return std::make_unique<BuildTool>(); });
     shell.registerToolFactory([] { return std::make_unique<AtlasAITool>(); });
+    shell.registerToolFactory([] { return std::make_unique<IDETool>(); });
 }
 
 } // namespace NF

@@ -813,13 +813,15 @@ TEST_CASE("SceneEditorTool: shutdown resets dirty and counts", "[scene_editor][p
 
 // ── SceneEditorTool project adapter hooks ─────────────────────────
 
-TEST_CASE("SceneEditorTool: onProjectLoaded clears stats", "[scene_editor][phase3]") {
+TEST_CASE("SceneEditorTool: onProjectLoaded seeds default scene stats", "[scene_editor][phase3]") {
     NF::SceneEditorTool tool;
     tool.initialize();
     tool.setEntityCount(99);
     tool.markDirty();
     tool.onProjectLoaded("my_project");
-    REQUIRE(tool.stats().entityCount == 0);
+    // onProjectLoaded resets dirty state and seeds a default starter scene
+    // (Camera_Main, DirectionalLight, Player, Environment, SkyDome).
+    REQUIRE(tool.stats().entityCount == 5);
     REQUIRE_FALSE(tool.isDirty());
 }
 

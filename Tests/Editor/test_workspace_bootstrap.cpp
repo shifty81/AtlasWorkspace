@@ -8,8 +8,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include "NF/Editor/CoreToolRoster.h"
+#include "NF/Editor/IDETool.h"
 
-// CoreToolRoster.h includes WorkspaceShell.h and all 8 primary tool headers.
+// CoreToolRoster.h includes WorkspaceShell.h and all 9 primary tool headers.
 
 using namespace NF;
 
@@ -27,11 +28,11 @@ static bool hasToolId(const WorkspaceShell& shell, const char* id) {
 // Full roster presence
 // ─────────────────────────────────────────────────────────────────
 
-TEST_CASE("Bootstrap: WorkspaceShell registers 8 core tools on initialize", "[bootstrap][phase3]") {
+TEST_CASE("Bootstrap: WorkspaceShell registers 9 core tools on initialize", "[bootstrap][phase3]") {
     WorkspaceShell shell;
     registerCoreTools(shell);
     REQUIRE(shell.initialize());
-    CHECK(shell.toolRegistry().count() == 8);
+    CHECK(shell.toolRegistry().count() == 9);
     shell.shutdown();
 }
 
@@ -99,11 +100,19 @@ TEST_CASE("Bootstrap: AtlasAITool is registered at bootstrap", "[bootstrap][phas
     shell.shutdown();
 }
 
+TEST_CASE("Bootstrap: IDETool is registered at bootstrap", "[bootstrap][phase3]") {
+    WorkspaceShell shell;
+    registerCoreTools(shell);
+    shell.initialize();
+    CHECK(hasToolId(shell, IDETool::kToolId));
+    shell.shutdown();
+}
+
 // ─────────────────────────────────────────────────────────────────
 // All core tools are initialized (Ready state) after shell.initialize()
 // ─────────────────────────────────────────────────────────────────
 
-TEST_CASE("Bootstrap: all core tools are in Ready state after initialize", "[bootstrap][phase3]") {
+TEST_CASE("Bootstrap: all 9 core tools are in Ready state after initialize", "[bootstrap][phase3]") {
     WorkspaceShell shell;
     registerCoreTools(shell);
     shell.initialize();
@@ -122,6 +131,7 @@ TEST_CASE("Bootstrap: all core tools are in Ready state after initialize", "[boo
     check(VisualLogicEditorTool::kToolId);
     check(BuildTool::kToolId);
     check(AtlasAITool::kToolId);
+    check(IDETool::kToolId);
 
     shell.shutdown();
 }
@@ -130,7 +140,7 @@ TEST_CASE("Bootstrap: all core tools are in Ready state after initialize", "[boo
 // All core tools are Unloaded after shell.shutdown()
 // ─────────────────────────────────────────────────────────────────
 
-TEST_CASE("Bootstrap: all core tools are Unloaded after shutdown", "[bootstrap][phase3]") {
+TEST_CASE("Bootstrap: all 9 core tools are Unloaded after shutdown", "[bootstrap][phase3]") {
     WorkspaceShell shell;
     registerCoreTools(shell);
     shell.initialize();
@@ -151,18 +161,19 @@ TEST_CASE("Bootstrap: all core tools are Unloaded after shutdown", "[bootstrap][
     check(VisualLogicEditorTool::kToolId);
     check(BuildTool::kToolId);
     check(AtlasAITool::kToolId);
+    check(IDETool::kToolId);
 }
 
 // ─────────────────────────────────────────────────────────────────
 // Primary tool filter
 // ─────────────────────────────────────────────────────────────────
 
-TEST_CASE("Bootstrap: all 8 core tools are marked primary", "[bootstrap][phase3]") {
+TEST_CASE("Bootstrap: all 9 core tools are marked primary", "[bootstrap][phase3]") {
     WorkspaceShell shell;
     registerCoreTools(shell);
     shell.initialize();
     auto primaries = shell.toolRegistry().primaryTools();
-    CHECK(primaries.size() == 8);
+    CHECK(primaries.size() == 9);
     for (const auto* t : primaries)
         CHECK(t->descriptor().isPrimary);
     shell.shutdown();
@@ -223,7 +234,7 @@ TEST_CASE("Bootstrap: double initialize does not add extra tools", "[bootstrap][
     registerCoreTools(shell);
     REQUIRE(shell.initialize());
     REQUIRE_FALSE(shell.initialize()); // second call rejected
-    CHECK(shell.toolRegistry().count() == 8);
+    CHECK(shell.toolRegistry().count() == 9);
     shell.shutdown();
 }
 

@@ -148,6 +148,10 @@ public:
         return e;
     }
 
+    /// Update the last frame time (milliseconds) shown in the status bar.
+    /// Call this from the main loop with the delta time for each frame.
+    void setLastFrameMs(float ms) { m_lastFrameMs = ms; }
+
 private:
     // ── Dropdown menu item ────────────────────────────────────────
     struct DropItem {
@@ -321,11 +325,11 @@ private:
                     if (active) {
                         NF_LOG_INFO("WorkspaceUI",
                             std::string("ActivityBar: deactivating ") + desc->toolId);
-                        shell.toolRegistry().deactivateTool();
+                        shell.deactivateTool();
                     } else {
                         NF_LOG_INFO("WorkspaceUI",
                             std::string("ActivityBar: activating ") + desc->toolId);
-                        shell.toolRegistry().activateTool(desc->toolId);
+                        shell.activateTool(desc->toolId);
                     }
                 }
 
@@ -370,7 +374,7 @@ private:
                         m_activeProjectPanelId.clear();
                     } else {
                         m_activeProjectPanelId = panelDesc.id;
-                        shell.toolRegistry().deactivateTool();
+                        shell.deactivateTool();
                     }
                 }
 
@@ -631,7 +635,7 @@ private:
             if (m_ctx.hitRegion(rowR, false)) {
                 NF_LOG_INFO("WorkspaceUI",
                     std::string("Activating tool: ") + desc->toolId);
-                shell.toolRegistry().activateTool(desc->toolId);
+                shell.activateTool(desc->toolId);
             }
 
             ry += rowH + 2.f;
@@ -743,6 +747,14 @@ private:
         std::string left = std::string("  ") + shellPhaseName(shell.phase());
         ui.drawText(8.f, y + 5.f, left, 0xFFFFFFFF);
 
+        // Centre-left: FPS indicator derived from last frame time.
+        if (m_lastFrameMs > 0.f) {
+            char fpsBuf[32];
+            float fps = 1000.f / m_lastFrameMs;
+            std::snprintf(fpsBuf, sizeof(fpsBuf), "%.0f FPS  %.1f ms", fps, m_lastFrameMs);
+            ui.drawText(160.f, y + 5.f, fpsBuf, 0xFFFFFFFF);
+        }
+
         // Right: counts
         std::string right =
             "Tools: "  + std::to_string(shell.toolRegistry().count())  +
@@ -806,7 +818,7 @@ private:
         m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
         if (m_ctx.hitRegion(backR, false)) {
             NF_LOG_INFO("WorkspaceUI", "Tool deactivated: back to dashboard");
-            shell.toolRegistry().deactivateTool();
+            shell.deactivateTool();
         }
         m_ctx.end();
     }
@@ -1519,6 +1531,10 @@ private:
 
     // Fallback project path for project-scoped apps when no project is loaded.
     static constexpr const char* kStubProjectPath = "stub.atlas";
+
+    // Last frame time in milliseconds — set by the main loop via setLastFrameMs().
+    // Displayed in the status bar as an FPS indicator.
+    float m_lastFrameMs = 0.f;
 };
 
 } // namespace NF

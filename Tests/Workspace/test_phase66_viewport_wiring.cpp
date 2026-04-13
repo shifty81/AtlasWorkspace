@@ -85,7 +85,7 @@ TEST_CASE("SceneEditorTool IS-A IViewportSceneProvider", "[Phase66][Gap3]") {
     CHECK(provider != nullptr);
 }
 
-TEST_CASE("SceneEditorTool provideScene returns default state when no entities", "[Phase66][Gap3]") {
+TEST_CASE("SceneEditorTool provideScene returns content for default starter scene", "[Phase66][Gap3]") {
     SceneEditorTool tool;
     tool.initialize();
 
@@ -99,9 +99,11 @@ TEST_CASE("SceneEditorTool provideScene returns default state when no entities",
     const ViewportSlot* slot = mgr.findSlot(h);
     REQUIRE(slot != nullptr);
 
+    // activate() seeds a default starter scene (3 entities: camera, light, env root)
+    // so the viewport always shows content rather than an empty-state message.
     ViewportSceneState state = tool.provideScene(h, *slot);
-    CHECK_FALSE(state.hasContent); // no entities → no content
-    CHECK(state.entityCount == 0);
+    CHECK(state.hasContent);  // starter scene entities present
+    CHECK(state.entityCount == 3);
 
     tool.suspend();
     tool.shutdown();

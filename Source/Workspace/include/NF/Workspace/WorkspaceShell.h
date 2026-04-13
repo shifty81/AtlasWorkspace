@@ -132,6 +132,11 @@ public:
         // Initialize all registered tools
         m_toolRegistry.initializeAll();
 
+        // Register each tool's declared commands into the command bus.
+        // Tools list commands in their descriptor; we wire a default handler
+        // that logs execution so the command palette can discover them.
+        registerAllToolCommands();
+
         m_phase = ShellPhase::Ready;
         return true;
     }
@@ -174,11 +179,17 @@ public:
 
         // Notify WorkspaceProjectState — the session-level authority for project truth.
         m_projectState.onProjectLoaded(m_projectAdapter.get(), {});
+
+        // Publish project-loaded event so all bus subscribers are notified.
+        m_eventBus.post({"project.loaded", m_projectAdapter->projectId(),
+                          EditorEventPriority::High});
+        m_eventBus.flush();
         return true;
     }
 
     void unloadProject() {
         if (!m_projectAdapter) return;
+        const std::string pid = m_projectAdapter->projectId();
         m_toolRegistry.notifyProjectUnloaded();
         m_assetCatalog.clear();
         m_settingsStore.clearLayer(SettingsLayer::Project);
@@ -186,11 +197,35 @@ public:
         m_projectAdapter.reset();
         // Clear project state so panels and viewport know no project is loaded.
         m_projectState.onProjectUnloaded();
+        m_eventBus.post({"project.unloaded", pid, EditorEventPriority::High});
+        m_eventBus.flush();
     }
 
     [[nodiscard]] bool hasProject() const { return m_projectAdapter != nullptr; }
     [[nodiscard]] const IGameProjectAdapter* projectAdapter() const {
         return m_projectAdapter.get();
+    }
+
+    // ── Tool activation helpers ───────────────────────────────────
+    // These wrappers delegate to ToolRegistry and publish events on
+    // the EditorEventBus so subscribers (panels, renderers) can react.
+
+    bool activateTool(const std::string& toolId) {
+        bool ok = m_toolRegistry.activateTool(toolId);
+        if (ok) {
+            m_eventBus.post({"tool.activated", toolId, EditorEventPriority::Normal});
+            m_eventBus.flush();
+        }
+        return ok;
+    }
+
+    void deactivateTool() {
+        const std::string prev = m_toolRegistry.activeToolId();
+        m_toolRegistry.deactivateTool();
+        if (!prev.empty()) {
+            m_eventBus.post({"tool.deactivated", prev, EditorEventPriority::Normal});
+            m_eventBus.flush();
+        }
     }
 
     // ── Project state (session-level source of truth) ─────────────────────
@@ -388,6 +423,29 @@ private:
         m_settingsStore.setDefault("workspace.show_welcome", "true");
         m_settingsStore.setDefault("workspace.ui_scale", "1.0");
         m_settingsStore.setDefault("workspace.max_recent_projects", "10");
+    }
+
+    // Register commands declared by each tool's descriptor into the command bus.
+    // Each tool lists its command IDs in descriptor().commands; we wire a
+    // logging handler so the command palette can find and dispatch them.
+    void registerAllToolCommands() {
+        for (const auto* desc : m_toolRegistry.allDescriptors()) {
+            const std::string toolId = desc->toolId;
+            for (const auto& cmdName : desc->commands) {
+                if (m_commandBus.findCommand(cmdName) != nullptr) continue;
+                ConsoleCommand cmd(cmdName, ConsoleCmdScope::Editor, ConsoleCmdArgType::None);
+                cmd.setDescription(desc->displayName + ": " + cmdName);
+                cmd.setEnabled(true);
+                // Handler: activate the owning tool (if not already active) and log.
+                (void)m_commandBus.registerCommand(cmd,
+                    [this, toolId, cmdName]() -> ConsoleCmdExecResult {
+                        m_toolRegistry.activateTool(toolId);
+                        m_shellContract.postNotification(
+                            Notification{"Command: " + cmdName});
+                        return ConsoleCmdExecResult::Ok;
+                    });
+            }
+        }
     }
 
     // Populate asset catalog from project content roots.

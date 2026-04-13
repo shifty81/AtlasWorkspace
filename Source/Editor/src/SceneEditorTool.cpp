@@ -6,6 +6,7 @@
 
 #include "NF/Editor/SceneEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspaceShell.h"
 #include <cstdio>
 
 namespace NF {
@@ -184,6 +185,15 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
     const float inspW = ctx.w * 0.22f;
     const float viewW = ctx.w - hierW - inspW;
 
+    // Resolve live selection count from SelectionService when shell is wired.
+    uint32_t liveSelCount = m_stats.selectionCount;
+    EntityID primarySel   = INVALID_ENTITY;
+    if (ctx.shell) {
+        const SelectionService& sel = ctx.shell->selectionService();
+        liveSelCount = static_cast<uint32_t>(sel.selectionCount());
+        primarySel   = sel.primarySelection();
+    }
+
     // ── Hierarchy panel ──────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, hierW, ctx.h, "Hierarchy");
     // Entity count row
@@ -191,14 +201,22 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         char entBuf[32];
         std::snprintf(entBuf, sizeof(entBuf), "%u entities", m_stats.entityCount);
         ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, entBuf, ctx.kTextSecond);
-        // Simple static entity list (reflects scene state)
+
+        // Entity list — each entity has an implicit ID equal to its index + 1.
         static const char* kEntityNames[] = {
             "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
         };
         float ey = ctx.y + 48.f;
         uint32_t limit = m_stats.entityCount < 5u ? m_stats.entityCount : 5u;
         for (uint32_t i = 0; i < limit; ++i) {
-            ctx.ui.drawText(ctx.x + 16.f, ey, kEntityNames[i], ctx.kTextPrimary);
+            EntityID eid = static_cast<EntityID>(i + 1);
+            bool selected = (eid == primarySel);
+            if (selected) {
+                ctx.ui.drawRect({ctx.x + 4.f, ey - 2.f, hierW - 8.f, 18.f},
+                                0x1A3A6AFF);
+            }
+            ctx.ui.drawText(ctx.x + 16.f, ey, kEntityNames[i],
+                            selected ? ctx.kTextPrimary : ctx.kTextSecond);
             ey += 18.f;
         }
     }
@@ -206,17 +224,24 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
     // ── 3D Viewport panel ────────────────────────────────────────
     const char* viewHint = m_stats.isDirty ? "3D Viewport  [unsaved]" : "3D Viewport";
     ctx.drawPanel(ctx.x + hierW, ctx.y, viewW, ctx.h, viewHint);
-    // Grid overlay drawn below the 22 px header strip so the viewport is not
-    // just a dark rectangle.  Vertical and horizontal lines at 38 px intervals
-    // match the placeholder grid used elsewhere in the workspace.
     {
         const float vpx = ctx.x + hierW;
         const float vpy = ctx.y + 22.f;
         const float vph = ctx.h - 22.f;
+        // Grid overlay — vertical and horizontal lines at 38 px intervals.
         for (float gx = vpx; gx < vpx + viewW; gx += 38.f)
             ctx.ui.drawRect({gx, vpy, 1.f, vph}, 0x2D2D2DFF);
         for (float gy = vpy; gy < vpy + vph; gy += 38.f)
             ctx.ui.drawRect({vpx, gy, viewW, 1.f}, 0x2D2D2DFF);
+
+        // World axes overlay in the bottom-left corner of the viewport.
+        const float axX = vpx + 12.f;
+        const float axY = vpy + vph - 40.f;
+        ctx.ui.drawRect({axX,       axY + 12.f, 24.f, 2.f}, 0xE05050FF); // X axis (red)
+        ctx.ui.drawRect({axX + 12.f, axY,        2.f, 24.f}, 0x4EC94EFF); // Y axis (green)
+        ctx.ui.drawText(axX + 26.f, axY + 10.f, "X", 0xE05050FF);
+        ctx.ui.drawText(axX + 10.f, axY - 2.f,  "Y", 0x4EC94EFF);
+
         if (m_stats.entityCount == 0) {
             ctx.ui.drawText(vpx + 16.f, vpy + (vph - 14.f) * 0.5f,
                             "No scene loaded — add entities to begin",
@@ -240,21 +265,28 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
     }
 
     // ── Inspector panel ───────────────────────────────────────────
-    ctx.drawPanel(ctx.x + hierW + viewW, ctx.y, inspW, ctx.h, "Inspector");
+    const float ix = ctx.x + hierW + viewW;
+    ctx.drawPanel(ix, ctx.y, inspW, ctx.h, "Inspector");
     {
         char selBuf[32];
-        std::snprintf(selBuf, sizeof(selBuf), "%u selected", m_stats.selectionCount);
-        ctx.ui.drawText(ctx.x + hierW + viewW + 8.f, ctx.y + 30.f,
-                        selBuf, ctx.kTextSecond);
-        if (m_stats.selectionCount == 0) {
-            ctx.ui.drawText(ctx.x + hierW + viewW + 8.f, ctx.y + 50.f,
-                            "Nothing selected", ctx.kTextMuted);
+        std::snprintf(selBuf, sizeof(selBuf), "%u selected", liveSelCount);
+        ctx.ui.drawText(ix + 8.f, ctx.y + 30.f, selBuf, ctx.kTextSecond);
+
+        if (liveSelCount == 0) {
+            ctx.ui.drawText(ix + 8.f, ctx.y + 50.f, "Nothing selected", ctx.kTextMuted);
         } else {
-            ctx.ui.drawText(ctx.x + hierW + viewW + 8.f, ctx.y + 50.f,
-                            "Transform", ctx.kTextPrimary);
-            ctx.drawStatRow(ctx.x + hierW + viewW + 8.f, ctx.y + 70.f, "Pos:", "0, 0, 0");
-            ctx.drawStatRow(ctx.x + hierW + viewW + 8.f, ctx.y + 88.f, "Rot:", "0, 0, 0");
-            ctx.drawStatRow(ctx.x + hierW + viewW + 8.f, ctx.y + 106.f, "Scale:", "1, 1, 1");
+            // Show the name of the primary selected entity.
+            static const char* kEntityNames[] = {
+                "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
+            };
+            if (primarySel != INVALID_ENTITY && primarySel <= 5u) {
+                ctx.ui.drawText(ix + 8.f, ctx.y + 50.f,
+                                kEntityNames[primarySel - 1u], ctx.kTextPrimary);
+            }
+            ctx.ui.drawText(ix + 8.f, ctx.y + 68.f, "Transform", ctx.kTextSecond);
+            ctx.drawStatRow(ix + 8.f, ctx.y + 86.f,  "Pos:",   "0, 0, 0");
+            ctx.drawStatRow(ix + 8.f, ctx.y + 104.f, "Rot:",   "0, 0, 0");
+            ctx.drawStatRow(ix + 8.f, ctx.y + 122.f, "Scale:", "1, 1, 1");
         }
     }
 }
