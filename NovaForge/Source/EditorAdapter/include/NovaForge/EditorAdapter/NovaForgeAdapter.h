@@ -28,12 +28,23 @@ public:
     explicit NovaForgeAdapter(std::string projectRoot)
         : m_projectRoot(std::move(projectRoot)) {
         // Pre-compute absolute content roots once so contentRoots() is allocation-free.
+        // Accept both capitalized (canonical) and lowercase (sample/Linux) forms.
         namespace fs = std::filesystem;
         fs::path root(m_projectRoot);
-        m_contentRoots = {
-            (root / "Content").string(),
-            (root / "Data").string(),
+
+        auto addIfExists = [&](const char* canonical, const char* fallback) {
+            fs::path p = root / canonical;
+            if (fs::exists(p) && fs::is_directory(p)) {
+                m_contentRoots.push_back(p.string());
+            } else {
+                fs::path q = root / fallback;
+                if (fs::exists(q) && fs::is_directory(q))
+                    m_contentRoots.push_back(q.string());
+            }
         };
+
+        addIfExists("Content", "content");
+        addIfExists("Data",    "data");
     }
 
     std::string projectId() const override { return "novaforge"; }

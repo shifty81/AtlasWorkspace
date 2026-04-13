@@ -403,22 +403,100 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         if (liveSelCount == 0) {
             ctx.ui.drawText(ix + 8.f, ctx.y + 50.f, "Nothing selected", ctx.kTextMuted);
         } else {
-            // Show the name of the primary selected entity.
-            if (primarySel != INVALID_ENTITY && primarySel <= kEntityCount) {
-                ctx.ui.drawText(ix + 8.f, ctx.y + 50.f,
-                                kEntityNames[primarySel - 1u], ctx.kTextPrimary);
+            // Show the name and entity-type-specific components.
+            const char* selName = (primarySel != INVALID_ENTITY && primarySel <= kEntityCount)
+                                  ? kEntityNames[primarySel - 1u] : "Entity";
+            ctx.ui.drawText(ix + 8.f, ctx.y + 50.f, selName, ctx.kTextPrimary);
+            ctx.ui.drawRect({ix + 4.f, ctx.y + 64.f, inspW - 8.f, 1.f}, ctx.kBorder);
+
+            // Transform component (all entities share this)
+            ctx.ui.drawText(ix + 8.f, ctx.y + 70.f, "Transform", ctx.kTextSecond);
+            ctx.ui.drawRect({ix + 4.f, ctx.y + 82.f, inspW - 8.f, 1.f}, 0x303030FF);
+            ctx.drawStatRow(ix + 8.f, ctx.y + 86.f,  "Pos:",   "0, 0, 0");
+            ctx.drawStatRow(ix + 8.f, ctx.y + 102.f, "Rot:",   "0, 0, 0");
+            ctx.drawStatRow(ix + 8.f, ctx.y + 118.f, "Scale:", "1, 1, 1");
+
+            float compY = ctx.y + 134.f;
+
+            // Per-entity component sections (entity-type-aware)
+            if (primarySel == 1) {
+                // Camera_Main — Camera component (CinematicEditorV1/VirtualCameraEditorV1)
+                ctx.ui.drawRect({ix + 4.f, compY, inspW - 8.f, 1.f}, ctx.kBorder);
+                compY += 4.f;
+                ctx.ui.drawText(ix + 8.f, compY, "Camera", ctx.kTextSecond);
+                ctx.ui.drawRect({ix + 4.f, compY + 14.f, inspW - 8.f, 1.f}, 0x303030FF);
+                compY += 18.f;
+                ctx.drawStatRow(ix + 8.f, compY,      "FOV:",      "60.0");
+                ctx.drawStatRow(ix + 8.f, compY + 18.f, "Near clip:", "0.1");
+                ctx.drawStatRow(ix + 8.f, compY + 36.f, "Far clip:",  "1000");
+                ctx.drawStatRow(ix + 8.f, compY + 54.f, "Projection:","Persp.");
+                compY += 74.f;
+            } else if (primarySel == 2) {
+                // DirectionalLight — Light component (LightingRigEditorV1)
+                ctx.ui.drawRect({ix + 4.f, compY, inspW - 8.f, 1.f}, ctx.kBorder);
+                compY += 4.f;
+                ctx.ui.drawText(ix + 8.f, compY, "Directional Light", ctx.kTextSecond);
+                ctx.ui.drawRect({ix + 4.f, compY + 14.f, inspW - 8.f, 1.f}, 0x303030FF);
+                compY += 18.f;
+                // Color swatch
+                ctx.ui.drawRect({ix + 8.f, compY + 2.f, 16.f, 12.f}, 0xFFFAE0FFu);
+                ctx.ui.drawRectOutline({ix + 8.f, compY + 2.f, 16.f, 12.f}, ctx.kBorder, 1.f);
+                ctx.ui.drawText(ix + 28.f, compY, "Color", ctx.kTextSecond);
+                ctx.drawStatRow(ix + 8.f, compY + 18.f, "Intensity:", "1.0");
+                ctx.drawStatRow(ix + 8.f, compY + 36.f, "Angle:",     "45");
+                ctx.drawStatRow(ix + 8.f, compY + 54.f, "Shadows:",   "Hard");
+                compY += 74.f;
+            } else if (primarySel == 3) {
+                // Player — RigidBody + Collider + CharacterController
+                ctx.ui.drawRect({ix + 4.f, compY, inspW - 8.f, 1.f}, ctx.kBorder);
+                compY += 4.f;
+                ctx.ui.drawText(ix + 8.f, compY, "Rigidbody", ctx.kTextSecond);
+                ctx.ui.drawRect({ix + 4.f, compY + 14.f, inspW - 8.f, 1.f}, 0x303030FF);
+                compY += 18.f;
+                ctx.drawStatRow(ix + 8.f, compY,      "Mass:",    "80 kg");
+                ctx.drawStatRow(ix + 8.f, compY + 18.f, "Drag:",    "0.05");
+                ctx.drawStatRow(ix + 8.f, compY + 36.f, "Kinematic:","No");
+                compY += 52.f;
+                ctx.ui.drawRect({ix + 4.f, compY, inspW - 8.f, 1.f}, ctx.kBorder);
+                compY += 4.f;
+                ctx.ui.drawText(ix + 8.f, compY, "Capsule Collider", ctx.kTextSecond);
+                ctx.ui.drawRect({ix + 4.f, compY + 14.f, inspW - 8.f, 1.f}, 0x303030FF);
+                compY += 18.f;
+                ctx.drawStatRow(ix + 8.f, compY,      "Radius:", "0.4");
+                ctx.drawStatRow(ix + 8.f, compY + 18.f, "Height:", "1.8");
+                ctx.drawStatRow(ix + 8.f, compY + 36.f, "Material:","Default");
+                compY += 52.f;
+            } else if (primarySel == 4) {
+                // Environment — nothing special beyond Transform
+                ctx.ui.drawRect({ix + 4.f, compY, inspW - 8.f, 1.f}, ctx.kBorder);
+                compY += 4.f;
+                ctx.ui.drawText(ix + 8.f, compY, "Environment Volume", ctx.kTextSecond);
+                ctx.ui.drawRect({ix + 4.f, compY + 14.f, inspW - 8.f, 1.f}, 0x303030FF);
+                compY += 18.f;
+                ctx.drawStatRow(ix + 8.f, compY,      "Ambient:",  "0.05");
+                ctx.drawStatRow(ix + 8.f, compY + 18.f, "Fog:",      "Linear");
+                ctx.drawStatRow(ix + 8.f, compY + 36.f, "FogStart:", "50.0");
+                compY += 52.f;
+            } else if (primarySel == 5) {
+                // SkyDome — Sky + Atmosphere component (WeatherSystemEditorV1)
+                ctx.ui.drawRect({ix + 4.f, compY, inspW - 8.f, 1.f}, ctx.kBorder);
+                compY += 4.f;
+                ctx.ui.drawText(ix + 8.f, compY, "Sky & Atmosphere", ctx.kTextSecond);
+                ctx.ui.drawRect({ix + 4.f, compY + 14.f, inspW - 8.f, 1.f}, 0x303030FF);
+                compY += 18.f;
+                ctx.drawStatRow(ix + 8.f, compY,      "Preset:",   "Clear");
+                ctx.drawStatRow(ix + 8.f, compY + 18.f, "TimeOfDay:", "12:00");
+                ctx.drawStatRow(ix + 8.f, compY + 36.f, "Clouds:",    "None");
+                compY += 52.f;
             }
-            ctx.ui.drawText(ix + 8.f, ctx.y + 68.f, "Transform", ctx.kTextSecond);
-            ctx.ui.drawRect({ix + 4.f, ctx.y + 82.f, inspW - 8.f, 1.f}, ctx.kBorder);
-            ctx.drawStatRow(ix + 8.f, ctx.y + 88.f,  "Pos:",   "0, 0, 0");
-            ctx.drawStatRow(ix + 8.f, ctx.y + 106.f, "Rot:",   "0, 0, 0");
-            ctx.drawStatRow(ix + 8.f, ctx.y + 124.f, "Scale:", "1, 1, 1");
 
             // Deselect button
-            if (ctx.drawButton(ix + 8.f, ctx.y + ctx.h - 30.f, inspW - 16.f, 20.f,
-                               "Deselect All")) {
-                if (ctx.shell)
-                    ctx.shell->selectionService().clearSelection();
+            if (compY + 22.f < ctx.y + ctx.h - 4.f) {
+                if (ctx.drawButton(ix + 8.f, ctx.y + ctx.h - 30.f, inspW - 16.f, 20.f,
+                                   "Deselect All")) {
+                    if (ctx.shell)
+                        ctx.shell->selectionService().clearSelection();
+                }
             }
         }
     }

@@ -21,16 +21,24 @@ namespace NF {
 // ── Visual Logic editing mode ─────────────────────────────────────
 
 enum class VisualLogicMode : uint8_t {
-    Graph,  // node-graph authoring view
-    Debug,  // live execution debugger / breakpoints
-    Diff,   // graph diff vs. last compile
+    Graph,        // script node-graph authoring (ScriptGraphEditorV1)
+    Dialogue,     // branching dialogue tree (DialogueTreeEditorV1)
+    StateMachine, // finite-state machine (StateGraphV1)
+    BehaviorTree, // AI behavior tree + blackboard (AIBehaviorTreeEditorV1)
+    VFX,          // VFX node graph (VFXGraphEditorV1)
+    Debug,        // live execution debugger / breakpoints
+    Diff,         // graph diff vs. last compile
 };
 
 inline const char* visualLogicModeName(VisualLogicMode m) {
     switch (m) {
-        case VisualLogicMode::Graph: return "Graph";
-        case VisualLogicMode::Debug: return "Debug";
-        case VisualLogicMode::Diff:  return "Diff";
+        case VisualLogicMode::Graph:        return "Graph";
+        case VisualLogicMode::Dialogue:     return "Dialogue";
+        case VisualLogicMode::StateMachine: return "StateMachine";
+        case VisualLogicMode::BehaviorTree: return "BehaviorTree";
+        case VisualLogicMode::VFX:          return "VFX";
+        case VisualLogicMode::Debug:        return "Debug";
+        case VisualLogicMode::Diff:         return "Diff";
     }
     return "Unknown";
 }
@@ -96,12 +104,16 @@ public:
 private:
     HostedToolDescriptor    m_descriptor;
     HostedToolState         m_state    = HostedToolState::Unloaded;
-    VisualLogicMode         m_editMode = VisualLogicMode::Graph;
+    mutable VisualLogicMode m_editMode = VisualLogicMode::Graph;
     VisualLogicEditorStats  m_stats;
     std::string             m_activeProjectId;
 
     // ── Mutable per-view UI state (safe from const renderToolView) ─
-    mutable int m_viewSelectedNode = -1;
+    mutable int m_viewSelectedNode    = -1; // Graph mode
+    mutable int m_viewSelectedDlgNode = -1; // Dialogue mode
+    mutable int m_viewSelectedState   = -1; // StateMachine mode
+    mutable int m_viewSelectedBTNode  = -1; // BehaviorTree mode
+    mutable int m_viewSelectedVFXNode = -1; // VFX mode
 
     void buildDescriptor();
 };

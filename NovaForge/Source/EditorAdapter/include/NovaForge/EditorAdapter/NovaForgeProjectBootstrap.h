@@ -35,8 +35,20 @@ public:
         namespace fs = std::filesystem;
         fs::path root(m_projectRoot);
 
-        // Check Content/ directory
-        fs::path contentDir = root / "Content";
+        // ── Helper: resolve a directory accepting either casing ───────────
+        // Projects created on case-sensitive filesystems (Linux/Mac) may use
+        // lowercase names (e.g. data/, config/) while the canonical spec uses
+        // uppercase (Data/, Config/).  Accept either form.
+        auto resolveDir = [&](const char* canonical, const char* fallback) -> fs::path {
+            fs::path p = root / canonical;
+            if (fs::exists(p) && fs::is_directory(p)) return p;
+            fs::path q = root / fallback;
+            if (fs::exists(q) && fs::is_directory(q)) return q;
+            return p; // return canonical path (doesn't exist) so callers can report it
+        };
+
+        // Check Content/ (or content/) directory — required; absence is an Error.
+        fs::path contentDir = resolveDir("Content", "content");
         if (!fs::exists(contentDir) || !fs::is_directory(contentDir)) {
             contract.addError("missing_content_dir",
                 "NovaForge Content/ directory not found at: " + contentDir.string());
@@ -48,8 +60,8 @@ public:
             }
         }
 
-        // Check Data/ directory
-        fs::path dataDir = root / "Data";
+        // Check Data/ (or data/) directory
+        fs::path dataDir = resolveDir("Data", "data");
         if (!fs::exists(dataDir) || !fs::is_directory(dataDir)) {
             contract.addWarning("missing_data_dir",
                 "NovaForge Data/ directory not found at: " + dataDir.string());
@@ -58,8 +70,8 @@ public:
                 "Data/ directory validated: " + dataDir.string());
         }
 
-        // Check Config/ directory (new in Storage Map v1)
-        fs::path configDir = root / "Config";
+        // Check Config/ (or config/) directory
+        fs::path configDir = resolveDir("Config", "config");
         if (!fs::exists(configDir) || !fs::is_directory(configDir)) {
             contract.addWarning("missing_config_dir",
                 "NovaForge Config/ directory not found at: " + configDir.string());
@@ -68,8 +80,8 @@ public:
                 "Config/ directory validated: " + configDir.string());
         }
 
-        // Check Schemas/ directory (plural - Storage Map v1 canonical name)
-        fs::path schemasDir = root / "Schemas";
+        // Check Schemas/ (or schemas/) directory
+        fs::path schemasDir = resolveDir("Schemas", "schemas");
         if (!fs::exists(schemasDir) || !fs::is_directory(schemasDir)) {
             contract.addWarning("missing_schemas_dir",
                 "NovaForge Schemas/ directory not found at: " + schemasDir.string());
@@ -79,7 +91,7 @@ public:
         }
 
         // Check Generated/ directory (informational)
-        fs::path generatedDir = root / "Generated";
+        fs::path generatedDir = resolveDir("Generated", "generated");
         if (fs::exists(generatedDir) && fs::is_directory(generatedDir)) {
             contract.addInfo("generated_dir_found",
                 "Generated/ directory found: " + generatedDir.string());
