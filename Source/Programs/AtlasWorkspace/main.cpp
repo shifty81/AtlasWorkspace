@@ -305,7 +305,9 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
         // Route dropped files to the workspace shell for asset intake.
         if (g_shell) {
             HDROP hDrop = reinterpret_cast<HDROP>(wParam);
-            UINT count = DragQueryFileW(hDrop, 0xFFFFFFFF, nullptr, 0);
+            // Passing 0xFFFFFFFF as the file index queries the total count of dropped files.
+            static constexpr UINT kQueryFileCount = 0xFFFFFFFFu;
+            UINT count = DragQueryFileW(hDrop, kQueryFileCount, nullptr, 0);
             for (UINT i = 0; i < count; ++i) {
                 wchar_t buf[MAX_PATH] = {};
                 if (DragQueryFileW(hDrop, i, buf, MAX_PATH) > 0) {

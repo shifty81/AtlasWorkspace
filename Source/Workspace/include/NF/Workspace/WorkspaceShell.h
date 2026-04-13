@@ -57,6 +57,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+#if !defined(_WIN32)
+#  include <sys/stat.h>  // mkdir
+#endif
 
 namespace NF {
 
@@ -126,10 +129,16 @@ public:
         registerDefaultSettings();
 
         // Load persisted User/Project settings from disk.
-        m_settingsStore.loadFromFile(userSettingsPath());
+        if (!m_settingsStore.loadFromFile(userSettingsPath())) {
+            NF_LOG_INFO("WorkspaceShell", "No persisted settings found — using defaults ("
+                        + userSettingsPath() + ")");
+        }
 
         // Load persisted layout presets from disk.
-        m_layoutPersistence.loadFromFile(userLayoutPath());
+        if (!m_layoutPersistence.loadFromFile(userLayoutPath())) {
+            NF_LOG_INFO("WorkspaceShell", "No persisted layout presets found — starting fresh ("
+                        + userLayoutPath() + ")");
+        }
 
         // Load recent files list from disk.
         loadRecentFiles();
@@ -588,41 +597,44 @@ private:
 
     /// Returns the path to the user settings file.
     /// Uses $HOME/.atlasworkspace/settings.cfg on POSIX, %APPDATA%\AtlasWorkspace\settings.cfg on Windows.
-    static std::string userSettingsPath() {
+    /// Returns the user-specific directory for AtlasWorkspace config files.
+    /// Creates the directory if it does not yet exist.
+    static std::string userDataDir() {
 #if defined(_WIN32)
         const char* appdata = std::getenv("APPDATA");
-        std::string base = appdata ? appdata : ".";
-        return base + "\\AtlasWorkspace\\settings.cfg";
+        std::string dir = (appdata ? appdata : ".") + std::string("\\AtlasWorkspace");
+        CreateDirectoryA(dir.c_str(), nullptr); // no-op if already exists
 #else
         const char* home = std::getenv("HOME");
-        std::string base = home ? home : ".";
-        return base + "/.atlasworkspace/settings.cfg";
+        std::string dir = (home ? home : ".") + std::string("/.atlasworkspace");
+        mkdir(dir.c_str(), 0755); // no-op if already exists (EEXIST ignored)
+#endif
+        return dir;
+    }
+
+    static std::string userSettingsPath() {
+#if defined(_WIN32)
+        return userDataDir() + "\\settings.cfg";
+#else
+        return userDataDir() + "/settings.cfg";
 #endif
     }
 
     /// Returns the path to the user layout presets file.
     static std::string userLayoutPath() {
 #if defined(_WIN32)
-        const char* appdata = std::getenv("APPDATA");
-        std::string base = appdata ? appdata : ".";
-        return base + "\\AtlasWorkspace\\layout.cfg";
+        return userDataDir() + "\\layout.cfg";
 #else
-        const char* home = std::getenv("HOME");
-        std::string base = home ? home : ".";
-        return base + "/.atlasworkspace/layout.cfg";
+        return userDataDir() + "/layout.cfg";
 #endif
     }
 
     /// Returns the path to the recent-files store.
     static std::string userRecentFilesPath() {
 #if defined(_WIN32)
-        const char* appdata = std::getenv("APPDATA");
-        std::string base = appdata ? appdata : ".";
-        return base + "\\AtlasWorkspace\\recentfiles.cfg";
+        return userDataDir() + "\\recentfiles.cfg";
 #else
-        const char* home = std::getenv("HOME");
-        std::string base = home ? home : ".";
-        return base + "/.atlasworkspace/recentfiles.cfg";
+        return userDataDir() + "/recentfiles.cfg";
 #endif
     }
 

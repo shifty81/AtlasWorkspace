@@ -168,8 +168,8 @@ public:
         bool inPreset = false;
         while (std::getline(ifs, line)) {
             if (line.empty() || line[0] == '#') continue;
-            if (line.substr(0, 10) == "lastUsed:") {
-                m_lastUsed = line.substr(10);
+            if (line.substr(0, 9) == "lastUsed:") {
+                m_lastUsed = line.substr(9);
             } else if (line.substr(0, 7) == "preset:") {
                 currentName = line.substr(7);
                 currentData.clear();
