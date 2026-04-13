@@ -130,46 +130,107 @@ void AnimationEditorTool::renderToolView(const ToolViewRenderContext& ctx) const
     const float timelineW = ctx.w * 0.55f;
     const float propW     = ctx.w - skelW - timelineW;
 
+    // Stub clip list
+    static const char* kClipNames[] = {"Idle", "Run", "Jump", "Attack", "Death"};
+    static constexpr int kClipCount = 5;
+
     // ── Skeleton / Clips panel ────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, skelW, ctx.h, "Skeleton / Clips");
     {
         char boneBuf[32];
         std::snprintf(boneBuf, sizeof(boneBuf), "%u bones sel.", m_stats.selectedBoneCount);
         ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, boneBuf, ctx.kTextSecond);
+
+        // Clip list rows
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 50.f, "Clips:", ctx.kTextMuted);
+        float cy2 = ctx.y + 66.f;
+        for (int i = 0; i < kClipCount; ++i) {
+            if (cy2 + 18.f > ctx.y + ctx.h - 4.f) break;
+            bool sel = (m_viewSelectedClip == i);
+            bool hov = ctx.isHovered({ctx.x + 2.f, cy2, skelW - 4.f, 16.f});
+            uint32_t bg = sel ? ctx.kAccentBlue : (hov ? 0x2A2A3AFF : 0x00000000u);
+            if (bg) ctx.ui.drawRect({ctx.x + 2.f, cy2, skelW - 4.f, 16.f}, bg);
+            ctx.ui.drawText(ctx.x + 8.f, cy2 + 1.f, kClipNames[i],
+                            sel ? ctx.kTextPrimary : ctx.kTextSecond);
+            if (ctx.hitRegion({ctx.x + 2.f, cy2, skelW - 4.f, 16.f}, false))
+                m_viewSelectedClip = sel ? -1 : i;
+            cy2 += 18.f;
+        }
     }
 
     // ── Timeline panel ────────────────────────────────────────────
     ctx.drawPanel(ctx.x + skelW, ctx.y, timelineW, ctx.h, "Timeline");
-    // Mode pill
-    ctx.drawStatusPill(ctx.x + skelW + 8.f, ctx.y + 30.f,
-                       animationEditModeName(m_editMode), ctx.kAccentBlue);
-    // Playback state
-    if (m_stats.isPlaying) {
-        ctx.drawStatusPill(ctx.x + skelW + 80.f, ctx.y + 30.f, "PLAYING", ctx.kGreen);
+
+    // Playback control buttons: Play / Pause / Stop / Record
+    {
+        float bx = ctx.x + skelW + 8.f;
+        float by = ctx.y + 28.f;
+        if (ctx.drawButton(bx,      by, 40.f, 18.f, m_viewIsPlaying ? "Pause" : "Play",
+                           m_viewIsPlaying ? ctx.kGreen : ctx.kButtonBg)) {
+            m_viewIsPlaying = !m_viewIsPlaying;
+        }
+        if (ctx.drawButton(bx + 44.f, by, 36.f, 18.f, "Stop")) {
+            m_viewIsPlaying  = false;
+            m_viewIsRecording = false;
+        }
+        uint32_t recBg = m_viewIsRecording ? ctx.kRed : ctx.kButtonBg;
+        if (ctx.drawButton(bx + 84.f, by, 36.f, 18.f, "REC", recBg)) {
+            m_viewIsRecording = !m_viewIsRecording;
+        }
     }
-    if (m_stats.isRecording) {
-        ctx.drawStatusPill(ctx.x + skelW + 150.f, ctx.y + 30.f, "REC", ctx.kRed);
+
+    // Status pills
+    if (m_viewIsPlaying || m_stats.isPlaying)
+        ctx.drawStatusPill(ctx.x + skelW + 8.f, ctx.y + 50.f, "PLAYING", ctx.kGreen);
+    if (m_viewIsRecording || m_stats.isRecording)
+        ctx.drawStatusPill(ctx.x + skelW + 80.f, ctx.y + 50.f, "REC", ctx.kRed);
+
+    // Timeline ruler (simple frame markers)
+    {
+        float rulY = ctx.y + 70.f;
+        float rulW = timelineW - 16.f;
+        ctx.ui.drawRect({ctx.x + skelW + 8.f, rulY, rulW, 18.f}, 0x1E1E1EFF);
+        ctx.ui.drawRectOutline({ctx.x + skelW + 8.f, rulY, rulW, 18.f}, ctx.kBorder, 1.f);
+        // Tick marks at 10% intervals
+        for (int t = 0; t <= 10; ++t) {
+            float tx2 = ctx.x + skelW + 8.f + rulW * (t / 10.f);
+            ctx.ui.drawRect({tx2, rulY, 1.f, 8.f}, ctx.kTextMuted);
+        }
+        // Playhead (blue line at 0 for now)
+        ctx.ui.drawRect({ctx.x + skelW + 8.f, rulY, 2.f, 18.f}, ctx.kAccentBlue);
     }
+
     {
         char frameBuf[48];
         std::snprintf(frameBuf, sizeof(frameBuf), "%.0f ms  |  %u keyframes",
                       m_stats.clipDurationMs, m_stats.frameCount);
-        ctx.ui.drawText(ctx.x + skelW + 8.f, ctx.y + 54.f, frameBuf, ctx.kTextSecond);
+        ctx.ui.drawText(ctx.x + skelW + 8.f, ctx.y + 94.f, frameBuf, ctx.kTextSecond);
     }
 
     // ── Clip Properties panel ─────────────────────────────────────
     ctx.drawPanel(ctx.x + skelW + timelineW, ctx.y, propW, ctx.h, "Clip Properties");
-    {
+    const float px = ctx.x + skelW + timelineW;
+    if (m_viewSelectedClip >= 0 && m_viewSelectedClip < kClipCount) {
+        ctx.ui.drawText(px + 8.f, ctx.y + 30.f, kClipNames[m_viewSelectedClip], ctx.kTextPrimary);
+        ctx.ui.drawRect({px + 4.f, ctx.y + 44.f, propW - 8.f, 1.f}, ctx.kBorder);
         char durBuf[32];
         std::snprintf(durBuf, sizeof(durBuf), "%.1f ms", m_stats.clipDurationMs);
-        ctx.drawStatRow(ctx.x + skelW + timelineW + 8.f, ctx.y + 30.f, "Duration:", durBuf);
+        ctx.drawStatRow(px + 8.f, ctx.y + 50.f, "Duration:", durBuf);
         char fcBuf[16];
         std::snprintf(fcBuf, sizeof(fcBuf), "%u", m_stats.frameCount);
-        ctx.drawStatRow(ctx.x + skelW + timelineW + 8.f, ctx.y + 48.f, "Frames:", fcBuf);
+        ctx.drawStatRow(px + 8.f, ctx.y + 68.f, "Frames:", fcBuf);
+        ctx.drawStatRow(px + 8.f, ctx.y + 86.f, "Loop:", "Yes");
+    } else {
+        char durBuf[32];
+        std::snprintf(durBuf, sizeof(durBuf), "%.1f ms", m_stats.clipDurationMs);
+        ctx.drawStatRow(px + 8.f, ctx.y + 30.f, "Duration:", durBuf);
+        char fcBuf[16];
+        std::snprintf(fcBuf, sizeof(fcBuf), "%u", m_stats.frameCount);
+        ctx.drawStatRow(px + 8.f, ctx.y + 48.f, "Frames:", fcBuf);
+        ctx.ui.drawText(px + 8.f, ctx.y + 70.f, "Select a clip", ctx.kTextMuted);
     }
     if (m_stats.isDirty) {
-        ctx.ui.drawText(ctx.x + skelW + timelineW + 8.f, ctx.y + ctx.h - 20.f,
-                        "* unsaved", ctx.kRed);
+        ctx.ui.drawText(px + 8.f, ctx.y + ctx.h - 20.f, "* unsaved", ctx.kRed);
     }
 }
 

@@ -11,6 +11,12 @@
 //
 // WorkspaceShell is passed by pointer (never null in practice, but nullable so
 // that unit tests can exercise renderToolView without a full shell).
+//
+// uiCtx — nullable UIContext* provided by WorkspaceRenderer so that tools can
+// register hit-regions for interactive click handling.  Always non-null in the
+// live runtime path; null only in headless tests that call renderToolView directly.
+// Tools must guard every uiCtx call with a null check, or use the hitRegion()
+// / isHovered() convenience helpers that do so automatically.
 
 #include "NF/UI/UI.h"
 #include "NF/UI/UIWidgets.h"
@@ -26,7 +32,8 @@ struct ToolViewRenderContext {
     UIRenderer&          ui;
     const UIMouseState&  mouse;
     float                x, y, w, h;   // bounding box of the tool content area
-    WorkspaceShell*      shell = nullptr;
+    WorkspaceShell*      shell  = nullptr;
+    UIContext*           uiCtx  = nullptr; // nullable — null in headless tests
 
     // ── Shared color palette (RRGGBBAA, matches GDIBackend convention) ─
     static constexpr uint32_t kSurface      = 0x252525FF;
@@ -39,6 +46,39 @@ struct ToolViewRenderContext {
     static constexpr uint32_t kTextPrimary  = 0xE0E0E0FF;
     static constexpr uint32_t kTextSecond   = 0x888888FF;
     static constexpr uint32_t kTextMuted    = 0x555555FF;
+
+    // ── Click / hover helpers ─────────────────────────────────────
+    // These delegate to uiCtx when non-null.  Safe to call from const
+    // renderToolView() implementations.
+
+    // Returns true when the user completes a left-click inside |r|.
+    // Draws a subtle hover highlight when hovered (if uiCtx is set).
+    // Always returns false when uiCtx is null (headless / test path).
+    [[nodiscard]] bool hitRegion(const Rect& r, bool drawHover = true) const {
+        if (!uiCtx) return false;
+        return uiCtx->hitRegion(r, drawHover);
+    }
+
+    // Returns true when the mouse cursor is currently inside |r|.
+    // Uses the mouse snapshot embedded in the context — no uiCtx needed.
+    [[nodiscard]] bool isHovered(const Rect& r) const {
+        return r.contains(mouse.x, mouse.y);
+    }
+
+    // Draws a button-style rect at (px,py,pw,ph) with |label|.
+    // Returns true when clicked. Honours hover tint automatically.
+    [[nodiscard]] bool drawButton(float px, float py, float pw, float ph,
+                                   const char* label,
+                                   uint32_t normalBg = kButtonBg,
+                                   uint32_t hoverBg  = 0x4A4A4AFF) const {
+        Rect r{px, py, pw, ph};
+        bool hov = isHovered(r);
+        ui.drawRect(r, hov ? hoverBg : normalBg);
+        ui.drawRectOutline(r, kBorder, 1.f);
+        float tw = static_cast<float>(std::strlen(label)) * 7.f;
+        ui.drawText(px + (pw - tw) * 0.5f, py + (ph - 14.f) * 0.5f, label, kTextPrimary);
+        return hitRegion(r, false);
+    }
 
     // ── Panel chrome helper ───────────────────────────────────────
     // Draws a titled panel zone with an optional centered hint string.

@@ -100,6 +100,9 @@ private:
     VisualLogicEditorStats  m_stats;
     std::string             m_activeProjectId;
 
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    mutable int m_viewSelectedNode = -1;
+
     void buildDescriptor();
 };
 

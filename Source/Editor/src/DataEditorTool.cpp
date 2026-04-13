@@ -5,7 +5,9 @@
 
 #include "NF/Editor/DataEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspaceShell.h"
 #include <cstdio>
+#include <cstring>
 
 namespace NF {
 
@@ -115,14 +117,31 @@ void DataEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
     const float gridW   = ctx.w * 0.50f;
     const float inspW   = ctx.w - tablesW - gridW;
 
+    // Stub table list (reflects open table + project-catalog tables when shell wired)
+    static const char* kTableNames[] = {
+        "PlayerStats", "EnemyConfig", "ItemTable", "QuestData", "SkillTree"
+    };
+    static constexpr int kTableCount = 5;
+
     // ── Tables panel ──────────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, tablesW, ctx.h, "Tables");
-    if (!m_openTablePath.empty()) {
-        std::string label = m_openTablePath;
-        if (label.size() > 22) label = label.substr(0, 19) + "...";
-        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, label, ctx.kTextPrimary);
-    } else {
-        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, "No table open", ctx.kTextMuted);
+    {
+        // Show the externally-set table path if available, otherwise the view selection
+        const std::string& displayPath = !m_openTablePath.empty() ? m_openTablePath : m_viewOpenTable;
+        float ty2 = ctx.y + 28.f;
+        for (int i = 0; i < kTableCount; ++i) {
+            if (ty2 + 20.f > ctx.y + ctx.h - 4.f) break;
+            bool active = (displayPath == kTableNames[i]);
+            bool hov    = ctx.isHovered({ctx.x + 2.f, ty2, tablesW - 4.f, 18.f});
+            uint32_t bg = active ? ctx.kAccentBlue
+                        : (hov ? 0x2A2A3AFF : 0x00000000u);
+            if (bg) ctx.ui.drawRect({ctx.x + 2.f, ty2, tablesW - 4.f, 18.f}, bg);
+            ctx.ui.drawText(ctx.x + 8.f, ty2 + 2.f, kTableNames[i],
+                            active ? ctx.kTextPrimary : ctx.kTextSecond);
+            if (ctx.hitRegion({ctx.x + 2.f, ty2, tablesW - 4.f, 18.f}, false))
+                m_viewOpenTable = active ? "" : kTableNames[i];
+            ty2 += 20.f;
+        }
     }
 
     // ── Data Grid ─────────────────────────────────────────────────
@@ -132,10 +151,40 @@ void DataEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         std::snprintf(gridBuf, sizeof(gridBuf), "%u rows  x  %u cols",
                       m_stats.rowCount, m_stats.columnCount);
         ctx.ui.drawText(ctx.x + tablesW + 8.f, ctx.y + 30.f, gridBuf, ctx.kTextSecond);
+
+        // Header row
+        float hdrY = ctx.y + 48.f;
+        ctx.ui.drawRect({ctx.x + tablesW, hdrY, gridW, 20.f}, 0x303030FF);
+        ctx.ui.drawText(ctx.x + tablesW + 8.f,   hdrY + 3.f, "ID",    ctx.kTextSecond);
+        ctx.ui.drawText(ctx.x + tablesW + 60.f,  hdrY + 3.f, "Name",  ctx.kTextSecond);
+        ctx.ui.drawText(ctx.x + tablesW + 180.f, hdrY + 3.f, "Value", ctx.kTextSecond);
+        ctx.ui.drawRect({ctx.x + tablesW, hdrY + 20.f, gridW, 1.f}, ctx.kBorder);
+
+        // Data rows (show up to 10 stub rows derived from row count)
+        static const char* kRowIds[]    = {"001","002","003","004","005","006","007","008","009","010"};
+        static const char* kRowValues[] = {"100","50","12","1","0","42","7","99","3","18"};
+        uint32_t rowsToShow = m_stats.rowCount < 10u ? m_stats.rowCount : 10u;
+        float ry2 = hdrY + 22.f;
+        for (uint32_t i = 0; i < rowsToShow; ++i) {
+            if (ry2 + 20.f > ctx.y + ctx.h - 4.f) break;
+            bool sel = (m_viewSelectedRow == static_cast<int>(i));
+            bool hov = ctx.isHovered({ctx.x + tablesW + 2.f, ry2, gridW - 4.f, 18.f});
+            uint32_t bg = sel ? 0x1A3A6AFF : (hov ? 0x2A2A3AFF : 0x00000000u);
+            if (bg) ctx.ui.drawRect({ctx.x + tablesW + 2.f, ry2, gridW - 4.f, 18.f}, bg);
+            ctx.ui.drawRect({ctx.x + tablesW + 2.f, ry2, 2.f, 18.f},
+                            sel ? ctx.kAccentBlue : 0x404040FF);
+            ctx.ui.drawText(ctx.x + tablesW + 8.f,   ry2 + 2.f, kRowIds[i],    ctx.kTextSecond);
+            ctx.ui.drawText(ctx.x + tablesW + 60.f,  ry2 + 2.f, kTableNames[i % kTableCount], ctx.kTextSecond);
+            ctx.ui.drawText(ctx.x + tablesW + 180.f, ry2 + 2.f, kRowValues[i], ctx.kTextMuted);
+            if (ctx.hitRegion({ctx.x + tablesW + 2.f, ry2, gridW - 4.f, 18.f}, false))
+                m_viewSelectedRow = sel ? -1 : static_cast<int>(i);
+            ry2 += 20.f;
+        }
         if (m_stats.selectedRowCount > 0) {
             char selBuf[32];
             std::snprintf(selBuf, sizeof(selBuf), "%u selected", m_stats.selectedRowCount);
-            ctx.drawStatusPill(ctx.x + tablesW + 8.f, ctx.y + 50.f, selBuf, ctx.kAccentBlue);
+            ctx.drawStatusPill(ctx.x + tablesW + 8.f, ctx.y + ctx.h - 22.f,
+                               selBuf, ctx.kAccentBlue);
         }
     }
     if (m_stats.isDirty) {
@@ -145,8 +194,26 @@ void DataEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
 
     // ── Inspector ─────────────────────────────────────────────────
     ctx.drawPanel(ctx.x + tablesW + gridW, ctx.y, inspW, ctx.h, "Inspector");
-    ctx.ui.drawText(ctx.x + tablesW + gridW + 8.f, ctx.y + 30.f,
-                    "Row Properties", ctx.kTextSecond);
+    const float ix = ctx.x + tablesW + gridW;
+    if (m_viewSelectedRow >= 0) {
+        static const char* kRowIds[]    = {"001","002","003","004","005","006","007","008","009","010"};
+        static const char* kRowValues[] = {"100","50","12","1","0","42","7","99","3","18"};
+        ctx.ui.drawText(ix + 8.f, ctx.y + 30.f, "Row Details", ctx.kTextPrimary);
+        ctx.ui.drawRect({ix + 4.f, ctx.y + 44.f, inspW - 8.f, 1.f}, ctx.kBorder);
+        int ri = m_viewSelectedRow;
+        ctx.drawStatRow(ix + 8.f, ctx.y + 50.f, "ID:",    kRowIds[ri % 10]);
+        ctx.drawStatRow(ix + 8.f, ctx.y + 68.f, "Name:",  kTableNames[ri % kTableCount]);
+        ctx.drawStatRow(ix + 8.f, ctx.y + 86.f, "Value:", kRowValues[ri % 10]);
+
+        // Save row button
+        if (ctx.drawButton(ix + 8.f, ctx.y + ctx.h - 30.f, inspW - 16.f, 20.f, "Save Row")) {
+            if (ctx.shell)
+                (void)ctx.shell->commandBus().execute("data.save_row");
+        }
+    } else {
+        ctx.ui.drawText(ix + 8.f, ctx.y + 30.f, "Row Properties", ctx.kTextSecond);
+        ctx.ui.drawText(ix + 8.f, ctx.y + 50.f, "Select a row", ctx.kTextMuted);
+    }
 }
 
 } // namespace NF

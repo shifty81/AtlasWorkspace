@@ -7,7 +7,9 @@
 #include "NF/Editor/SceneEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
 #include "NF/Workspace/WorkspaceShell.h"
+#include <cctype>
 #include <cstdio>
+#include <cstring>
 
 namespace NF {
 
@@ -194,29 +196,45 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         primarySel   = sel.primarySelection();
     }
 
+    static const char* kEntityNames[] = {
+        "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
+    };
+    static constexpr size_t kEntityCount = std::size(kEntityNames);
+
     // ── Hierarchy panel ──────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, hierW, ctx.h, "Hierarchy");
-    // Entity count row
     {
         char entBuf[32];
         std::snprintf(entBuf, sizeof(entBuf), "%u entities", m_stats.entityCount);
         ctx.ui.drawText(ctx.x + 8.f, ctx.y + 30.f, entBuf, ctx.kTextSecond);
 
         // Entity list — each entity has an implicit ID equal to its index + 1.
-        static const char* kEntityNames[] = {
-            "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
-        };
+        // Rows are hit-tested so clicking selects the entity via SelectionService.
         float ey = ctx.y + 48.f;
-        uint32_t limit = m_stats.entityCount < 5u ? m_stats.entityCount : 5u;
+        uint32_t limit = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
+                       ? m_stats.entityCount
+                       : static_cast<uint32_t>(kEntityCount);
         for (uint32_t i = 0; i < limit; ++i) {
             EntityID eid = static_cast<EntityID>(i + 1);
             bool selected = (eid == primarySel);
-            if (selected) {
-                ctx.ui.drawRect({ctx.x + 4.f, ey - 2.f, hierW - 8.f, 18.f},
-                                0x1A3A6AFF);
-            }
+            bool hovered  = ctx.isHovered({ctx.x + 4.f, ey - 2.f, hierW - 8.f, 18.f});
+
+            uint32_t bg = selected ? 0x1A3A6AFF : (hovered ? 0x2A2A3AFF : 0x00000000u);
+            if (bg) ctx.ui.drawRect({ctx.x + 4.f, ey - 2.f, hierW - 8.f, 18.f}, bg);
+
+            // Left accent stripe
+            ctx.ui.drawRect({ctx.x + 4.f, ey - 2.f, 2.f, 18.f},
+                            selected ? ctx.kAccentBlue : 0x404040FF);
             ctx.ui.drawText(ctx.x + 16.f, ey, kEntityNames[i],
                             selected ? ctx.kTextPrimary : ctx.kTextSecond);
+
+            // Click: select entity exclusively via SelectionService
+            if (ctx.hitRegion({ctx.x + 4.f, ey - 2.f, hierW - 8.f, 18.f}, false)) {
+                m_viewSelectedEntity = static_cast<int>(i);
+                if (ctx.shell)
+                    ctx.shell->selectionService().selectExclusive(eid);
+            }
+
             ey += 18.f;
         }
     }
@@ -247,14 +265,39 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
                             "No scene loaded — add entities to begin",
                             ctx.kTextMuted);
         }
+
+        // Edit mode toolbar buttons along the top of the viewport
+        static constexpr struct { const char* label; SceneEditMode mode; } kModes[] = {
+            {"Select", SceneEditMode::Select},
+            {"Move",   SceneEditMode::Translate},
+            {"Rotate", SceneEditMode::Rotate},
+            {"Scale",  SceneEditMode::Scale},
+        };
+        float btnX = vpx + 8.f;
+        float btnY = vpy + 4.f;
+        for (const auto& m : kModes) {
+            bool active = (m_editMode == m.mode);
+            float btnW = static_cast<float>(std::strlen(m.label)) * 7.f + 16.f;
+            uint32_t bg = active ? ctx.kAccentBlue : ctx.kButtonBg;
+            if (ctx.drawButton(btnX, btnY, btnW, 18.f, m.label, bg)) {
+                // Click: switch edit mode via the shell command bus if available
+                if (ctx.shell) {
+                    std::string cmd = "scene.set_mode.";
+                    for (const char* c = m.label; *c; ++c)
+                        cmd += static_cast<char>(std::tolower(static_cast<unsigned char>(*c)));
+                    (void)ctx.shell->commandBus().execute(cmd);
+                }
+            }
+            btnX += btnW + 4.f;
+        }
     }
-    // Mode pill
-    ctx.drawStatusPill(ctx.x + hierW + 8.f, ctx.y + 30.f,
+    // Mode pill (shown at bottom-left)
+    ctx.drawStatusPill(ctx.x + hierW + 8.f, ctx.y + ctx.h - 22.f,
                        sceneEditModeName(m_editMode), ctx.kAccentBlue);
     // Dirty indicator
     if (m_stats.isDirty) {
-        ctx.ui.drawText(ctx.x + hierW + 8.f, ctx.y + ctx.h - 20.f,
-                        "* unsaved changes", ctx.kRed);
+        ctx.ui.drawText(ctx.x + hierW + 90.f, ctx.y + ctx.h - 20.f,
+                        "* unsaved", ctx.kRed);
     }
     // Frame time
     {
@@ -276,18 +319,22 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             ctx.ui.drawText(ix + 8.f, ctx.y + 50.f, "Nothing selected", ctx.kTextMuted);
         } else {
             // Show the name of the primary selected entity.
-            static const char* kEntityNames[] = {
-                "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
-            };
-            static constexpr size_t kEntityCount = std::size(kEntityNames);
             if (primarySel != INVALID_ENTITY && primarySel <= kEntityCount) {
                 ctx.ui.drawText(ix + 8.f, ctx.y + 50.f,
                                 kEntityNames[primarySel - 1u], ctx.kTextPrimary);
             }
             ctx.ui.drawText(ix + 8.f, ctx.y + 68.f, "Transform", ctx.kTextSecond);
-            ctx.drawStatRow(ix + 8.f, ctx.y + 86.f,  "Pos:",   "0, 0, 0");
-            ctx.drawStatRow(ix + 8.f, ctx.y + 104.f, "Rot:",   "0, 0, 0");
-            ctx.drawStatRow(ix + 8.f, ctx.y + 122.f, "Scale:", "1, 1, 1");
+            ctx.ui.drawRect({ix + 4.f, ctx.y + 82.f, inspW - 8.f, 1.f}, ctx.kBorder);
+            ctx.drawStatRow(ix + 8.f, ctx.y + 88.f,  "Pos:",   "0, 0, 0");
+            ctx.drawStatRow(ix + 8.f, ctx.y + 106.f, "Rot:",   "0, 0, 0");
+            ctx.drawStatRow(ix + 8.f, ctx.y + 124.f, "Scale:", "1, 1, 1");
+
+            // Deselect button
+            if (ctx.drawButton(ix + 8.f, ctx.y + ctx.h - 30.f, inspW - 16.f, 20.f,
+                               "Deselect All")) {
+                if (ctx.shell)
+                    ctx.shell->selectionService().clearSelection();
+            }
         }
     }
 }

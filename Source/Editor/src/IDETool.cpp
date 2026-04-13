@@ -128,17 +128,22 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
     const float editorW = ctx.w * 0.60f;
     const float outputW = ctx.w - treeW - editorW;
 
+    // Stub file list for the tree panel (used when no project is open)
+    static const char* kStubFiles[] = {
+        "GameManager.cpp", "Player.cpp", "Enemy.cpp",
+        "InputHandler.cpp", "SceneLoader.cpp"
+    };
+    static constexpr int kStubCount = 5;
+
     // ── File Tree panel ───────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, treeW, ctx.h, "File Tree");
 
-    // Show indexed script files from the asset catalog when a project is open.
     float ty = ctx.y + 28.f;
     if (ctx.shell && ctx.shell->hasProject()) {
         const AssetCatalog& catalog = ctx.shell->assetCatalog();
         size_t scriptCount = catalog.countByType(AssetTypeTag::Script);
 
         if (scriptCount > 0) {
-            // Render script file entries from the catalog.
             auto scripts = catalog.query([](const AssetDescriptor& d) {
                 return d.typeTag == AssetTypeTag::Script;
             });
@@ -146,42 +151,73 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
                 const auto* desc = scripts[i];
                 if (!desc) continue;
                 bool isActive = (desc->sourcePath == m_activeFile);
+                bool hov = ctx.isHovered({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f});
+                uint32_t bg = isActive ? 0x1A3A6AFF : (hov ? 0x2A2A3AFF : 0x00000000u);
+                if (bg) ctx.ui.drawRect({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f}, bg);
                 std::string name = desc->displayName;
                 static constexpr size_t kMaxNameDisplayLen = 18;
                 static constexpr size_t kTruncatedNameLen  = 15;
                 if (name.size() > kMaxNameDisplayLen)
                     name = name.substr(0, kTruncatedNameLen) + "...";
-                ctx.ui.drawText(ctx.x + 10.f, ty,
-                                name.c_str(),
+                ctx.ui.drawText(ctx.x + 10.f, ty, name.c_str(),
                                 isActive ? ctx.kTextPrimary : ctx.kTextSecond);
+                if (ctx.hitRegion({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f}, false)) {
+                    m_viewSelectedFile = static_cast<int>(i);
+                    // Note: openFile() is non-const; we route through command bus.
+                    if (ctx.shell)
+                        (void)ctx.shell->commandBus().execute("ide.open_file:" + desc->sourcePath);
+                }
                 ty += 18.f;
             }
         } else {
             ctx.ui.drawText(ctx.x + 8.f, ty, "No scripts in project", ctx.kTextMuted);
         }
     } else {
-        ctx.ui.drawText(ctx.x + 8.f, ty, "Open a project", ctx.kTextMuted);
-        ctx.ui.drawText(ctx.x + 8.f, ty + 16.f, "to browse files", ctx.kTextMuted);
+        // Stub file list when no project is open
+        for (int i = 0; i < kStubCount && ty + 18.f < ctx.y + ctx.h - 4.f; ++i) {
+            bool isActive = (m_viewSelectedFile == i);
+            bool hov = ctx.isHovered({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f});
+            uint32_t bg = isActive ? 0x1A3A6AFF : (hov ? 0x2A2A3AFF : 0x00000000u);
+            if (bg) ctx.ui.drawRect({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f}, bg);
+            ctx.ui.drawText(ctx.x + 10.f, ty, kStubFiles[i],
+                            isActive ? ctx.kTextPrimary : ctx.kTextSecond);
+            if (ctx.hitRegion({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f}, false))
+                m_viewSelectedFile = isActive ? -1 : i;
+            ty += 18.f;
+        }
     }
 
     // ── Code Editor panel ─────────────────────────────────────────
     const float ex = ctx.x + treeW;
     ctx.drawPanel(ex, ctx.y, editorW, ctx.h, "Code Editor");
 
-    // Edit mode pill
-    ctx.drawStatusPill(ex + 8.f, ctx.y + 30.f, ideEditModeName(m_editMode), ctx.kAccentBlue);
-
-    if (m_stats.isDirty) {
-        ctx.ui.drawText(ex + 8.f, ctx.y + ctx.h - 20.f, "* unsaved changes", ctx.kRed);
+    // Edit mode buttons
+    static constexpr struct { const char* label; IDEEditMode mode; } kIDEModes[] = {
+        {"Code",      IDEEditMode::Code},
+        {"Diff",      IDEEditMode::Diff},
+        {"Read-Only", IDEEditMode::ReadOnly},
+    };
+    {
+        float bx = ex + 8.f;
+        for (const auto& m : kIDEModes) {
+            float bw = static_cast<float>(std::strlen(m.label)) * 7.f + 14.f;
+            bool active = (m_editMode == m.mode);
+            if (ctx.drawButton(bx, ctx.y + 28.f, bw, 16.f, m.label,
+                               active ? ctx.kAccentBlue : ctx.kButtonBg))
+                m_editMode = m.mode;
+            bx += bw + 4.f;
+        }
     }
 
-    // Open file tab bar
+    if (m_stats.isDirty)
+        ctx.ui.drawText(ex + editorW - 100.f, ctx.y + 30.f, "* unsaved", ctx.kRed);
+
+    // Open file tab bar with clickable tabs
     if (!m_openFiles.empty()) {
         float tabX = ex + 8.f;
-        float tabY = ctx.y + 52.f;
+        float tabY = ctx.y + 50.f;
         for (size_t i = 0; i < m_openFiles.size() && tabX < ex + editorW - 4.f; ++i) {
             const auto& f = m_openFiles[i];
-            // Extract filename
             std::string fname = f;
             auto sep = fname.find_last_of("/\\");
             if (sep != std::string::npos) fname = fname.substr(sep + 1);
@@ -189,26 +225,35 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
 
             bool active = (m_openFiles[i] == m_activeFile);
             float tw = static_cast<float>(fname.size()) * 8.f + 16.f;
-            ctx.ui.drawRect({tabX, tabY, tw, 20.f},
-                            active ? ctx.kAccentBlue : ctx.kCardBg);
+            uint32_t bg = active ? ctx.kAccentBlue : ctx.kCardBg;
+            ctx.ui.drawRect({tabX, tabY, tw, 20.f}, bg);
             ctx.ui.drawRectOutline({tabX, tabY, tw, 20.f}, ctx.kBorder, 1.f);
             ctx.ui.drawText(tabX + 6.f, tabY + 3.f, fname.c_str(),
                             active ? ctx.kTextPrimary : ctx.kTextSecond);
+            // Click: switch active file via command bus
+            if (ctx.hitRegion({tabX, tabY, tw, 20.f}, false) && ctx.shell)
+                (void)ctx.shell->commandBus().execute("ide.open_file:" + m_openFiles[i]);
             tabX += tw + 2.f;
         }
+    } else if (m_viewSelectedFile >= 0) {
+        // Show the stub file name in a pseudo tab
+        const char* fname = m_viewSelectedFile < kStubCount
+                          ? kStubFiles[m_viewSelectedFile] : kStubFiles[0];
+        float tw = static_cast<float>(std::strlen(fname)) * 8.f + 16.f;
+        ctx.ui.drawRect({ex + 8.f, ctx.y + 50.f, tw, 20.f}, ctx.kAccentBlue);
+        ctx.ui.drawRectOutline({ex + 8.f, ctx.y + 50.f, tw, 20.f}, ctx.kBorder, 1.f);
+        ctx.ui.drawText(ex + 14.f, ctx.y + 53.f, fname, ctx.kTextPrimary);
     }
 
-    // Editor body — show line number gutter + code area placeholder
+    // Editor body — line number gutter + code area
     {
         const float bodyY = ctx.y + 76.f;
         const float bodyH = ctx.h - 76.f - 24.f;
         const float gutterW = 32.f;
 
-        // Gutter
         ctx.ui.drawRect({ex, bodyY, gutterW, bodyH}, 0x1E1E1EFF);
         ctx.ui.drawRect({ex + gutterW, bodyY, 1.f, bodyH}, ctx.kBorder);
 
-        // Line numbers
         for (float ly = bodyY + 4.f; ly < bodyY + bodyH - 4.f; ly += 18.f) {
             int lineNo = static_cast<int>((ly - bodyY) / 18.f) + 1;
             char lnBuf[16];
@@ -216,20 +261,28 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
             ctx.ui.drawText(ex + 2.f, ly, lnBuf, ctx.kTextMuted);
         }
 
-        // Code body
         ctx.ui.drawRect({ex + gutterW + 1.f, bodyY, editorW - gutterW - 1.f, bodyH},
                         0x1A1A1AFF);
 
-        if (m_activeFile.empty()) {
+        bool hasFile = !m_activeFile.empty() || m_viewSelectedFile >= 0;
+        if (!hasFile) {
             float hx = ex + gutterW + (editorW - gutterW - 160.f) * 0.5f;
             float hy = bodyY + (bodyH - 14.f) * 0.5f;
             ctx.ui.drawText(hx, hy, "Select a file to edit", ctx.kTextMuted);
         } else {
-            // Show a cursor line indicator at line 1
+            // Active line highlight + cursor
             ctx.ui.drawRect({ex + gutterW + 1.f, bodyY + 2.f,
-                             editorW - gutterW - 1.f, 18.f},
-                            0x2A3A2AFF); // active line highlight
+                             editorW - gutterW - 1.f, 18.f}, 0x2A3A2AFF);
             ctx.ui.drawText(ex + gutterW + 8.f, bodyY + 4.f, "|", ctx.kAccentBlue);
+
+            // Show filename as first comment line
+            const char* fn = !m_activeFile.empty() ? m_activeFile.c_str()
+                           : (m_viewSelectedFile >= 0 && m_viewSelectedFile < kStubCount
+                              ? kStubFiles[m_viewSelectedFile] : "");
+            if (*fn) {
+                std::string comment = std::string("// ") + fn;
+                ctx.ui.drawText(ex + gutterW + 8.f, bodyY + 22.f, comment, ctx.kTextMuted);
+            }
         }
     }
 
@@ -239,7 +292,6 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
 
     {
         float oy = ctx.y + 28.f;
-        // File counts from project index
         if (ctx.shell && ctx.shell->hasProject()) {
             const AssetCatalog& catalog = ctx.shell->assetCatalog();
             size_t scripts  = catalog.countByType(AssetTypeTag::Script);
@@ -268,6 +320,18 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
 
         ctx.ui.drawText(ox + 8.f, oy, m_stats.isRunning ? "Running..." : "Ready",
                         m_stats.isRunning ? ctx.kGreen : ctx.kTextMuted);
+        oy += 18.f;
+
+        // Run / Stop buttons
+        if (!m_stats.isRunning) {
+            if (ctx.drawButton(ox + 8.f, ctx.y + ctx.h - 30.f,
+                               outputW - 16.f, 20.f, "Run Script")) {
+                if (ctx.shell)
+                    (void)ctx.shell->commandBus().execute("ide.run_script");
+            }
+        } else {
+            ctx.drawStatusPill(ox + 8.f, ctx.y + ctx.h - 28.f, "Running...", ctx.kGreen);
+        }
     }
 }
 

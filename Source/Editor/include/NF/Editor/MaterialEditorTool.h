@@ -116,6 +116,9 @@ private:
     // Optional material preview scene provider (Phase D.4)
     IViewportSceneProvider* m_materialPreviewProvider = nullptr;
 
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    mutable int m_viewSelectedNode = -1;
+
     void buildDescriptor();
 };
 
