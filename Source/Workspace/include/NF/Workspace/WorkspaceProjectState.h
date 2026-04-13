@@ -320,12 +320,17 @@ public:
                 continue;
             }
 
-            // Fallback: if a file path is set, touch the file to confirm the
-            // path is writable.  This handles documents whose content has already
-            // been serialized to a staging buffer by the owning subsystem.
+            // Fallback: if a file path is set, verify the path is writable.
+            // This handles documents whose content has already been serialized
+            // to disk by the owning subsystem (e.g. via a file watcher or
+            // staging buffer flush).  We only confirm writability; we do NOT
+            // write document content here — that is the delegate's responsibility.
             if (!entry.filePath.empty()) {
-                std::ofstream ofs(entry.filePath, std::ios::app);
-                if (ofs.good()) {
+                std::ofstream ofs(entry.filePath,
+                                  std::ios::out | std::ios::app);
+                bool writable = ofs.good();
+                ofs.close();
+                if (writable) {
                     entry.isDirty = false;
                     ++saved;
                 } else {

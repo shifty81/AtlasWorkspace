@@ -561,15 +561,15 @@ private:
                "Close the active document or editor tab",
                [this]() -> ConsoleCmdExecResult {
                    if (!hasProject()) return ConsoleCmdExecResult::PermissionDenied;
-                   const std::string& activeId = m_projectState.activeDocumentId();
-                   if (activeId.empty()) {
+                   const auto* doc = m_projectState.activeDocument();
+                   if (!doc) {
                        m_shellContract.postNotification(
                            Notification{"No active document to close."});
                        return ConsoleCmdExecResult::Ok;
                    }
-                   const auto* doc = m_projectState.activeDocument();
-                   std::string title = doc ? doc->displayTitle : activeId;
-                   m_projectState.closeDocument(activeId);
+                   std::string title = doc->displayTitle;
+                   std::string docId = doc->documentId;
+                   m_projectState.closeDocument(docId);
                    m_shellContract.postNotification(
                        Notification{"Closed document: " + title});
                    return ConsoleCmdExecResult::Ok;
