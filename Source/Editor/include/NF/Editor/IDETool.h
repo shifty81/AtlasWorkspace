@@ -18,6 +18,7 @@
 
 #include "NF/Workspace/IHostedTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include <map>
 #include <string>
 #include <vector>
 
@@ -101,6 +102,9 @@ private:
     std::string              m_activeFile;
     std::vector<std::string> m_openFiles;
     std::string              m_activeProjectId;
+
+    // Loaded file content cache: path → vector of lines
+    std::map<std::string, std::vector<std::string>> m_fileContents;
 
     // ── Mutable per-view UI state (safe from const renderToolView) ─
     mutable int m_viewSelectedFile = -1;
