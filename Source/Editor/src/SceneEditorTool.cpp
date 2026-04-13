@@ -211,10 +211,10 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         // Entity list — each entity has an implicit ID equal to its index + 1.
         // Rows are hit-tested so clicking selects the entity via SelectionService.
         float ey = ctx.y + 48.f;
-        uint32_t limit = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
+        uint32_t visibleEntityCount = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
                        ? m_stats.entityCount
                        : static_cast<uint32_t>(kEntityCount);
-        for (uint32_t i = 0; i < limit; ++i) {
+        for (uint32_t i = 0; i < visibleEntityCount; ++i) {
             EntityID eid = static_cast<EntityID>(i + 1);
             bool selected = (eid == primarySel);
             bool hovered  = ctx.isHovered({ctx.x + 4.f, ey - 2.f, hierW - 8.f, 18.f});
@@ -246,19 +246,98 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         const float vpx = ctx.x + hierW;
         const float vpy = ctx.y + 22.f;
         const float vph = ctx.h - 22.f;
-        // Grid overlay — vertical and horizontal lines at 38 px intervals.
+
+        // Darker interior background so the viewport area is visually distinct
+        // from the panel chrome and surrounding panels.
+        ctx.ui.drawRect({vpx + 1.f, vpy + 1.f, viewW - 2.f, vph - 2.f}, 0x171717FF);
+
+        // Grid overlay — visible lines at 38px intervals.
         for (float gx = vpx; gx < vpx + viewW; gx += 38.f)
-            ctx.ui.drawRect({gx, vpy, 1.f, vph}, 0x2D2D2DFF);
+            ctx.ui.drawRect({gx, vpy, 1.f, vph}, 0x363636FF);
         for (float gy = vpy; gy < vpy + vph; gy += 38.f)
-            ctx.ui.drawRect({vpx, gy, viewW, 1.f}, 0x2D2D2DFF);
+            ctx.ui.drawRect({vpx, gy, viewW, 1.f}, 0x363636FF);
+
+        // Emphasise the centre cross-lines
+        const float vcx = vpx + viewW * 0.5f;
+        const float vcy = vpy + vph * 0.5f;
+        ctx.ui.drawRect({vcx, vpy, 1.f, vph}, 0x444444FF);
+        ctx.ui.drawRect({vpx, vcy, viewW, 1.f}, 0x444444FF);
 
         // World axes overlay in the bottom-left corner of the viewport.
         const float axX = vpx + 12.f;
         const float axY = vpy + vph - 40.f;
-        ctx.ui.drawRect({axX,       axY + 12.f, 24.f, 2.f}, 0xE05050FF); // X axis (red)
-        ctx.ui.drawRect({axX + 12.f, axY,        2.f, 24.f}, 0x4EC94EFF); // Y axis (green)
-        ctx.ui.drawText(axX + 26.f, axY + 10.f, "X", 0xE05050FF);
-        ctx.ui.drawText(axX + 10.f, axY - 2.f,  "Y", 0x4EC94EFF);
+        ctx.ui.drawRect({axX,        axY + 12.f, 30.f, 2.f}, 0xE05050FF); // X axis (red)
+        ctx.ui.drawRect({axX + 12.f, axY,         2.f, 30.f}, 0x4EC94EFF); // Y axis (green)
+        ctx.ui.drawText(axX + 34.f, axY + 10.f, "X", 0xE05050FF);
+        ctx.ui.drawText(axX + 10.f, axY - 4.f,  "Y", 0x4EC94EFF);
+
+        // ── Entity dot markers ────────────────────────────────────
+        // Pseudo top-down positions spread around the viewport centre.
+        // Each entity is represented as a coloured square with its name.
+        struct EntityLayout { float rx; float ry; uint32_t color; };
+        static constexpr EntityLayout kEntityLayout[] = {
+            { 0.50f, 0.40f, 0xFFCC44FF }, // Camera_Main     — gold
+            { 0.55f, 0.30f, 0xAADDFFFF }, // DirectionalLight — light-blue
+            { 0.50f, 0.50f, 0x44DD88FF }, // Player          — green
+            { 0.38f, 0.55f, 0x8888AAFF }, // Environment     — grey-blue
+            { 0.65f, 0.35f, 0xDDAAFFFF }, // SkyDome         — lavender
+        };
+        uint32_t visibleEntityCount = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
+                       ? m_stats.entityCount
+                       : static_cast<uint32_t>(kEntityCount);
+        for (uint32_t i = 0; i < visibleEntityCount; ++i) {
+            EntityID eid = static_cast<EntityID>(i + 1);
+            bool selected = (eid == primarySel);
+
+            float ex = vpx + kEntityLayout[i].rx * viewW;
+            float ey = vpy + kEntityLayout[i].ry * vph;
+            float sz = selected ? 10.f : 7.f;
+
+            // Selection halo
+            if (selected)
+                ctx.ui.drawRect({ex - sz - 2.f, ey - sz - 2.f,
+                                 sz * 2.f + 4.f, sz * 2.f + 4.f}, ctx.kAccentBlue);
+
+            ctx.ui.drawRect({ex - sz, ey - sz, sz * 2.f, sz * 2.f}, kEntityLayout[i].color);
+            ctx.ui.drawText(ex + sz + 4.f, ey - 6.f, kEntityNames[i], ctx.kTextSecond);
+        }
+
+        // ── 2D gizmo overlay for the selected entity ─────────────
+        // Drawn when a transform mode is active and an entity is selected.
+        if (liveSelCount > 0 && primarySel != INVALID_ENTITY
+                && primarySel <= static_cast<EntityID>(kEntityCount)) {
+            uint32_t pidx = primarySel - 1u;
+            float gx2 = vpx + kEntityLayout[pidx].rx * viewW;
+            float gy2 = vpy + kEntityLayout[pidx].ry * vph;
+            constexpr float kArm = 32.f;
+
+            switch (m_editMode) {
+            case SceneEditMode::Translate:
+                // Move gizmo — red (X) and green (Y) arrows
+                ctx.ui.drawRect({gx2,        gy2 - 1.f, kArm,  3.f}, 0xE05050FF); // +X
+                ctx.ui.drawRect({gx2 - 3.f,  gy2 - kArm, 3.f, kArm}, 0x4EC94EFF); // +Y
+                ctx.ui.drawText(gx2 + kArm + 2.f, gy2 - 8.f,  "X", 0xE05050FF);
+                ctx.ui.drawText(gx2 + 2.f,  gy2 - kArm - 14.f, "Y", 0x4EC94EFF);
+                break;
+            case SceneEditMode::Rotate:
+                // Rotate gizmo — arc approximated with thin rect ring
+                ctx.ui.drawRectOutline({gx2 - kArm, gy2 - kArm,
+                                        kArm * 2.f, kArm * 2.f}, 0xDDAA44FF, 2.f);
+                ctx.ui.drawText(gx2 - 10.f, gy2 - kArm - 14.f, "Rot", 0xDDAA44FF);
+                break;
+            case SceneEditMode::Scale:
+                // Scale gizmo — square handles at axis ends
+                ctx.ui.drawRect({gx2,           gy2 - 1.f, kArm - 4.f, 3.f}, 0xE05050FF);
+                ctx.ui.drawRect({gx2 + kArm - 4.f, gy2 - 4.f, 8.f, 8.f}, 0xE05050FF);
+                ctx.ui.drawRect({gx2 - 3.f, gy2 - kArm, 3.f, kArm - 4.f}, 0x4EC94EFF);
+                ctx.ui.drawRect({gx2 - 4.f, gy2 - kArm - 4.f, 8.f, 8.f}, 0x4EC94EFF);
+                ctx.ui.drawText(gx2 + kArm + 2.f, gy2 - 8.f, "X", 0xE05050FF);
+                ctx.ui.drawText(gx2 + 2.f, gy2 - kArm - 14.f, "Y", 0x4EC94EFF);
+                break;
+            default:
+                break;
+            }
+        }
 
         if (m_stats.entityCount == 0) {
             ctx.ui.drawText(vpx + 16.f, vpy + (vph - 14.f) * 0.5f,
@@ -266,12 +345,18 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
                             ctx.kTextMuted);
         }
 
-        // Edit mode toolbar buttons along the top of the viewport
-        static constexpr struct { const char* label; SceneEditMode mode; } kModes[] = {
-            {"Select", SceneEditMode::Select},
-            {"Move",   SceneEditMode::Translate},
-            {"Rotate", SceneEditMode::Rotate},
-            {"Scale",  SceneEditMode::Scale},
+        // Edit mode toolbar buttons along the top of the viewport.
+        // cmdSuffix is the exact scene.set_mode.<suffix> command registered
+        // in WorkspaceShell.  "Move" maps to "translate" (not "move").
+        static constexpr struct {
+            const char* label;
+            SceneEditMode mode;
+            const char* cmdSuffix;
+        } kModes[] = {
+            {"Select", SceneEditMode::Select,    "select"},
+            {"Move",   SceneEditMode::Translate, "translate"},
+            {"Rotate", SceneEditMode::Rotate,    "rotate"},
+            {"Scale",  SceneEditMode::Scale,     "scale"},
         };
         float btnX = vpx + 8.f;
         float btnY = vpy + 4.f;
@@ -280,11 +365,11 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             float btnW = static_cast<float>(std::strlen(m.label)) * 7.f + 16.f;
             uint32_t bg = active ? ctx.kAccentBlue : ctx.kButtonBg;
             if (ctx.drawButton(btnX, btnY, btnW, 18.f, m.label, bg)) {
-                // Click: switch edit mode via the shell command bus if available
+                // Set edit mode directly so the button highlights immediately.
+                m_editMode = m.mode;
+                // Also notify the command bus for keybinding / palette purposes.
                 if (ctx.shell) {
-                    std::string cmd = "scene.set_mode.";
-                    for (const char* c = m.label; *c; ++c)
-                        cmd += static_cast<char>(std::tolower(static_cast<unsigned char>(*c)));
+                    std::string cmd = std::string("scene.set_mode.") + m.cmdSuffix;
                     (void)ctx.shell->commandBus().execute(cmd);
                 }
             }
