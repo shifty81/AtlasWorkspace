@@ -174,9 +174,10 @@ void AtlasAITool::renderToolView(const ToolViewRenderContext& ctx) const {
     if (ctx.mouse.leftPressed)
         m_inputFocused = inputBoxR.contains(ctx.mouse.x, ctx.mouse.y);
 
-    // Process typed text when focused
+    // Process typed text when focused — copy first for safe iteration
     if (m_inputFocused && !ctx.mouse.typedText.empty()) {
-        for (char c : ctx.mouse.typedText) {
+        const std::string typedSnapshot = ctx.mouse.typedText;
+        for (char c : typedSnapshot) {
             if (c == '\b') {
                 if (!m_inputBuffer.empty()) m_inputBuffer.pop_back();
             } else if (c == '\r' || c == '\n') {

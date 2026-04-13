@@ -191,7 +191,7 @@ void VisualLogicEditorTool::renderToolView(const ToolViewRenderContext& ctx) con
             if (ctx.hitRegion({nx, ny, 100.f, 44.f}, false)) {
                 // Find the matching palette index
                 for (int pi = 0; pi < kPaletteCount; ++pi) {
-                    if (kNodeTypes[pi] == std::string(kGraphNodes[i].label)) {
+                    if (std::strcmp(kNodeTypes[pi], kGraphNodes[i].label) == 0) {
                         m_viewSelectedNode = (m_viewSelectedNode == pi) ? -1 : pi;
                         break;
                     }
