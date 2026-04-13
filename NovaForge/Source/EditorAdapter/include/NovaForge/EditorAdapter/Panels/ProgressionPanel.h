@@ -141,7 +141,7 @@ protected:
     }
 
 private:
-    void loadFromProjectFiles(const std::string& projectRoot) {
+    void loadFromProjectFiles([[maybe_unused]] const std::string& projectRoot) {
 #ifdef NF_PROGRESSION_HAS_JSON
         namespace fs = std::filesystem;
 

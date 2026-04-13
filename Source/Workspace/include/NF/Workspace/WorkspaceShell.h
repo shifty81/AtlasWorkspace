@@ -173,10 +173,12 @@ public:
         // Populate asset catalog from project content roots
         populateAssetCatalog();
 
-        // Derive the real project root (first content root, or project ID as fallback).
+        // Derive the real project root: prefer adapter->projectRoot(); fall back to
+        // the first content root (legacy path), then the project ID as last resort.
         const auto roots = m_projectAdapter->contentRoots();
-        const std::string projectRoot = roots.empty() ? m_projectAdapter->projectId()
-                                                      : roots[0];
+        std::string projectRoot = m_projectAdapter->projectRoot();
+        if (projectRoot.empty() && !roots.empty()) projectRoot = roots[0];
+        if (projectRoot.empty()) projectRoot = m_projectAdapter->projectId();
 
         // Notify live panels so they can load project data immediately.
         m_projectSystemsTool.notifyProjectLoaded(projectRoot);
@@ -190,6 +192,7 @@ public:
         ProjectLoadContract contract;
         contract.projectId          = m_projectAdapter->projectId();
         contract.projectDisplayName = m_projectAdapter->projectDisplayName();
+        contract.projectRoot        = projectRoot;
         contract.contentRoots       = roots;
         contract.customCommands     = m_projectAdapter->customCommands();
         contract.panelCount         = static_cast<uint32_t>(

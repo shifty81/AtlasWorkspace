@@ -81,6 +81,7 @@ struct ProjectLoadContract {
     std::string projectId;          // from IGameProjectAdapter::projectId()
     std::string projectDisplayName; // from IGameProjectAdapter::projectDisplayName()
     std::string projectVersion;     // optional, supplied by adapter
+    std::string projectRoot;        // from IGameProjectAdapter::projectRoot()
 
     // ── State ─────────────────────────────────────────────────────
     ProjectLoadState state = ProjectLoadState::Unloaded;

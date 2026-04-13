@@ -49,8 +49,7 @@ public:
 
     std::string projectId() const override { return "novaforge"; }
     std::string projectDisplayName() const override { return "NovaForge"; }
-
-    [[nodiscard]] const std::string& projectRoot() const { return m_projectRoot; }
+    std::string projectRoot() const override { return m_projectRoot; }
 
     bool initialize() override {
         // Run project bootstrap (validation only — does not block adapter init)

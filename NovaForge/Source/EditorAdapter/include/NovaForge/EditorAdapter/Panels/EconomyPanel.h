@@ -159,7 +159,7 @@ protected:
     }
 
 private:
-    void loadFromProjectFiles(const std::string& projectRoot) {
+    void loadFromProjectFiles([[maybe_unused]] const std::string& projectRoot) {
         namespace fs = std::filesystem;
 
         // ISK is always the base currency

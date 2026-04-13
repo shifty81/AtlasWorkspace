@@ -235,7 +235,7 @@ private:
     }
 #endif
 
-    void loadFromProjectFiles(const std::string& projectRoot) {
+    void loadFromProjectFiles([[maybe_unused]] const std::string& projectRoot) {
 #ifdef NF_MISSION_HAS_JSON
         namespace fs = std::filesystem;
 
