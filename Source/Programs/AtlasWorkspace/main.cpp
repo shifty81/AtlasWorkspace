@@ -491,6 +491,7 @@ int main(int argc, char* argv[]) {
         frameCtrl.markUpdateDone();
 
 #if defined(_WIN32)
+        if (g_renderer) g_renderer->setLastFrameMs(fr.dt * 1000.f);
         InvalidateRect(hwnd, nullptr, FALSE);
 
         // Sleep to pace to ~60 FPS (render happens in WM_PAINT).

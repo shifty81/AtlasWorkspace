@@ -324,8 +324,23 @@ private:
         // Attempt to parse and validate the manifest when the file is on disk.
         // If the file does not exist yet (e.g. during wizard flow or unit tests
         // that use synthetic paths), skip content validation.
+        bool fileExists = std::filesystem::exists(path);
         AtlasProjectFileLoader loader;
-        if (loader.loadFromFile(path)) {
+        bool parsed = loader.loadFromFile(path);
+        if (!fileExists) {
+            // File not on disk — use the filename as the project name.
+            // A warning is added so the UX can surface this to the user.
+            result.projectName = derivedName;
+            result.addWarning("Project file not found on disk: " + path);
+            result.success = true;
+            return result;
+        }
+        if (!parsed) {
+            // File exists on disk but could not be parsed — surface as an error.
+            result.addError("Failed to parse project manifest: " + loader.error());
+            return result;
+        }
+        {
             // File exists and parsed — validate its contents via bootstrap.
             ProjectBootstrapResult bootstrap = loader.bootstrap(path, /*checkPathsOnDisk=*/false);
             for (const auto& entry : bootstrap.validationEntries) {
@@ -350,11 +365,6 @@ private:
             result.projectName = bootstrap.manifest.name.empty()
                                ? derivedName
                                : bootstrap.manifest.name;
-        } else {
-            // File not on disk — use the filename as the project name.
-            // A warning is added so the UX can surface this to the user.
-            result.projectName = derivedName;
-            result.addWarning("Project file not found on disk: " + path);
         }
 
         result.success = true;

@@ -8,6 +8,7 @@ add_library(NF_Editor STATIC
     src/VisualLogicEditorTool.cpp
     src/BuildTool.cpp
     src/AtlasAITool.cpp
+    src/IDETool.cpp
     src/Tools/ConsoleToolModule.cpp
     src/Tools/ProfilerToolModule.cpp
     src/Tools/ECSInspectorToolModule.cpp
