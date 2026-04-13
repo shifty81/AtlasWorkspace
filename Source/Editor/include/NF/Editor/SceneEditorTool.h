@@ -145,6 +145,10 @@ private:
     // Input pointer injected via onAttachInput()
     const InputSystem*       m_input          = nullptr;
 
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    // Hierarchy selection — index into the displayed entity list, -1 = none.
+    mutable int m_viewSelectedEntity = -1;
+
     void buildDescriptor();
 };
 

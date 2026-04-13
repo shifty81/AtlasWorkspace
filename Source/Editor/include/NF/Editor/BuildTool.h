@@ -96,10 +96,13 @@ public:
 private:
     HostedToolDescriptor m_descriptor;
     HostedToolState      m_state      = HostedToolState::Unloaded;
-    BuildMode            m_buildMode  = BuildMode::Incremental;
+    mutable BuildMode    m_buildMode  = BuildMode::Incremental;
     BuildToolStats       m_stats;
     std::string          m_activeTarget;
     std::string          m_activeProjectId;
+
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    mutable bool m_viewBuildRequested = false;
 
     void buildDescriptor();
 };

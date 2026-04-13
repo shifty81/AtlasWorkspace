@@ -5,7 +5,9 @@
 
 #include "NF/Editor/VisualLogicEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspaceShell.h"
 #include <cstdio>
+#include <string>
 
 namespace NF {
 
@@ -112,6 +114,13 @@ void VisualLogicEditorTool::renderToolView(const ToolViewRenderContext& ctx) con
     const float graphW  = ctx.w * 0.60f;
     const float propW   = ctx.w - nodesW - graphW;
 
+    // Stub node palette (fixed names for the demonstration graph)
+    static const char* kNodeTypes[] = {
+        "On Start", "Branch", "Set Variable", "Spawn Entity",
+        "Play Sound", "Delay", "Loop", "Event"
+    };
+    static constexpr int kPaletteCount = 8;
+
     // ── Node List panel ───────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, nodesW, ctx.h, "Nodes");
     {
@@ -121,6 +130,22 @@ void VisualLogicEditorTool::renderToolView(const ToolViewRenderContext& ctx) con
         char connBuf[32];
         std::snprintf(connBuf, sizeof(connBuf), "%u connections", m_stats.connectionCount);
         ctx.ui.drawText(ctx.x + 8.f, ctx.y + 48.f, connBuf, ctx.kTextSecond);
+
+        // Node palette list — click to place / select node type
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 68.f, "Palette:", ctx.kTextMuted);
+        float ny = ctx.y + 84.f;
+        for (int i = 0; i < kPaletteCount; ++i) {
+            if (ny + 18.f > ctx.y + ctx.h - 4.f) break;
+            bool sel = (m_viewSelectedNode == i);
+            bool hov = ctx.isHovered({ctx.x + 2.f, ny, nodesW - 4.f, 16.f});
+            uint32_t bg = sel ? ctx.kAccentBlue : (hov ? 0x2A2A3AFF : 0x00000000u);
+            if (bg) ctx.ui.drawRect({ctx.x + 2.f, ny, nodesW - 4.f, 16.f}, bg);
+            ctx.ui.drawText(ctx.x + 8.f, ny + 1.f, kNodeTypes[i],
+                            sel ? ctx.kTextPrimary : ctx.kTextSecond);
+            if (ctx.hitRegion({ctx.x + 2.f, ny, nodesW - 4.f, 16.f}, false))
+                m_viewSelectedNode = sel ? -1 : i;
+            ny += 18.f;
+        }
     }
 
     // ── Graph Canvas panel ────────────────────────────────────────
@@ -129,14 +154,68 @@ void VisualLogicEditorTool::renderToolView(const ToolViewRenderContext& ctx) con
     ctx.drawStatusPill(ctx.x + nodesW + 8.f, ctx.y + 30.f,
                        visualLogicModeName(m_editMode), ctx.kAccentBlue);
     if (m_stats.isCompiling) {
-        ctx.drawStatusPill(ctx.x + nodesW + 70.f, ctx.y + 30.f, "Compiling...", ctx.kAccentBlue);
+        ctx.drawStatusPill(ctx.x + nodesW + 80.f, ctx.y + 30.f, "Compiling...", ctx.kAccentBlue);
     } else if (m_stats.errorCount > 0) {
         char errBuf[24];
         std::snprintf(errBuf, sizeof(errBuf), "%u errors", m_stats.errorCount);
-        ctx.drawStatusPill(ctx.x + nodesW + 70.f, ctx.y + 30.f, errBuf, ctx.kRed);
+        ctx.drawStatusPill(ctx.x + nodesW + 80.f, ctx.y + 30.f, errBuf, ctx.kRed);
     } else {
-        ctx.drawStatusPill(ctx.x + nodesW + 70.f, ctx.y + 30.f, "OK", ctx.kGreen);
+        ctx.drawStatusPill(ctx.x + nodesW + 80.f, ctx.y + 30.f, "OK", ctx.kGreen);
     }
+
+    // Draw node stubs on the canvas — 4 default graph nodes
+    struct NodeStub { const char* label; float rx; float ry; };
+    static const NodeStub kGraphNodes[] = {
+        {"On Start",     0.10f, 0.25f},
+        {"Branch",       0.32f, 0.20f},
+        {"Set Variable", 0.55f, 0.15f},
+        {"Spawn Entity", 0.55f, 0.50f},
+    };
+    {
+        const float gvpx = ctx.x + nodesW;
+        const float gvpy = ctx.y + 48.f;
+        const float gvph = ctx.h - 48.f;
+        for (int i = 0; i < 4; ++i) {
+            float nx = gvpx + graphW * kGraphNodes[i].rx;
+            float ny = gvpy + gvph * kGraphNodes[i].ry;
+            bool hov = ctx.isHovered({nx, ny, 100.f, 44.f});
+            uint32_t bg = hov ? 0x2A3A5AFF : ctx.kCardBg;
+            ctx.ui.drawRect({nx, ny, 100.f, 44.f}, bg);
+            ctx.ui.drawRectOutline({nx, ny, 100.f, 44.f}, ctx.kBorder, 1.f);
+            ctx.ui.drawRect({nx, ny, 100.f, 20.f}, ctx.kAccentBlue);
+            ctx.ui.drawText(nx + 6.f, ny + 4.f, kGraphNodes[i].label, ctx.kTextPrimary);
+            // I/O pins
+            ctx.ui.drawRect({nx - 5.f,  ny + 28.f, 8.f, 8.f}, ctx.kAccentBlue);
+            ctx.ui.drawRect({nx + 97.f, ny + 28.f, 8.f, 8.f}, ctx.kAccentBlue);
+            // Click selects the node type in the palette
+            if (ctx.hitRegion({nx, ny, 100.f, 44.f}, false)) {
+                // Find the matching palette index
+                for (int pi = 0; pi < kPaletteCount; ++pi) {
+                    if (std::strcmp(kNodeTypes[pi], kGraphNodes[i].label) == 0) {
+                        m_viewSelectedNode = (m_viewSelectedNode == pi) ? -1 : pi;
+                        break;
+                    }
+                }
+            }
+        }
+        // Wires between nodes (simple horizontal segments)
+        float n0x = gvpx + graphW * 0.10f;
+        float n0y = gvpy + gvph * 0.25f + 32.f;
+        ctx.ui.drawRect({n0x + 105.f, n0y, 55.f, 1.f}, ctx.kTextMuted);
+        ctx.ui.drawRect({n0x + 265.f, gvpy + gvph * 0.20f + 32.f, 55.f, 1.f}, ctx.kTextMuted);
+        ctx.ui.drawRect({n0x + 265.f, gvpy + gvph * 0.50f + 32.f, 55.f, 1.f}, ctx.kTextMuted);
+    }
+
+    // Compile / run buttons
+    if (ctx.drawButton(ctx.x + nodesW + graphW - 100.f, ctx.y + 28.f, 46.f, 18.f, "Compile")) {
+        if (ctx.shell)
+            (void)ctx.shell->commandBus().execute("logic.compile");
+    }
+    if (ctx.drawButton(ctx.x + nodesW + graphW - 50.f, ctx.y + 28.f, 42.f, 18.f, "Run")) {
+        if (ctx.shell)
+            (void)ctx.shell->commandBus().execute("logic.run");
+    }
+
     if (m_stats.isDirty) {
         ctx.ui.drawText(ctx.x + nodesW + 8.f, ctx.y + ctx.h - 20.f,
                         "* unsaved", ctx.kRed);
@@ -144,8 +223,16 @@ void VisualLogicEditorTool::renderToolView(const ToolViewRenderContext& ctx) con
 
     // ── Properties panel ──────────────────────────────────────────
     ctx.drawPanel(ctx.x + nodesW + graphW, ctx.y, propW, ctx.h, "Properties");
-    ctx.ui.drawText(ctx.x + nodesW + graphW + 8.f, ctx.y + 30.f,
-                    "Node Parameters", ctx.kTextSecond);
+    const float px = ctx.x + nodesW + graphW;
+    if (m_viewSelectedNode >= 0 && m_viewSelectedNode < kPaletteCount) {
+        ctx.ui.drawText(px + 8.f, ctx.y + 30.f, kNodeTypes[m_viewSelectedNode], ctx.kTextPrimary);
+        ctx.ui.drawText(px + 8.f, ctx.y + 50.f, "Type: Logic Node", ctx.kTextSecond);
+        ctx.ui.drawText(px + 8.f, ctx.y + 68.f, "Inputs: 1", ctx.kTextMuted);
+        ctx.ui.drawText(px + 8.f, ctx.y + 86.f, "Outputs: 2", ctx.kTextMuted);
+    } else {
+        ctx.ui.drawText(px + 8.f, ctx.y + 30.f, "Node Parameters", ctx.kTextSecond);
+        ctx.ui.drawText(px + 8.f, ctx.y + 50.f, "Select a node", ctx.kTextMuted);
+    }
 }
 
 } // namespace NF

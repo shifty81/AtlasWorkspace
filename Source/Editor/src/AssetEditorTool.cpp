@@ -9,6 +9,7 @@
 #include "NF/Workspace/WorkspaceShell.h"
 #include "NF/Workspace/AssetCatalog.h"
 #include <cstdio>
+#include <cstring>
 
 namespace NF {
 
@@ -138,8 +139,6 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
     const float inspW    = ctx.w - browserW - previewW;
 
     // ── Live catalog data ─────────────────────────────────────────
-    // Pull counts directly from the shell's AssetCatalog so the browser
-    // reflects real disk content discovered during project load.
     uint32_t totalCount    = m_stats.totalAssetCount;
     uint32_t filteredCount = m_stats.filteredAssetCount;
 
@@ -147,7 +146,6 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         const AssetCatalog& catalog = ctx.shell->assetCatalog();
         totalCount = static_cast<uint32_t>(catalog.count());
 
-        // Apply filter mode to derive the filtered count.
         if (m_filterMode == AssetFilterMode::All) {
             filteredCount = totalCount;
         } else {
@@ -167,67 +165,97 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
 
     // ── Content Browser ───────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, browserW, ctx.h, "Content Browser");
-    // Filter mode pill
-    ctx.drawStatusPill(ctx.x + 8.f, ctx.y + 30.f,
-                       assetFilterModeName(m_filterMode), ctx.kAccentBlue);
+
+    // Filter mode buttons (All / Mesh / Texture / Material / Script / Audio / Prefab)
+    static constexpr struct { const char* label; AssetFilterMode mode; } kFilters[] = {
+        {"All",      AssetFilterMode::All},
+        {"Meshes",   AssetFilterMode::Meshes},
+        {"Textures", AssetFilterMode::Textures},
+        {"Materials",AssetFilterMode::Materials},
+        {"Scripts",  AssetFilterMode::Scripts},
+        {"Audio",    AssetFilterMode::Audio},
+        {"Prefabs",  AssetFilterMode::Prefabs},
+    };
+    {
+        float fx = ctx.x + 8.f;
+        float fy = ctx.y + 28.f;
+        for (const auto& f : kFilters) {
+            float fw = static_cast<float>(std::strlen(f.label)) * 6.f + 14.f;
+            bool active = (m_filterMode == f.mode);
+            uint32_t bg = active ? ctx.kAccentBlue : ctx.kButtonBg;
+            if (ctx.drawButton(fx, fy, fw, 16.f, f.label, bg, 0x4A4A4AFF)) {
+                m_filterMode = f.mode;
+            }
+            fx += fw + 4.f;
+        }
+    }
+
     // Asset counts
     {
         char buf[48];
         std::snprintf(buf, sizeof(buf), "%u / %u assets", filteredCount, totalCount);
-        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 54.f, buf, ctx.kTextSecond);
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 52.f, buf, ctx.kTextSecond);
     }
 
-    // Asset type summary tiles (one per type that has entries in the catalog)
+    // Asset type summary tiles
+    struct TypeEntry { const char* label; AssetTypeTag tag; };
+    static constexpr TypeEntry kTypes[] = {
+        {"Mesh",      AssetTypeTag::Mesh},
+        {"Texture",   AssetTypeTag::Texture},
+        {"Material",  AssetTypeTag::Material},
+        {"Script",    AssetTypeTag::Script},
+        {"Audio",     AssetTypeTag::Audio},
+        {"Prefab",    AssetTypeTag::Prefab},
+        {"Scene",     AssetTypeTag::Scene},
+        {"Shader",    AssetTypeTag::Shader},
+        {"Animation", AssetTypeTag::Animation},
+    };
+    static constexpr int kTypeCount = static_cast<int>(std::size(kTypes));
+
     if (ctx.shell && totalCount > 0) {
         const AssetCatalog& catalog = ctx.shell->assetCatalog();
-
-        struct TypeEntry { const char* label; AssetTypeTag tag; };
-        static constexpr TypeEntry kTypes[] = {
-            {"Mesh",      AssetTypeTag::Mesh},
-            {"Texture",   AssetTypeTag::Texture},
-            {"Material",  AssetTypeTag::Material},
-            {"Script",    AssetTypeTag::Script},
-            {"Audio",     AssetTypeTag::Audio},
-            {"Prefab",    AssetTypeTag::Prefab},
-            {"Scene",     AssetTypeTag::Scene},
-            {"Shader",    AssetTypeTag::Shader},
-            {"Animation", AssetTypeTag::Animation},
-        };
-
         float tx = ctx.x + 8.f;
-        float ty = ctx.y + 74.f;
-        for (const auto& te : kTypes) {
+        float ty = ctx.y + 72.f;
+        int tileIdx = 0;
+        for (int ti = 0; ti < kTypeCount; ++ti) {
+            const auto& te = kTypes[ti];
             size_t cnt = catalog.countByType(te.tag);
             if (cnt == 0) continue;
             if (tx + 72.f > ctx.x + browserW - 4.f) { tx = ctx.x + 8.f; ty += 64.f; }
             if (ty + 60.f > ctx.y + ctx.h - 4.f) break;
 
-            bool sel = false;
-            if (m_filterMode != AssetFilterMode::All) {
-                // Map filter mode to type tag for direct comparison (no string lookup).
-                AssetTypeTag filterTag = AssetTypeTag::Custom;
-                switch (m_filterMode) {
-                    case AssetFilterMode::Textures:  filterTag = AssetTypeTag::Texture;  break;
-                    case AssetFilterMode::Materials: filterTag = AssetTypeTag::Material; break;
-                    case AssetFilterMode::Meshes:    filterTag = AssetTypeTag::Mesh;     break;
-                    case AssetFilterMode::Audio:     filterTag = AssetTypeTag::Audio;    break;
-                    case AssetFilterMode::Scripts:   filterTag = AssetTypeTag::Script;   break;
-                    case AssetFilterMode::Prefabs:   filterTag = AssetTypeTag::Prefab;   break;
-                    default:                         filterTag = AssetTypeTag::Custom;   break;
-                }
-                sel = (te.tag == filterTag);
-            }
-            ctx.ui.drawRect({tx, ty, 68.f, 58.f},
-                            sel ? 0x2A3A5AFF : 0x333333FF);
-            ctx.ui.drawRectOutline({tx, ty, 68.f, 58.f},
-                                   sel ? ctx.kAccentBlue : ctx.kBorder, 1.f);
-            // Type label
+            bool sel = (m_viewSelectedTile == tileIdx);
+            bool hov = ctx.isHovered({tx, ty, 68.f, 58.f});
+            uint32_t bg = sel ? 0x2A3A5AFF : (hov ? 0x3A3A4AFF : 0x333333FF);
+            uint32_t border = sel ? ctx.kAccentBlue : ctx.kBorder;
+
+            ctx.ui.drawRect({tx, ty, 68.f, 58.f}, bg);
+            ctx.ui.drawRectOutline({tx, ty, 68.f, 58.f}, border, 1.f);
             ctx.ui.drawText(tx + 4.f, ty + 20.f, te.label, ctx.kTextSecond);
-            // Count badge
             char countBuf[16];
             std::snprintf(countBuf, sizeof(countBuf), "%zu", cnt);
             ctx.ui.drawText(tx + 4.f, ty + 38.f, countBuf, ctx.kTextPrimary);
+
+            // Click: select tile and update filter
+            if (ctx.hitRegion({tx, ty, 68.f, 58.f}, false)) {
+                m_viewSelectedTile = sel ? -1 : tileIdx;
+                // Also switch filter mode to match the tile
+                if (m_viewSelectedTile >= 0) {
+                    switch (te.tag) {
+                        case AssetTypeTag::Mesh:      m_filterMode = AssetFilterMode::Meshes;    break;
+                        case AssetTypeTag::Texture:   m_filterMode = AssetFilterMode::Textures;  break;
+                        case AssetTypeTag::Material:  m_filterMode = AssetFilterMode::Materials; break;
+                        case AssetTypeTag::Script:    m_filterMode = AssetFilterMode::Scripts;   break;
+                        case AssetTypeTag::Audio:     m_filterMode = AssetFilterMode::Audio;     break;
+                        case AssetTypeTag::Prefab:    m_filterMode = AssetFilterMode::Prefabs;   break;
+                        default:                      m_filterMode = AssetFilterMode::All;       break;
+                    }
+                } else {
+                    m_filterMode = AssetFilterMode::All;
+                }
+            }
             tx += 76.f;
+            ++tileIdx;
         }
     } else if (totalCount == 0) {
         const char* hint = ctx.shell && ctx.shell->hasProject()
@@ -244,8 +272,26 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
     }
 
     // ── Preview panel ─────────────────────────────────────────────
-    const char* previewHint = totalCount > 0 ? nullptr : "No asset selected";
+    const char* previewHint = (m_viewSelectedTile >= 0) ? nullptr : "Select an asset tile";
     ctx.drawPanel(ctx.x + browserW, ctx.y, previewW, ctx.h, "Preview", previewHint);
+    if (m_viewSelectedTile >= 0 && m_viewSelectedTile < kTypeCount) {
+        // Find which tile was displayed at that index
+        int tileIdx = 0;
+        for (int ti = 0; ti < kTypeCount; ++ti) {
+            size_t cnt = ctx.shell ? ctx.shell->assetCatalog().countByType(kTypes[ti].tag) : 0;
+            if (cnt == 0) continue;
+            if (tileIdx == m_viewSelectedTile) {
+                ctx.ui.drawText(ctx.x + browserW + 8.f, ctx.y + 30.f,
+                                kTypes[ti].label, ctx.kTextPrimary);
+                char cntBuf[32];
+                std::snprintf(cntBuf, sizeof(cntBuf), "%zu assets", cnt);
+                ctx.ui.drawText(ctx.x + browserW + 8.f, ctx.y + 50.f,
+                                cntBuf, ctx.kTextSecond);
+                break;
+            }
+            ++tileIdx;
+        }
+    }
 
     // ── Inspector panel ───────────────────────────────────────────
     ctx.drawPanel(ctx.x + browserW + previewW, ctx.y, inspW, ctx.h, "Inspector");
@@ -256,6 +302,12 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         std::snprintf(buf, sizeof(buf), "%u total assets", totalCount);
         ctx.ui.drawText(ctx.x + browserW + previewW + 8.f, ctx.y + 48.f,
                         buf, ctx.kTextMuted);
+    }
+    // Import button
+    if (ctx.drawButton(ctx.x + browserW + previewW + 8.f, ctx.y + ctx.h - 30.f,
+                       inspW - 16.f, 20.f, "Import Asset...")) {
+        if (ctx.shell)
+            (void)ctx.shell->commandBus().execute("asset.import");
     }
 }
 

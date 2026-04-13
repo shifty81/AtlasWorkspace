@@ -95,12 +95,15 @@ private:
 
     HostedToolDescriptor m_descriptor;
     HostedToolState      m_state       = HostedToolState::Unloaded;
-    IDEEditMode          m_editMode    = IDEEditMode::Code;
+    mutable IDEEditMode  m_editMode    = IDEEditMode::Code;
     IDEToolStats         m_stats;
 
     std::string              m_activeFile;
     std::vector<std::string> m_openFiles;
     std::string              m_activeProjectId;
+
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    mutable int m_viewSelectedFile = -1;
 };
 
 } // namespace NF

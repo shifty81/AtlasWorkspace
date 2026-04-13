@@ -15,6 +15,7 @@
 #include "NF/Workspace/IHostedTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
 #include <string>
+#include <vector>
 
 namespace NF {
 
@@ -94,9 +95,15 @@ public:
 private:
     HostedToolDescriptor m_descriptor;
     HostedToolState      m_state      = HostedToolState::Unloaded;
-    AIAssistMode         m_assistMode = AIAssistMode::Chat;
+    mutable AIAssistMode m_assistMode = AIAssistMode::Chat;
     AtlasAIToolStats     m_stats;
     std::string          m_activeProjectId;
+
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    struct AIChatEntry { bool isUser; std::string text; };
+    mutable std::vector<AIChatEntry> m_chatHistory;
+    mutable std::string              m_inputBuffer;
+    mutable bool                     m_inputFocused = false;
 
     void buildDescriptor();
 };

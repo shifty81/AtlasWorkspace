@@ -5,7 +5,9 @@
 
 #include "NF/Editor/MaterialEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspaceShell.h"
 #include <cstdio>
+#include <string>
 
 namespace NF {
 
@@ -124,6 +126,13 @@ void MaterialEditorTool::renderToolView(const ToolViewRenderContext& ctx) const 
     const float previewW = ctx.w * 0.40f;
     const float propW    = ctx.w - graphW - previewW;
 
+    // Stub material node list for the graph panel
+    static const char* kNodeNames[] = {
+        "BaseColor", "Metallic", "Roughness", "Normal Map",
+        "Emissive", "Opacity", "Output"
+    };
+    static constexpr int kMatNodeCount = 7;
+
     // ── Material Graph ────────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, graphW, ctx.h, "Material Graph");
     {
@@ -133,8 +142,33 @@ void MaterialEditorTool::renderToolView(const ToolViewRenderContext& ctx) const 
         char texBuf[32];
         std::snprintf(texBuf, sizeof(texBuf), "%u texture slots", m_stats.textureSlotCount);
         ctx.ui.drawText(ctx.x + 8.f, ctx.y + 48.f, texBuf, ctx.kTextSecond);
-        if (m_stats.isDirty) {
+        if (m_stats.isDirty)
             ctx.drawStatusPill(ctx.x + 8.f, ctx.y + 70.f, "unsaved", ctx.kRed);
+
+        // Node list rows
+        ctx.ui.drawText(ctx.x + 8.f, ctx.y + 90.f, "Nodes:", ctx.kTextMuted);
+        float ny = ctx.y + 106.f;
+        for (int i = 0; i < kMatNodeCount; ++i) {
+            if (ny + 18.f > ctx.y + ctx.h - 4.f) break;
+            bool sel = (m_viewSelectedNode == i);
+            bool hov = ctx.isHovered({ctx.x + 2.f, ny, graphW - 4.f, 16.f});
+            uint32_t bg = sel ? ctx.kAccentBlue : (hov ? 0x2A2A3AFF : 0x00000000u);
+            if (bg) ctx.ui.drawRect({ctx.x + 2.f, ny, graphW - 4.f, 16.f}, bg);
+            // Small colored dot icon
+            uint32_t dotColor = (i == kMatNodeCount - 1) ? ctx.kGreen : ctx.kAccentBlue;
+            ctx.ui.drawRect({ctx.x + 6.f, ny + 4.f, 6.f, 6.f}, dotColor);
+            ctx.ui.drawText(ctx.x + 16.f, ny + 1.f, kNodeNames[i],
+                            sel ? ctx.kTextPrimary : ctx.kTextSecond);
+            if (ctx.hitRegion({ctx.x + 2.f, ny, graphW - 4.f, 16.f}, false))
+                m_viewSelectedNode = sel ? -1 : i;
+            ny += 18.f;
+        }
+
+        // Add node button
+        if (ctx.drawButton(ctx.x + 8.f, ctx.y + ctx.h - 30.f, graphW - 16.f, 20.f,
+                           "+ Add Node")) {
+            if (ctx.shell)
+                (void)ctx.shell->commandBus().execute("material.add_node");
         }
     }
 
@@ -149,12 +183,20 @@ void MaterialEditorTool::renderToolView(const ToolViewRenderContext& ctx) const 
 
     // ── Properties panel ──────────────────────────────────────────
     ctx.drawPanel(ctx.x + graphW + previewW, ctx.y, propW, ctx.h, "Properties");
-    ctx.ui.drawText(ctx.x + graphW + previewW + 8.f, ctx.y + 30.f,
-                    "Material Parameters", ctx.kTextSecond);
-    ctx.drawStatRow(ctx.x + graphW + previewW + 8.f, ctx.y + 50.f, "Nodes:", "");
-    {
+    const float px = ctx.x + graphW + previewW;
+    if (m_viewSelectedNode >= 0 && m_viewSelectedNode < kMatNodeCount) {
+        ctx.ui.drawText(px + 8.f, ctx.y + 30.f, kNodeNames[m_viewSelectedNode], ctx.kTextPrimary);
+        ctx.ui.drawRect({px + 4.f, ctx.y + 44.f, propW - 8.f, 1.f}, ctx.kBorder);
+        ctx.ui.drawText(px + 8.f, ctx.y + 50.f, "Type: Input", ctx.kTextSecond);
+        ctx.drawStatRow(px + 8.f, ctx.y + 68.f, "Nodes:", "");
         char nb[16]; std::snprintf(nb, sizeof(nb), "%u", m_stats.nodeCount);
-        ctx.ui.drawText(ctx.x + graphW + previewW + 118.f, ctx.y + 50.f, nb, ctx.kTextPrimary);
+        ctx.ui.drawText(px + 118.f, ctx.y + 68.f, nb, ctx.kTextPrimary);
+    } else {
+        ctx.ui.drawText(px + 8.f, ctx.y + 30.f, "Material Parameters", ctx.kTextSecond);
+        ctx.drawStatRow(px + 8.f, ctx.y + 50.f, "Nodes:", "");
+        char nb[16]; std::snprintf(nb, sizeof(nb), "%u", m_stats.nodeCount);
+        ctx.ui.drawText(px + 118.f, ctx.y + 50.f, nb, ctx.kTextPrimary);
+        ctx.ui.drawText(px + 8.f, ctx.y + 72.f, "Select a node", ctx.kTextMuted);
     }
 }
 

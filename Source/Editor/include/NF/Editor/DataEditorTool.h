@@ -99,6 +99,10 @@ private:
     std::string          m_openTablePath;
     std::string          m_activeProjectId;
 
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    mutable int         m_viewSelectedRow  = -1;
+    mutable std::string m_viewOpenTable;           // selected table in the tree panel
+
     void buildDescriptor();
 };
 

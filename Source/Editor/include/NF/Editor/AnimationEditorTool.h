@@ -108,6 +108,11 @@ private:
     AnimationEditorStats  m_stats;
     std::string           m_activeProjectId;
 
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    mutable int  m_viewSelectedClip    = -1;
+    mutable bool m_viewIsPlaying       = false;
+    mutable bool m_viewIsRecording     = false;
+
     void buildDescriptor();
 };
 

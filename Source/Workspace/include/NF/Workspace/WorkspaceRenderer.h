@@ -804,11 +804,16 @@ private:
         // ── Per-tool panel layout ──────────────────────────────────
         // Delegate to the tool's own render contract (Patch 5).
         // The tool renders its own panel layout backed by live runtime state.
+        // m_ctx is begun here so the tool can call ctx.hitRegion() for interactive
+        // elements.  It is ended immediately after renderToolView returns so that
+        // the back-button below can use its own separate begin/end pair.
         {
+            m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
             ToolViewRenderContext toolCtx{ui, mouse,
                                           x, y + kHeaderH, w, kMainH,
-                                          &shell};
+                                          &shell, &m_ctx};
             tool->renderToolView(toolCtx);
+            m_ctx.end();
         }
 
         // ── Bottom strip: Console + Metrics ───────────────────────

@@ -124,7 +124,7 @@ public:
 private:
     HostedToolDescriptor m_descriptor;
     HostedToolState      m_state      = HostedToolState::Unloaded;
-    AssetFilterMode      m_filterMode = AssetFilterMode::All;
+    mutable AssetFilterMode m_filterMode = AssetFilterMode::All;
     AssetEditorStats     m_stats;
     std::string          m_searchQuery;
     std::string          m_activeProjectId;
@@ -133,6 +133,10 @@ private:
 
     // Optional asset preview scene provider (Phase D.3)
     IViewportSceneProvider* m_assetPreviewProvider = nullptr;
+
+    // ── Mutable per-view UI state (safe from const renderToolView) ─
+    // Selected asset tile index in content browser, -1 = none.
+    mutable int m_viewSelectedTile = -1;
 };
 
 } // namespace NF

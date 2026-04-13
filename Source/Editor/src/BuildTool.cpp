@@ -5,7 +5,9 @@
 
 #include "NF/Editor/BuildTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspaceShell.h"
 #include <cstdio>
+#include <cstring>
 
 namespace NF {
 
@@ -115,6 +117,13 @@ void BuildTool::renderToolView(const ToolViewRenderContext& ctx) const {
     const float logW     = ctx.w * 0.55f;
     const float metricsW = ctx.w - configW - logW;
 
+    // Build mode options
+    static constexpr struct { const char* label; BuildMode mode; } kModes[] = {
+        {"Incremental", BuildMode::Incremental},
+        {"Full",        BuildMode::Full},
+        {"ShaderOnly",  BuildMode::ShaderOnly},
+    };
+
     // ── Build Config panel ────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, configW, ctx.h, "Build Config");
     ctx.drawStatRow(ctx.x + 8.f, ctx.y + 30.f, "Mode:", buildModeName(m_buildMode));
@@ -123,36 +132,83 @@ void BuildTool::renderToolView(const ToolViewRenderContext& ctx) const {
         if (tgt.size() > 20) tgt = tgt.substr(0, 17) + "...";
         ctx.drawStatRow(ctx.x + 8.f, ctx.y + 48.f, "Target:", tgt.c_str());
     }
-    if (m_stats.isBuilding) {
-        ctx.drawStatusPill(ctx.x + 8.f, ctx.y + 72.f, "Building...", ctx.kAccentBlue);
+
+    // Build mode selector buttons
+    float mbY = ctx.y + 72.f;
+    for (const auto& m : kModes) {
+        if (mbY + 20.f > ctx.y + ctx.h - 36.f) break;
+        bool active = (m_buildMode == m.mode);
+        uint32_t bg = active ? ctx.kAccentBlue : ctx.kButtonBg;
+        if (ctx.drawButton(ctx.x + 8.f, mbY, configW - 16.f, 18.f, m.label, bg)) {
+            m_buildMode = m.mode;
+        }
+        mbY += 22.f;
+    }
+
+    // Build button at the bottom of the config panel
+    bool isBuilding = m_stats.isBuilding || m_viewBuildRequested;
+    if (!isBuilding) {
+        if (ctx.drawButton(ctx.x + 8.f, ctx.y + ctx.h - 30.f,
+                           configW - 16.f, 22.f, "Build Now",
+                           0x005A9EFF, ctx.kAccentBlue)) {
+            m_viewBuildRequested = true;
+            if (ctx.shell)
+                (void)ctx.shell->commandBus().execute("build.start");
+        }
+    } else {
+        ctx.drawStatusPill(ctx.x + 8.f, ctx.y + ctx.h - 28.f, "Building...", ctx.kAccentBlue);
     }
 
     // ── Build Log panel ───────────────────────────────────────────
     ctx.drawPanel(ctx.x + configW, ctx.y, logW, ctx.h, "Build Log");
-    if (m_stats.errorCount > 0) {
-        char errBuf[32];
-        std::snprintf(errBuf, sizeof(errBuf), "%u errors", m_stats.errorCount);
-        ctx.drawStatusPill(ctx.x + configW + 8.f, ctx.y + 30.f, errBuf, ctx.kRed);
-    }
-    if (m_stats.warningCount > 0) {
-        char warnBuf[32];
-        std::snprintf(warnBuf, sizeof(warnBuf), "%u warnings", m_stats.warningCount);
-        float warnX = m_stats.errorCount > 0 ? ctx.x + configW + 90.f : ctx.x + configW + 8.f;
-        ctx.drawStatusPill(warnX, ctx.y + 30.f, warnBuf, 0xE09020FFu);
-    }
-    if (m_stats.errorCount == 0 && m_stats.warningCount == 0 && !m_stats.isBuilding) {
-        ctx.ui.drawText(ctx.x + configW + 8.f, ctx.y + 30.f, "Build clean", ctx.kGreen);
+    {
+        float ly = ctx.y + 30.f;
+        if (m_stats.errorCount > 0) {
+            char errBuf[32];
+            std::snprintf(errBuf, sizeof(errBuf), "%u errors", m_stats.errorCount);
+            ctx.drawStatusPill(ctx.x + configW + 8.f, ly, errBuf, ctx.kRed);
+            ly += 24.f;
+        }
+        if (m_stats.warningCount > 0) {
+            char warnBuf[32];
+            std::snprintf(warnBuf, sizeof(warnBuf), "%u warnings", m_stats.warningCount);
+            ctx.drawStatusPill(ctx.x + configW + 8.f, ly, warnBuf, 0xE09020FFu);
+            ly += 24.f;
+        }
+        if (m_stats.errorCount == 0 && m_stats.warningCount == 0 && !isBuilding) {
+            ctx.ui.drawText(ctx.x + configW + 8.f, ly, "Build clean", ctx.kGreen);
+            ly += 18.f;
+        }
+
+        // Static stub log lines
+        static const char* kLogLines[] = {
+            "[INFO]  Build system ready",
+            "[INFO]  Target: Windows x64",
+            "[INFO]  Mode: Incremental",
+            "[INFO]  Awaiting start...",
+        };
+        for (auto* line : kLogLines) {
+            if (ly + 16.f > ctx.y + ctx.h - 4.f) break;
+            ctx.ui.drawText(ctx.x + configW + 8.f, ly, line, ctx.kTextSecond);
+            ly += 16.f;
+        }
     }
 
     // ── Metrics panel ─────────────────────────────────────────────
     ctx.drawPanel(ctx.x + configW + logW, ctx.y, metricsW, ctx.h, "Metrics");
+    const float mx = ctx.x + configW + logW;
     if (m_stats.lastBuildMs > 0.f) {
         char timeBuf[32];
         std::snprintf(timeBuf, sizeof(timeBuf), "%.0f ms", m_stats.lastBuildMs);
-        ctx.drawStatRow(ctx.x + configW + logW + 8.f, ctx.y + 30.f, "Last build:", timeBuf);
+        ctx.drawStatRow(mx + 8.f, ctx.y + 30.f, "Last build:", timeBuf);
     } else {
-        ctx.ui.drawText(ctx.x + configW + logW + 8.f, ctx.y + 30.f, "No build yet", ctx.kTextMuted);
+        ctx.ui.drawText(mx + 8.f, ctx.y + 30.f, "No build yet", ctx.kTextMuted);
     }
+    ctx.drawStatRow(mx + 8.f, ctx.y + 50.f, "Mode:", buildModeName(m_buildMode));
+    char errStr[16]; std::snprintf(errStr, sizeof(errStr), "%u", m_stats.errorCount);
+    ctx.drawStatRow(mx + 8.f, ctx.y + 68.f, "Errors:", errStr);
+    char warnStr[16]; std::snprintf(warnStr, sizeof(warnStr), "%u", m_stats.warningCount);
+    ctx.drawStatRow(mx + 8.f, ctx.y + 86.f, "Warnings:", warnStr);
 }
 
 } // namespace NF
