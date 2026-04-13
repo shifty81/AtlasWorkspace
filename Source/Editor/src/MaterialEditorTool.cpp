@@ -10,7 +10,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <cstdio>
 #include <string>
 
 namespace NF {
