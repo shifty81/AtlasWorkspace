@@ -142,6 +142,22 @@ public:
         return msgs;
     }
 
+    // ── Summary rows (for workspace dashboard display) ────────────────────
+    [[nodiscard]] std::vector<std::pair<std::string, std::string>>
+        summaryRows() const override
+    {
+        std::vector<std::pair<std::string, std::string>> rows;
+        rows.emplace_back("Missions",
+                          std::to_string(m_missions.size()));
+        rows.emplace_back("Max active missions",
+                          std::to_string(m_maxActiveMissions));
+        rows.emplace_back("Mission chains",
+                          m_chainEnabled ? "Enabled" : "Disabled");
+        if (!m_missions.empty())
+            rows.emplace_back("First mission", m_missions[0].displayName);
+        return rows;
+    }
+
     // ── Project load hook ─────────────────────────────────────────────────
     void onProjectLoaded(const std::string& projectRoot) override {
         DocumentPanelBase::onProjectLoaded(projectRoot);

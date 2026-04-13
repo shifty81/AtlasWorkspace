@@ -872,26 +872,46 @@ private:
         if (!panel) {
             ui.drawText(x + 16.f, cy + 20.f, "Panel unavailable.", kTextMuted);
         } else {
+            static constexpr float kLabelColW = 180.f;
             float rx = x + 24.f;
-            float ry = cy + 20.f;
+            float ry = cy + 16.f;
 
+            // ── Title / status row ────────────────────────────────────────
             ui.drawText(rx, ry, panel->panelTitle(), kTextPrimary);
+            const uint32_t statusColor = panel->isReady() ? kGreen : kTextMuted;
+            const char*    statusText  = panel->isReady() ? "Ready" : "Loading…";
+            ui.drawText(rx + kLabelColW, ry, statusText, statusColor);
             ry += 22.f;
-            ui.drawText(rx, ry, "Category: " + desc->category, kTextSecondary);
-            ry += 18.f;
-            ui.drawText(rx, ry,
-                        panel->isReady() ? "Status: Ready" : "Status: Loading...",
-                        panel->isReady() ? kGreen : kTextMuted);
-            ry += 28.f;
             ui.drawRect({x + 12.f, ry, w - 24.f, 1.f}, kBorder);
-            ry += 14.f;
-            ui.drawText(rx, ry,
-                        "Open NovaForge Editor to author content for this system.",
-                        kTextMuted);
-            ry += 18.f;
-            ui.drawText(rx, ry,
-                        "Changes are reflected in the game at runtime.",
-                        kTextMuted);
+            ry += 10.f;
+
+            // ── Real panel data rows ──────────────────────────────────────
+            // summaryRows() returns (label, value) pairs populated from the
+            // panel's live data (loaded from project files on project open).
+            const auto rows = panel->summaryRows();
+            if (rows.empty()) {
+                ui.drawText(rx, ry, "No data loaded.", kTextMuted);
+            } else {
+                for (const auto& [label, value] : rows) {
+                    ui.drawText(rx, ry, label, kTextSecondary);
+                    ui.drawText(rx + kLabelColW, ry, value, kTextPrimary);
+                    ry += 18.f;
+                    if (ry > cy + kContentH - 10.f) break; // guard against overflow
+                }
+            }
+
+            // ── Project root hint ─────────────────────────────────────────
+            ry += 6.f;
+            ui.drawRect({x + 12.f, ry, w - 24.f, 1.f}, kBorder);
+            ry += 10.f;
+            if (shell.hasProject() && shell.projectAdapter()) {
+                const auto roots = shell.projectAdapter()->contentRoots();
+                const std::string rootHint = roots.empty()
+                    ? shell.projectAdapter()->projectId()
+                    : roots[0];
+                ui.drawText(rx, ry, "Project root:", kTextMuted);
+                ui.drawText(rx + kLabelColW, ry, rootHint, kTextMuted);
+            }
         }
 
         // ── Bottom strip ───────────────────────────────────────────────

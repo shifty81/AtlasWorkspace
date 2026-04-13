@@ -103,6 +103,24 @@ public:
         return msgs;
     }
 
+    // ── Summary rows (for workspace dashboard display) ────────────────────
+    [[nodiscard]] std::vector<std::pair<std::string, std::string>>
+        summaryRows() const override
+    {
+        std::vector<std::pair<std::string, std::string>> rows;
+        rows.emplace_back("Max level",
+                          std::to_string(m_maxLevel));
+        rows.emplace_back("XP multiplier",
+                          std::to_string(m_xpGlobalMultiplier));
+        rows.emplace_back("Skill points / level",
+                          std::to_string(m_skillPointsPerLevel));
+        rows.emplace_back("Level thresholds",
+                          std::to_string(m_levels.size()));
+        rows.emplace_back("Skill unlocks",
+                          std::to_string(m_skills.size()));
+        return rows;
+    }
+
     // ── Project load hook ─────────────────────────────────────────────────
     void onProjectLoaded(const std::string& projectRoot) override {
         DocumentPanelBase::onProjectLoaded(projectRoot);

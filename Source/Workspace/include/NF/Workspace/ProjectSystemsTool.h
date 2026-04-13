@@ -47,7 +47,8 @@ public:
     // ── Descriptor management ─────────────────────────────────────
     void loadFromAdapter(const IGameProjectAdapter& adapter) {
         m_panels = adapter.panelDescriptors();
-        m_livePanels.clear(); // discard any previously-instantiated panels
+        m_livePanels.clear();       // discard any previously-instantiated panels
+        m_currentProjectRoot.clear(); // stale root is invalid until notifyProjectLoaded
     }
 
     const std::vector<GameplaySystemPanelDescriptor>& panels() const {
@@ -66,6 +67,8 @@ public:
     // ── Live panel access ─────────────────────────────────────────
     // Returns the live IEditorPanel instance for the given panelId, creating
     // it on first access via the descriptor's createPanel factory.
+    // If a project is currently loaded the panel immediately receives
+    // onProjectLoaded() so lazily-created panels have real data from the start.
     // Returns nullptr if the panel is not registered or has no factory.
     IEditorPanel* getOrCreatePanel(const std::string& panelId) {
         // Return cached instance if available.
@@ -81,6 +84,13 @@ public:
 
         IEditorPanel* raw = panel.get();
         m_livePanels.emplace(panelId, std::move(panel));
+
+        // If a project root is already set, notify the newly-created panel
+        // immediately so it can load real project data without waiting for the
+        // next explicit notifyProjectLoaded() broadcast.
+        if (!m_currentProjectRoot.empty())
+            raw->onProjectLoaded(m_currentProjectRoot);
+
         return raw;
     }
 
@@ -95,12 +105,14 @@ public:
     // ── Project lifecycle ─────────────────────────────────────────
     // Notify all live panels when a project is loaded or unloaded.
     void notifyProjectLoaded(const std::string& projectRoot) {
+        m_currentProjectRoot = projectRoot;
         for (auto& [id, panel] : m_livePanels) {
             if (panel) panel->onProjectLoaded(projectRoot);
         }
     }
 
     void notifyProjectUnloaded() {
+        m_currentProjectRoot.clear();
         for (auto& [id, panel] : m_livePanels) {
             if (panel) panel->onProjectUnloaded();
         }
@@ -111,6 +123,7 @@ public:
     void reset() {
         m_livePanels.clear();
         m_panels.clear();
+        m_currentProjectRoot.clear();
     }
 
     // ── Filtering helpers ─────────────────────────────────────────
@@ -144,6 +157,10 @@ private:
     // Live panel instances keyed by panel ID.
     // Created lazily on first getOrCreatePanel() call.
     std::unordered_map<std::string, std::unique_ptr<IEditorPanel>> m_livePanels;
+
+    // Project root of the currently loaded project (empty when no project).
+    // Stored so lazily-created panels receive onProjectLoaded() immediately.
+    std::string m_currentProjectRoot;
 };
 
 } // namespace NF

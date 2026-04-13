@@ -138,6 +138,22 @@ public:
         return msgs;
     }
 
+    // ── Summary rows (for workspace dashboard display) ────────────────────
+    [[nodiscard]] std::vector<std::pair<std::string, std::string>>
+        summaryRows() const override
+    {
+        std::vector<std::pair<std::string, std::string>> rows;
+        rows.emplace_back("Trade hubs",
+                          std::to_string(m_shops.size()));
+        rows.emplace_back("Listings",
+                          std::to_string(m_listings.size()));
+        rows.emplace_back("Global discount",
+                          std::to_string(m_globalDiscount));
+        if (!m_shops.empty())
+            rows.emplace_back("Primary hub", m_shops.front().displayName);
+        return rows;
+    }
+
     // ── Project load hook ─────────────────────────────────────────────────
     void onProjectLoaded(const std::string& projectRoot) override {
         DocumentPanelBase::onProjectLoaded(projectRoot);

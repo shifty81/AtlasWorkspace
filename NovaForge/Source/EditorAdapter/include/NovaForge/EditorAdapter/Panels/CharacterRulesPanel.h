@@ -109,6 +109,22 @@ public:
         return msgs;
     }
 
+    // ── Summary rows (for workspace dashboard display) ────────────────────
+    [[nodiscard]] std::vector<std::pair<std::string, std::string>>
+        summaryRows() const override
+    {
+        std::vector<std::pair<std::string, std::string>> rows;
+        rows.emplace_back("Class presets",
+                          std::to_string(m_classes.size()));
+        rows.emplace_back("Max characters / account",
+                          std::to_string(m_maxCharactersPerAccount));
+        rows.emplace_back("Custom classes",
+                          m_customClassEnabled ? "Enabled" : "Disabled");
+        if (!m_classes.empty())
+            rows.emplace_back("First class", m_classes[0].displayName);
+        return rows;
+    }
+
     // ── Project load hook ─────────────────────────────────────────────────
     void onProjectLoaded(const std::string& projectRoot) override {
         DocumentPanelBase::onProjectLoaded(projectRoot);
