@@ -136,11 +136,10 @@ public:
                 m_state == PIEProcessState::Launching) {
                 return { false, "A process is already running" };
             }
-            m_state = PIEProcessState::Launching;
+            m_state        = PIEProcessState::Launching;
+            m_launchCount++;
+            m_lastExitCode = 0;
         }
-
-        m_launchCount++;
-        m_lastExitCode = 0;
         m_exitNotified.store(false);
         {
             std::lock_guard<std::mutex> lk(m_linesMutex);
@@ -274,9 +273,18 @@ public:
         return s == PIEProcessState::Exited || s == PIEProcessState::Crashed;
     }
     [[nodiscard]] bool     hasCrashed()   const { return state() == PIEProcessState::Crashed; }
-    [[nodiscard]] uint32_t processId()    const { return m_processId; }
-    [[nodiscard]] int32_t  lastExitCode() const { return m_lastExitCode; }
-    [[nodiscard]] uint32_t launchCount()  const { return m_launchCount; }
+    [[nodiscard]] uint32_t processId()    const {
+        std::lock_guard<std::mutex> lk(m_procMutex);
+        return m_processId;
+    }
+    [[nodiscard]] int32_t  lastExitCode() const {
+        std::lock_guard<std::mutex> lk(m_procMutex);
+        return m_lastExitCode;
+    }
+    [[nodiscard]] uint32_t launchCount()  const {
+        std::lock_guard<std::mutex> lk(m_procMutex);
+        return m_launchCount;
+    }
 
     // ── Callbacks ─────────────────────────────────────────────────────────
 
@@ -315,9 +323,12 @@ private:
         if (m_config.waitForDebugger)
             argStrings.emplace_back("--wait-debugger");
 
+        // Build argv vector.  execv historically takes char*[], not const char*[].
+        // The strings are owned by argStrings (local scope) and execv does not
+        // modify them — the const_cast is safe here and is a POSIX API quirk.
         std::vector<char*> argv;
         for (auto& s : argStrings)
-            argv.push_back(const_cast<char*>(s.c_str()));
+            argv.push_back(const_cast<char*>(s.c_str())); // NOLINT(cppcoreguidelines-pro-type-const-cast)
         argv.push_back(nullptr);
 
         pid_t pid = ::fork();
@@ -427,6 +438,8 @@ private:
         if (WIFEXITED(status))
             code = WEXITSTATUS(status);
         else if (WIFSIGNALED(status))
+            // Encode signal-terminated exits as negative signal numbers
+            // (distinct from the -1 used by terminate() for editor-initiated stops).
             code = -static_cast<int32_t>(WTERMSIG(status));
 
         {
