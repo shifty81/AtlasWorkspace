@@ -459,7 +459,10 @@ TEST_CASE("WorkspaceShell: initialize registers default panels", "[workspace][sh
     REQUIRE(shell.panelRegistry().isRegistered("memory_profiler"));
     REQUIRE(shell.panelRegistry().isRegistered("pipeline_monitor"));
     REQUIRE(shell.panelRegistry().isRegistered("notification_center"));
-    REQUIRE(shell.panelRegistry().count() == 14);
+    // newly added panels
+    REQUIRE(shell.panelRegistry().isRegistered("preferences"));
+    REQUIRE(shell.panelRegistry().isRegistered("project_settings"));
+    REQUIRE(shell.panelRegistry().count() == 16);
 }
 
 TEST_CASE("WorkspaceShell: double-init fails", "[workspace][shell]") {
@@ -577,8 +580,8 @@ TEST_CASE("ShellPhase: name round-trip", "[workspace][shell]") {
 TEST_CASE("WorkspaceShell: accessors return correct registries", "[workspace][shell]") {
     NF::WorkspaceShell shell;
     shell.initialize();
-    // Panel registry has default panels (8 descriptor-only + 6 factory-backed)
-    REQUIRE(shell.panelRegistry().count() == 14);
+    // Panel registry has default panels (10 descriptor-only + 6 factory-backed)
+    REQUIRE(shell.panelRegistry().count() == 16);
     // Tool registry has no auto-registered tools (factories must be added externally)
     REQUIRE(shell.toolRegistry().count() == 0);
     // App registry is accessible
@@ -1197,5 +1200,170 @@ TEST_CASE("WorkspaceShell: descriptor-only panels have no factory", "[workspace]
     REQUIRE_FALSE(shell.panelRegistry().hasFactory("console"));
     REQUIRE(shell.panelRegistry().getOrCreatePanel("inspector") == nullptr);
 
+    shell.shutdown();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Audit fix: Undo/Redo wiring through command bus
+// ═══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("WorkspaceShell: undo/redo commands route through UndoRedoSystem", "[workspace][shell][undo]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    // Push an undo group
+    NF::UndoGroup group("Test Action");
+    NF::UndoAction action;
+    action.id          = "a1";
+    action.description = "Move entity";
+    action.type        = NF::UndoActionType::Move;
+    action.state       = NF::UndoActionState::Applied;
+    group.addAction(action);
+    REQUIRE(shell.undoRedoSystem().pushGroup(std::move(group)));
+    REQUIRE(shell.undoRedoSystem().canUndo());
+
+    // Execute workspace.undo through command bus
+    auto result = shell.commandBus().execute("workspace.undo");
+    REQUIRE(result == NF::ConsoleCmdExecResult::Ok);
+    REQUIRE_FALSE(shell.undoRedoSystem().canUndo());
+    REQUIRE(shell.undoRedoSystem().canRedo());
+
+    // Execute workspace.redo through command bus
+    result = shell.commandBus().execute("workspace.redo");
+    REQUIRE(result == NF::ConsoleCmdExecResult::Ok);
+    REQUIRE(shell.undoRedoSystem().canUndo());
+    REQUIRE_FALSE(shell.undoRedoSystem().canRedo());
+
+    shell.shutdown();
+}
+
+TEST_CASE("WorkspaceShell: undo on empty stack succeeds with no-op", "[workspace][shell][undo]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    REQUIRE_FALSE(shell.undoRedoSystem().canUndo());
+    auto result = shell.commandBus().execute("workspace.undo");
+    REQUIRE(result == NF::ConsoleCmdExecResult::Ok);
+
+    shell.shutdown();
+}
+
+TEST_CASE("WorkspaceShell: undoRedoSystem accessor exists", "[workspace][shell][undo]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+    REQUIRE_FALSE(shell.undoRedoSystem().canUndo());
+    REQUIRE_FALSE(shell.undoRedoSystem().canRedo());
+    REQUIRE(shell.undoRedoSystem().undoDepth() == 0);
+    shell.shutdown();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Audit fix: Close document wiring
+// ═══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("WorkspaceShell: close_document closes active document via projectState", "[workspace][shell][close]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    struct TestAdapter final : NF::IGameProjectAdapter {
+        std::string projectId()          const override { return "test_close"; }
+        std::string projectDisplayName() const override { return "Test Close"; }
+        bool initialize() override { return true; }
+        void shutdown()   override {}
+        std::vector<NF::GameplaySystemPanelDescriptor> panelDescriptors() const override { return {}; }
+    };
+    shell.loadProject(std::make_unique<TestAdapter>());
+
+    NF::OpenDocumentEntry entry;
+    entry.documentId   = "doc1";
+    entry.displayTitle = "My Scene";
+    entry.kind         = NF::DocumentKind::Scene;
+    shell.projectState().openDocument(entry);
+    REQUIRE(shell.projectState().openDocumentCount() == 1);
+    REQUIRE(shell.projectState().activeDocumentId()  == "doc1");
+
+    auto result = shell.commandBus().execute("workspace.close_document");
+    REQUIRE(result == NF::ConsoleCmdExecResult::Ok);
+    REQUIRE(shell.projectState().openDocumentCount() == 0);
+
+    shell.shutdown();
+}
+
+TEST_CASE("WorkspaceShell: close_document with no active doc succeeds", "[workspace][shell][close]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    struct TestAdapter final : NF::IGameProjectAdapter {
+        std::string projectId()          const override { return "test_close2"; }
+        std::string projectDisplayName() const override { return "Test Close 2"; }
+        bool initialize() override { return true; }
+        void shutdown()   override {}
+        std::vector<NF::GameplaySystemPanelDescriptor> panelDescriptors() const override { return {}; }
+    };
+    shell.loadProject(std::make_unique<TestAdapter>());
+
+    auto result = shell.commandBus().execute("workspace.close_document");
+    REQUIRE(result == NF::ConsoleCmdExecResult::Ok);
+
+    shell.shutdown();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Audit fix: Recent files recording on project load
+// ═══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("WorkspaceShell: loadProject records in recent files", "[workspace][shell][recent]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    // Clear any entries persisted from prior test runs.
+    shell.recentFiles().clearAll();
+
+    struct TestAdapter final : NF::IGameProjectAdapter {
+        std::string projectId()          const override { return "recents_test"; }
+        std::string projectDisplayName() const override { return "Recents Test"; }
+        std::string projectRoot()        const override { return "/tmp/recents_test"; }
+        bool initialize() override { return true; }
+        void shutdown()   override {}
+        std::vector<NF::GameplaySystemPanelDescriptor> panelDescriptors() const override { return {}; }
+    };
+
+    REQUIRE(shell.recentFiles().globalRecent().empty());
+    shell.loadProject(std::make_unique<TestAdapter>());
+
+    auto recent = shell.recentFiles().globalRecent();
+    REQUIRE(recent.size() >= 1);
+    REQUIRE(recent[0].displayName == "Recents Test");
+    REQUIRE(recent[0].path        == "/tmp/recents_test");
+    REQUIRE(recent[0].kind        == NF::RecentFileKind::Project);
+
+    shell.shutdown();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Audit fix: Preferences and project settings panels
+// ═══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("WorkspaceShell: preferences panel toggles via command", "[workspace][shell][prefs]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+
+    REQUIRE(shell.panelRegistry().isRegistered("preferences"));
+    REQUIRE_FALSE(shell.panelRegistry().isPanelVisible("preferences"));
+
+    shell.commandBus().execute("workspace.preferences");
+    REQUIRE(shell.panelRegistry().isPanelVisible("preferences"));
+
+    shell.commandBus().execute("workspace.preferences");
+    REQUIRE_FALSE(shell.panelRegistry().isPanelVisible("preferences"));
+
+    shell.shutdown();
+}
+
+TEST_CASE("WorkspaceShell: project_settings panel registered", "[workspace][shell][prefs]") {
+    NF::WorkspaceShell shell;
+    shell.initialize();
+    REQUIRE(shell.panelRegistry().isRegistered("project_settings"));
+    REQUIRE_FALSE(shell.panelRegistry().isPanelVisible("project_settings"));
     shell.shutdown();
 }
