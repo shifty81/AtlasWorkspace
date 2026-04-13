@@ -46,9 +46,11 @@ namespace fs = std::filesystem;
 static std::string novaForgeAtlasPath() {
     const std::string defined = NF_NOVAFORGE_ATLAS_PATH;
     if (!defined.empty() && fs::exists(defined)) return defined;
-    // Fallback: walk up from current working directory to find NovaForge.atlas
+    // Fallback: walk up from current working directory to find NovaForge.atlas.
+    // 8 levels covers typical out-of-source build trees (e.g. build/bin/Tests/).
+    constexpr int kMaxSearchDepth = 8;
     fs::path dir = fs::current_path();
-    for (int depth = 0; depth < 8; ++depth) {
+    for (int depth = 0; depth < kMaxSearchDepth; ++depth) {
         auto candidate = dir / "NovaForge" / "NovaForge.atlas";
         if (fs::exists(candidate)) return candidate.string();
         if (dir.has_parent_path()) dir = dir.parent_path();

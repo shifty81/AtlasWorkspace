@@ -344,6 +344,9 @@ private:
             if (!bootstrap.success) {
                 return result; // errors already added above
             }
+            // Use the manifest name when present; fall back to the filename-derived name.
+            // The 'name' field is optional in the atlas.project.v1 schema, so an empty
+            // name is valid and should not be treated as an error.
             result.projectName = bootstrap.manifest.name.empty()
                                ? derivedName
                                : bootstrap.manifest.name;
