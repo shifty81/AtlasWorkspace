@@ -90,6 +90,11 @@ public:
     virtual std::string projectId() const = 0;
     virtual std::string projectDisplayName() const = 0;
 
+    // Absolute path to the project's root directory (the folder that contains
+    // the .atlas file and all sub-trees).  Returns an empty string by default;
+    // adapters that know their on-disk location should override this.
+    virtual std::string projectRoot() const { return {}; }
+
     // Extension registration
     virtual bool initialize() = 0;
     virtual void shutdown() = 0;
