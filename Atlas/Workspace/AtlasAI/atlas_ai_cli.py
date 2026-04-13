@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Atlas Arbiter — Rule-based decision engine CLI.
+"""AtlasAI Rule Evaluator — Rule-based decision engine CLI.
 
-Deployable wrapper around the AtlasAI/Atlas_Arbiter source.
-Evaluates declarative .arbiter.json rules against JSON context snapshots.
+Deployable wrapper around the AtlasAI rule engine source.
+Evaluates declarative .atlas_ai.json rules against JSON context snapshots.
 
 Usage:
-    python arbiter_cli.py evaluate <context.json> [--rules rules/]
-    python arbiter_cli.py validate <rulefile.arbiter.json>
-    python arbiter_cli.py watch    [--pipeline ../../.novaforge/pipeline/]
+    python atlas_ai_cli.py evaluate <context.json> [--rules rules/]
+    python atlas_ai_cli.py validate <rulefile.atlas_ai.json>
+    python atlas_ai_cli.py watch    [--pipeline ../../.novaforge/pipeline/]
 
 See AtlasAI/Atlas_Arbiter/README.md for full documentation.
 """
@@ -31,9 +31,9 @@ def evaluate(context_path: str, rules_dir: str = "rules") -> int:
         print(f"Error: rules directory not found: {rules}", file=sys.stderr)
         return 1
 
-    rule_files = list(rules.glob("*.arbiter.json"))
+    rule_files = list(rules.glob("*.atlas_ai.json"))
     if not rule_files:
-        print(f"Warning: no .arbiter.json files in {rules}", file=sys.stderr)
+        print(f"Warning: no .atlas_ai.json files in {rules}", file=sys.stderr)
         return 0
 
     with open(ctx, encoding="utf-8") as f:
@@ -44,7 +44,7 @@ def evaluate(context_path: str, rules_dir: str = "rules") -> int:
         with open(rf, encoding="utf-8") as f:
             ruleset = json.load(f)
         print(f"  Evaluating {rf.name} ({len(ruleset.get('rules', []))} rules)...")
-        # Stub: actual evaluation engine is in AtlasAI/Atlas_Arbiter
+        # Stub: actual evaluation engine is in AtlasAI
         for rule in ruleset.get("rules", []):
             print(f"    [{rule.get('severity', 'info')}] {rule.get('id', '?')}: {rule.get('description', '')}")
 
@@ -72,7 +72,7 @@ def validate(rulefile: str) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Atlas Arbiter CLI")
+    parser = argparse.ArgumentParser(description="AtlasAI Rule Evaluator CLI")
     sub = parser.add_subparsers(dest="command")
 
     ev = sub.add_parser("evaluate", help="Evaluate rules against context")
@@ -80,7 +80,7 @@ def main() -> int:
     ev.add_argument("--rules", default="rules", help="Rules directory")
 
     va = sub.add_parser("validate", help="Validate a rule file")
-    va.add_argument("rulefile", help="Path to .arbiter.json file")
+    va.add_argument("rulefile", help="Path to .atlas_ai.json file")
 
     sub.add_parser("watch", help="Watch pipeline for events (stub)")
 
