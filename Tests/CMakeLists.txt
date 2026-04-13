@@ -1172,7 +1172,31 @@ target_link_libraries(NF_PhaseHTests PRIVATE
 )
 catch_discover_tests(NF_PhaseHTests)
 
-# S187 — ScriptGraphEditorV1, EventBusEditorV1, AssetBundleEditorV1
+# Phase I — NovaForge End-to-End Project Load Integration
+#   I.1: AtlasProjectFileLoader validates the real NovaForge.atlas manifest
+#   I.2: NovaForgeProjectBootstrap validates the real project directory layout
+#   I.3: ProjectRegistry loads NovaForge via loadProjectFromAtlasFile()
+#   I.4: NovaForgeAdapter initializes and exposes all 6 gameplay panels
+#   I.5: ProjectOpenFlowController.validate() with real manifest content
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_PhaseITests
+        Workspace/test_phase_i.cpp
+        catch_main.cpp
+    )
+    target_compile_definitions(NF_PhaseITests PRIVATE
+        NF_NOVAFORGE_ATLAS_PATH="${CMAKE_SOURCE_DIR}/NovaForge/NovaForge.atlas"
+    )
+    target_include_directories(NF_PhaseITests PRIVATE
+        ${CMAKE_SOURCE_DIR}/NovaForge/Source/EditorAdapter/include
+    )
+    target_link_libraries(NF_PhaseITests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_PhaseITests)
+endif()
+
+
 add_executable(NF_EditorS187Tests
     Editor/Legacy/test_s187_editor.cpp
     catch_main.cpp

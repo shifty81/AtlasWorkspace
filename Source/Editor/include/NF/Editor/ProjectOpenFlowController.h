@@ -24,6 +24,7 @@
 //       clearRecents()                — clear the recents list
 //       state() / pendingPath()
 
+#include "NF/Workspace/AtlasProjectFileLoader.h"
 #include "NF/Workspace/ProjectManager.h"
 #include <algorithm>
 #include <functional>
@@ -290,8 +291,11 @@ private:
     std::function<void(const std::string&)> m_onProjectOpened;
     std::function<void(const std::string&)> m_onProjectError;
 
-    // Validation logic: stub (real impl would parse .atlas manifest).
-    // Returns success if the path ends with ".atlas" and is non-empty.
+    // Validation logic: validates the .atlas project path.
+    // When the file exists on disk, the manifest is parsed and its contents
+    // are validated using AtlasProjectFileLoader::bootstrap(). When the file
+    // does not yet exist (e.g. a path just entered by the user or used in
+    // unit tests), extension and naming checks are applied only.
     static ProjectValidationResult runValidation(const std::string& path) {
         ProjectValidationResult result;
         result.projectPath = path;
@@ -310,11 +314,44 @@ private:
         // Derive name from filename
         auto slash = path.find_last_of("/\\");
         std::string filename = (slash == std::string::npos) ? path : path.substr(slash + 1);
-        result.projectName = filename.substr(0, filename.size() - 6); // strip ".atlas"
+        std::string derivedName = filename.substr(0, filename.size() - 6); // strip ".atlas"
 
-        if (result.projectName.empty()) {
+        if (derivedName.empty()) {
             result.addError("Project name cannot be empty");
             return result;
+        }
+
+        // Attempt to parse and validate the manifest when the file is on disk.
+        // If the file does not exist yet (e.g. during wizard flow or unit tests
+        // that use synthetic paths), skip content validation.
+        AtlasProjectFileLoader loader;
+        if (loader.loadFromFile(path)) {
+            // File exists and parsed — validate its contents via bootstrap.
+            ProjectBootstrapResult bootstrap = loader.bootstrap(path, /*checkPathsOnDisk=*/false);
+            for (const auto& entry : bootstrap.validationEntries) {
+                switch (entry.severity) {
+                    case ProjectValidationSeverity::Fatal:
+                    case ProjectValidationSeverity::Error:
+                        result.addError("[" + entry.code + "] " + entry.message);
+                        break;
+                    case ProjectValidationSeverity::Warning:
+                        result.addWarning("[" + entry.code + "] " + entry.message);
+                        break;
+                    default:
+                        break; // Info entries are not surfaced in the flow result
+                }
+            }
+            if (!bootstrap.success) {
+                return result; // errors already added above
+            }
+            result.projectName = bootstrap.manifest.name.empty()
+                               ? derivedName
+                               : bootstrap.manifest.name;
+        } else {
+            // File not on disk — use the filename as the project name.
+            // A warning is added so the UX can surface this to the user.
+            result.projectName = derivedName;
+            result.addWarning("Project file not found on disk: " + path);
         }
 
         result.success = true;
