@@ -98,9 +98,15 @@ inline AssetTypeTag classifyExtension(std::string_view ext) {
     if (lower == ".prefab")
         return AssetTypeTag::Prefab;
 
-    // Project files
-    if (lower == ".atlas" || lower == ".project" || lower == ".json")
+    // Atlas project manifest files only (.atlas, .project)
+    if (lower == ".atlas" || lower == ".project")
         return AssetTypeTag::Project;
+
+    // Game data / config files — JSON, YAML, TOML, CSV, XML, INI
+    if (lower == ".json" || lower == ".yaml" || lower == ".yml"  ||
+        lower == ".toml" || lower == ".csv"  || lower == ".xml"  ||
+        lower == ".ini"  || lower == ".cfg"  || lower == ".conf")
+        return AssetTypeTag::Data;
 
     return AssetTypeTag::Custom;
 }
@@ -221,6 +227,10 @@ public:
 
         auto processEntry = [&](const fs::directory_entry& entry) {
             if (!entry.is_regular_file(ec)) return;
+
+            // Skip placeholder / VCS-only files (e.g. .gitkeep, .gitignore, .DS_Store).
+            std::string filename = entry.path().filename().string();
+            if (!filename.empty() && filename[0] == '.') return;
 
             std::string filePath = entry.path().string();
             ++result.filesScanned;

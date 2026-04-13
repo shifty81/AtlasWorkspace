@@ -39,6 +39,7 @@ enum class AssetTypeTag : uint8_t {
     Animation,
     Prefab,
     Custom,
+    Data,      // game data / config files (.json, .yaml, .toml, .csv, etc.)
 };
 
 inline const char* assetTypeTagName(AssetTypeTag t) {
@@ -58,6 +59,7 @@ inline const char* assetTypeTagName(AssetTypeTag t) {
     case AssetTypeTag::Animation: return "Animation";
     case AssetTypeTag::Prefab:    return "Prefab";
     case AssetTypeTag::Custom:    return "Custom";
+    case AssetTypeTag::Data:      return "Data";
     }
     return "Unknown";
 }
