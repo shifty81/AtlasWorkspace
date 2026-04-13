@@ -1122,6 +1122,19 @@ target_link_libraries(NF_WorkspaceProjectStateTests PRIVATE
 )
 catch_discover_tests(NF_WorkspaceProjectStateTests)
 
+# Workspace runtime wiring tests — contract, panel lazy-init, summaryRows, viewport
+if(TARGET NF::NovaForgeAdapter)
+add_executable(NF_WorkspaceRuntimeWiringTests
+    Workspace/test_workspace_wiring.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_WorkspaceRuntimeWiringTests PRIVATE
+    NF::NovaForgeAdapter NF::Editor NF::Workspace NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_WorkspaceRuntimeWiringTests)
+endif()
+
 # Phase G — Full Tool Wiring (G.1–G.8 document models)
 #   G.1: SceneDocument — entity hierarchy, transforms, components, save/load
 #   G.2: AssetDocument — LOD/variant/dependency/reimport metadata

@@ -20,7 +20,10 @@
 #include "NF/Workspace/WorkspaceAppRegistry.h"
 #include "NF/Workspace/WorkspaceLaunchContract.h"
 #include "NF/Workspace/IGameProjectAdapter.h"
+#include "NF/Workspace/WorkspaceViewportBridge.h"
+#include "NF/Workspace/ViewportHostContract.h"
 #include "NF/Editor/CoreToolRoster.h"
+#include "NF/Editor/SceneEditorTool.h"
 #include "NovaForge/EditorAdapter/NovaForgeAdapter.h"
 #include "LocalProjectAdapter.h"
 #if defined(_WIN32)
@@ -392,6 +395,25 @@ int main(int argc, char* argv[]) {
     NF_LOG_INFO("AtlasWorkspace",
         std::string("Bootstrap complete. Tools: ")
         + std::to_string(bootResult.toolsRegistered));
+
+    // ── Viewport wiring ───────────────────────────────────────────
+    // Wire the SceneEditorTool to the workspace viewport manager so it drives
+    // a real scene view instead of placeholder geometry.
+    {
+        using namespace NF;
+        IHostedTool* rawTool = shell.toolRegistry().find(HostToolId::SceneEditor);
+        if (auto* sceneTool = dynamic_cast<SceneEditorTool*>(rawTool)) {
+            // Request a full-window primary viewport slot for the scene editor.
+            ViewportHandle vh = shell.viewportManager().requestViewport(
+                HostToolId::SceneEditor, {0.f, 0.f, 1280.f, 800.f});
+            if (vh != kInvalidViewportHandle) {
+                sceneTool->attachViewportManager(&shell.viewportManager());
+                shell.viewportManager().activateViewport(vh);
+                NF_LOG_INFO("AtlasWorkspace", "SceneEditorTool viewport wired (handle="
+                            + std::to_string(vh) + ")");
+            }
+        }
+    }
 
     // ── UI renderer ───────────────────────────────────────────────
     NF::UIRenderer ui;

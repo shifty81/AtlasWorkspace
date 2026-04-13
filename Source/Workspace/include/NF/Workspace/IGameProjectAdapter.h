@@ -27,6 +27,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace NF {
@@ -53,6 +54,13 @@ public:
 
     // Status — override to expose panel-specific health or state.
     [[nodiscard]] virtual bool isReady() const { return true; }
+
+    // Returns a list of (label, value) rows that the workspace renderer uses
+    // to display real panel data in the project-systems dashboard.
+    // Override in concrete panels to surface meaningful authoring state.
+    // Each row is rendered as a property-grid line: "label   value".
+    [[nodiscard]] virtual std::vector<std::pair<std::string, std::string>>
+        summaryRows() const { return {}; }
 };
 
 // ── Panel descriptor ────────────────────────────────────────────

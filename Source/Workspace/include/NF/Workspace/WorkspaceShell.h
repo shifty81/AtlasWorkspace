@@ -173,12 +173,34 @@ public:
         // Populate asset catalog from project content roots
         populateAssetCatalog();
 
+        // Derive the real project root (first content root, or project ID as fallback).
+        const auto roots = m_projectAdapter->contentRoots();
+        const std::string projectRoot = roots.empty() ? m_projectAdapter->projectId()
+                                                      : roots[0];
+
+        // Notify live panels so they can load project data immediately.
+        m_projectSystemsTool.notifyProjectLoaded(projectRoot);
+
         m_toolRegistry.notifyProjectLoaded(m_projectAdapter->projectId());
         m_shellContract.postNotification(
             Notification{"Project loaded: " + m_projectAdapter->projectDisplayName()});
 
+        // Build a real ProjectLoadContract from the adapter so WorkspaceProjectState
+        // has authoritative project metadata, not an empty snapshot.
+        ProjectLoadContract contract;
+        contract.projectId          = m_projectAdapter->projectId();
+        contract.projectDisplayName = m_projectAdapter->projectDisplayName();
+        contract.contentRoots       = roots;
+        contract.customCommands     = m_projectAdapter->customCommands();
+        contract.panelCount         = static_cast<uint32_t>(
+                                          m_projectAdapter->panelDescriptors().size());
+        contract.state              = ProjectLoadState::Ready;
+        contract.loadTimestampMs    = static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count());
+
         // Notify WorkspaceProjectState — the session-level authority for project truth.
-        m_projectState.onProjectLoaded(m_projectAdapter.get(), {});
+        m_projectState.onProjectLoaded(m_projectAdapter.get(), contract);
 
         // Publish project-loaded event so all bus subscribers are notified.
         m_eventBus.post({"project.loaded", m_projectAdapter->projectId(),
@@ -191,6 +213,7 @@ public:
         if (!m_projectAdapter) return;
         const std::string pid = m_projectAdapter->projectId();
         m_toolRegistry.notifyProjectUnloaded();
+        m_projectSystemsTool.notifyProjectUnloaded();
         m_assetCatalog.clear();
         m_settingsStore.clearLayer(SettingsLayer::Project);
         m_projectAdapter->shutdown();

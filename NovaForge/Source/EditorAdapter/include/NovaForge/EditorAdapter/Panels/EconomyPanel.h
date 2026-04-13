@@ -117,6 +117,24 @@ public:
         return msgs;
     }
 
+    // ── Summary rows (for workspace dashboard display) ────────────────────
+    [[nodiscard]] std::vector<std::pair<std::string, std::string>>
+        summaryRows() const override
+    {
+        std::vector<std::pair<std::string, std::string>> rows;
+        rows.emplace_back("Economy enabled",
+                          m_economyEnabled ? "Yes" : "No");
+        rows.emplace_back("Global inflation rate",
+                          std::to_string(m_globalInflationRate));
+        rows.emplace_back("Currencies",
+                          std::to_string(m_currencies.size()));
+        rows.emplace_back("Pricing rules",
+                          std::to_string(m_pricingRules.size()));
+        if (!m_currencies.empty())
+            rows.emplace_back("Base currency", m_currencies[0].displayName);
+        return rows;
+    }
+
     // ── Project load hook ─────────────────────────────────────────────────
     // Called by the workspace after a project is manually opened by the user.
     // Reads data/market/prices.json from the project root and populates the

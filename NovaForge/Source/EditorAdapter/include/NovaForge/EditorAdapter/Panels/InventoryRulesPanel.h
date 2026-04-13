@@ -99,6 +99,22 @@ public:
         return msgs;
     }
 
+    // ── Summary rows (for workspace dashboard display) ────────────────────
+    [[nodiscard]] std::vector<std::pair<std::string, std::string>>
+        summaryRows() const override
+    {
+        std::vector<std::pair<std::string, std::string>> rows;
+        rows.emplace_back("Default max slots",
+                          std::to_string(m_defaultMaxSlots));
+        rows.emplace_back("Global stackable",
+                          m_globalStackable ? "Yes" : "No");
+        rows.emplace_back("Slot configs",
+                          std::to_string(m_slots.size()));
+        rows.emplace_back("Storage rules",
+                          std::to_string(m_storageRules.size()));
+        return rows;
+    }
+
     // ── Project load hook ─────────────────────────────────────────────────
     void onProjectLoaded(const std::string& projectRoot) override {
         DocumentPanelBase::onProjectLoaded(projectRoot);
