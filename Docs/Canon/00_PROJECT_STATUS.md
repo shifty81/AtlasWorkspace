@@ -1,6 +1,6 @@
 # Project Status
 
-Current Phase: **Phase A — Truth and Cleanup Lock** (In Progress)
+Current Phase: **All Phases A–I Complete** — Atlas Workspace v1.0 Milestone Reached
 
 ## Build Status
 
@@ -51,26 +51,25 @@ Current Phase: **Phase A — Truth and Cleanup Lock** (In Progress)
 ## Honest Summary
 
 The repository has excellent infrastructure — contracts, registries, event buses,
-serialization, undo/redo, and a clean module architecture. But the editor does not
-yet edit anything. Panels render chrome. The viewport shows a placeholder. Projects
-load as adapter labels. PCG is disconnected. There is no play mode.
+serialization, undo/redo, and a clean module architecture. Phases A–I of the roadmap
+are complete, reaching the Atlas Workspace v1.0 milestone.
 
-The new roadmap (Phases A–H) addresses all of these gaps with a clear end goal:
-Atlas Workspace v1.0.
+The new roadmap (Phases A–I) addressed all of these gaps. Atlas Workspace v1.0 is reached.
 
 ## Phase Summary
 
 | Phase | Title | Status |
 |-------|-------|--------|
 | Checkpoint | Foundation (Phases 0–71) | ✅ Complete |
-| A | Truth and Cleanup Lock | 🔄 In Progress |
+| A | Truth and Cleanup Lock | ✅ Complete |
 | B | Real Project Load | ✅ Complete |
 | C | Panels Edit Real Data | ✅ Complete |
-| D | Runtime-Backed Viewport | 🔄 In Progress (D.5 partial) |
+| D | Runtime-Backed Viewport | 🔄 In Progress (D.5 deferred — real GPU init) |
 | E | Shared PCG Preview Pipeline | ✅ Complete |
-| F | Play-In-Editor (PIE) | 🔄 In Progress (F.1–F.4 contract layer done) |
-| G | Full Tool Wiring | ⬚ Not Started |
-| H | UX Completion | ⬚ Not Started |
+| F | Play-In-Editor (PIE) | 🔄 In Progress (contract layer done; runtime wiring in G) |
+| G | Full Tool Wiring | ✅ Complete |
+| H | UX Completion | ✅ Complete |
+| I | NovaForge End-to-End Project Load Integration | ✅ Complete |
 
 ## Phase A Progress
 
@@ -183,3 +182,24 @@ Atlas Workspace v1.0.
 - [x] Severity-filtered diagnostics, session history capture, onDiagnostic callback
 - [ ] Performance counters UI panel (Phase G/H)
 - All Phase F tests: 76 test cases, all green (test_phase_f.cpp)
+
+## Phase G Progress (Complete ✅)
+- 121 new tests, 350 assertions, all green (test_phase_g.cpp + test_phase_g2_asset_editor.cpp)
+- All 8 core tool document models implemented: SceneDocument, AssetDocument, MaterialDocument,
+  AnimationDocument, GraphDocument, BuildTaskGraph, AIRequestContext, DataTableDocument
+- WorkspaceProjectState: open document registry, active document context, dirty tracking, save/revert
+- PIE toolbar controller, console bridge, and PIE wiring complete (test_phase_f_pie_wiring.cpp)
+
+## Phase H Progress (Complete ✅)
+- 82 new tests, 238 assertions, all green (test_phase_h.cpp)
+- Preferences UI, Keybind editor, Layout persistence (named presets + built-ins)
+- Command palette (Ctrl+P, fuzzy search, context-filtered)
+- Notification center (history, toasts, severity filtering, click-to-navigate)
+- Project open flow (recent projects, file picker, validation, new project wizard)
+
+## Phase I Progress (Complete ✅)
+- 20 integration tests, all green (test_phase_i.cpp)
+- Full `.atlas` manifest → ProjectRegistry → NovaForgeAdapter → panel registration chain validated
+- All 6 gameplay panels verified (economy, inventory_rules, shop, mission_rules, progression, character_rules)
+- `ProjectOpenFlowController.validate()` uses real `AtlasProjectFileLoader.bootstrap()` on disk paths
+

@@ -1,8 +1,8 @@
-# Atlas Arbiter — Runtime Configuration
+# AtlasAI Rule Evaluator — Runtime Configuration
 # See AtlasAI/Atlas_Arbiter/README.md for documentation.
 
-[arbiter]
-# Directory containing .arbiter.json rule files
+[atlas_ai]
+# Directory containing .atlas_ai.json rule files
 rules_dir = "rules"
 
 # Pipeline directory for ChangeEvent I/O

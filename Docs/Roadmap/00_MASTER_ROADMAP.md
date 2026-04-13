@@ -50,7 +50,7 @@ That is what the phases below address.
 
 ## Phase A — Truth and Cleanup Lock
 
-**Status: In Progress**
+**Status: Complete**
 
 **Goal:** Stop repo drift. Make the roadmap, status docs, and codebase honest about
 what works vs. what is a stub. Remove forwarding shims and legacy cruft that creates
@@ -511,9 +511,54 @@ see regenerated results in the viewport immediately.
 
 ---
 
+## Phase I — NovaForge End-to-End Project Load Integration
+
+**Status: Complete**
+
+**Goal:** Validate that the full project loading chain works with the real NovaForge
+project structure: `.atlas` manifest parsing → `ProjectRegistry` → `NovaForgeAdapter`
+initialization → bootstrap → panel registration. Close the gap between infrastructure
+phases (A–H) and genuine project load confidence.
+
+### Milestone I.1 — .atlas Manifest Validation
+- [x] `AtlasProjectFileLoader.bootstrap()` validates the real `NovaForge.atlas`
+- [x] Manifest fields (name, adapterId, capabilities, contentRoot) verified
+- [x] No fatal validation entries produced
+
+### Milestone I.2 — Project Directory Layout Validation
+- [x] `NovaForgeProjectBootstrap` validates the real project root
+- [x] `Content/`, `Data/`, `Config/`, `Schemas/` all confirmed present
+- [x] `AssetCatalog` populated from `Content/` root
+
+### Milestone I.3 — ProjectRegistry Load Flow
+- [x] "novaforge" factory registered with project root captured in closure
+- [x] `loadProject("novaforge")` returns `ProjectLoadState::Ready`
+- [x] `loadProjectFromAtlasFile(atlasPath)` succeeds end-to-end
+- [x] Contract carries content roots and custom commands
+
+### Milestone I.4 — Adapter and Panel Verification
+- [x] `NovaForgeAdapter.initialize()` succeeds with real project root
+- [x] All 6 gameplay panel descriptors present (economy, inventory_rules, shop, mission_rules, progression, character_rules)
+- [x] All panels hosted under `workspace.project_systems`
+- [x] `createPanel()` factory instantiates each panel without errors
+- [x] `shutdown()` clears all panels
+
+### Milestone I.5 — ProjectOpenFlowController Real Validation
+- [x] `validate()` upgraded: uses `AtlasProjectFileLoader.bootstrap()` when file is on disk
+- [x] Non-existent paths: extension-only validation with warning (no regressions)
+- [x] Real `NovaForge.atlas`: manifest content parsed, project name extracted from manifest
+- [x] Malformed `.atlas` files produce validation errors
+- [x] `confirmOpen()` after real validation succeeds and reaches `Open` state
+
+**Success Criteria:** ✅
+- Full load chain verified against the actual `NovaForge.atlas` and project structure
+- 20 integration tests, all green (test_phase_i.cpp)
+
+---
+
 ## Version Target
 
-When Phases A–H are complete, the repository reaches **Atlas Workspace v1.0** — a
+When Phases A–I are complete, the repository reaches **Atlas Workspace v1.0** — a
 functional development workspace that loads NovaForge projects, presents real editable
 content, renders runtime-backed viewport previews, runs shared PCG generation, and
 supports Play-In-Editor for rapid iteration.
