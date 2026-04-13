@@ -131,7 +131,6 @@ public:
 private:
     HostedToolDescriptor     m_descriptor;
     HostedToolState          m_state      = HostedToolState::Unloaded;
-    SceneEditMode            m_editMode   = SceneEditMode::Select;
     SceneEditorStats         m_stats;
     std::string              m_activeProjectId;
 
@@ -147,7 +146,10 @@ private:
 
     // ── Mutable per-view UI state (safe from const renderToolView) ─
     // Hierarchy selection — index into the displayed entity list, -1 = none.
-    mutable int m_viewSelectedEntity = -1;
+    mutable int           m_viewSelectedEntity = -1;
+    // Current edit mode — set directly from renderToolView hit regions so that
+    // button clicks take effect immediately without a command bus round-trip.
+    mutable SceneEditMode m_editMode           = SceneEditMode::Select;
 
     void buildDescriptor();
 };

@@ -157,6 +157,7 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
                 case AssetFilterMode::Audio:     filterTag = AssetTypeTag::Audio;     break;
                 case AssetFilterMode::Scripts:   filterTag = AssetTypeTag::Script;    break;
                 case AssetFilterMode::Prefabs:   filterTag = AssetTypeTag::Prefab;    break;
+                case AssetFilterMode::Data:      filterTag = AssetTypeTag::Data;      break;
                 default:                         filterTag = AssetTypeTag::Custom;    break;
             }
             filteredCount = static_cast<uint32_t>(catalog.countByType(filterTag));
@@ -166,7 +167,7 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
     // ── Content Browser ───────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, browserW, ctx.h, "Content Browser");
 
-    // Filter mode buttons (All / Mesh / Texture / Material / Script / Audio / Prefab)
+    // Filter mode buttons (All / Mesh / Texture / Material / Script / Audio / Prefab / Data)
     static constexpr struct { const char* label; AssetFilterMode mode; } kFilters[] = {
         {"All",      AssetFilterMode::All},
         {"Meshes",   AssetFilterMode::Meshes},
@@ -175,6 +176,7 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         {"Scripts",  AssetFilterMode::Scripts},
         {"Audio",    AssetFilterMode::Audio},
         {"Prefabs",  AssetFilterMode::Prefabs},
+        {"Data",     AssetFilterMode::Data},
     };
     {
         float fx = ctx.x + 8.f;
@@ -209,6 +211,7 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         {"Scene",     AssetTypeTag::Scene},
         {"Shader",    AssetTypeTag::Shader},
         {"Animation", AssetTypeTag::Animation},
+        {"Data",      AssetTypeTag::Data},
     };
     static constexpr int kTypeCount = static_cast<int>(std::size(kTypes));
 
@@ -248,6 +251,7 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
                         case AssetTypeTag::Script:    m_filterMode = AssetFilterMode::Scripts;   break;
                         case AssetTypeTag::Audio:     m_filterMode = AssetFilterMode::Audio;     break;
                         case AssetTypeTag::Prefab:    m_filterMode = AssetFilterMode::Prefabs;   break;
+                        case AssetTypeTag::Data:      m_filterMode = AssetFilterMode::Data;      break;
                         default:                      m_filterMode = AssetFilterMode::All;       break;
                     }
                 } else {

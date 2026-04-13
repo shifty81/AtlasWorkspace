@@ -30,6 +30,7 @@ enum class AssetFilterMode : uint8_t {
     Audio,      // filter to audio clip/bank assets
     Scripts,    // filter to script assets
     Prefabs,    // filter to prefab/archetype assets
+    Data,       // filter to game data / config assets (.json, .yaml, etc.)
 };
 
 inline const char* assetFilterModeName(AssetFilterMode m) {
@@ -41,6 +42,7 @@ inline const char* assetFilterModeName(AssetFilterMode m) {
         case AssetFilterMode::Audio:     return "Audio";
         case AssetFilterMode::Scripts:   return "Scripts";
         case AssetFilterMode::Prefabs:   return "Prefabs";
+        case AssetFilterMode::Data:      return "Data";
     }
     return "Unknown";
 }

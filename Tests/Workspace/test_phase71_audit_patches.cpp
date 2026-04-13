@@ -75,10 +75,19 @@ TEST_CASE("classifyExtension — materials, animations, prefabs", "[Audit][Patch
 }
 
 TEST_CASE("classifyExtension — project files and custom", "[Audit][Patch9]") {
-    REQUIRE(NF::classifyExtension(".json")  == NF::AssetTypeTag::Project);
+    REQUIRE(NF::classifyExtension(".json")  == NF::AssetTypeTag::Data);    // game data, not project manifest
     REQUIRE(NF::classifyExtension(".atlas") == NF::AssetTypeTag::Project);
     REQUIRE(NF::classifyExtension(".xyz")   == NF::AssetTypeTag::Custom);
     REQUIRE(NF::classifyExtension(".zzz")   == NF::AssetTypeTag::Custom);
+}
+
+TEST_CASE("classifyExtension — data files", "[Audit][Patch9]") {
+    REQUIRE(NF::classifyExtension(".json")  == NF::AssetTypeTag::Data);
+    REQUIRE(NF::classifyExtension(".yaml")  == NF::AssetTypeTag::Data);
+    REQUIRE(NF::classifyExtension(".yml")   == NF::AssetTypeTag::Data);
+    REQUIRE(NF::classifyExtension(".toml")  == NF::AssetTypeTag::Data);
+    REQUIRE(NF::classifyExtension(".csv")   == NF::AssetTypeTag::Data);
+    REQUIRE(NF::classifyExtension(".ini")   == NF::AssetTypeTag::Data);
 }
 
 TEST_CASE("classifyExtension — case insensitive", "[Audit][Patch9]") {
