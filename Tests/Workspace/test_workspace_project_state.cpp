@@ -406,8 +406,11 @@ TEST_CASE("WorkspaceProjectState saveAll saves dirty docs and clears dirty state
     WorkspaceProjectState state;
     StubAdapter adapter;
     state.onProjectLoaded(&adapter, {});
-    state.openDocument(makeEntry("d1", "Doc 1", DocumentKind::Scene, true));
-    state.openDocument(makeEntry("d2", "Doc 2", DocumentKind::Material, true));
+
+    // Documents with save delegates can be saved even without file paths.
+    auto stubSave = [](const std::string&, const std::string&) { return true; };
+    state.openDocument(makeEntry("d1", "Doc 1", DocumentKind::Scene, true), stubSave);
+    state.openDocument(makeEntry("d2", "Doc 2", DocumentKind::Material, true), stubSave);
     state.openDocument(makeEntry("d3", "Doc 3", DocumentKind::Animation, false));
 
     auto result = state.saveAll();
@@ -648,4 +651,129 @@ TEST_CASE("WorkspaceShell projectState change listener survives shell reload", "
     REQUIRE(unloadEvents == 1);
 
     shell.shutdown();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  saveAll with delegates — verifies real save pipeline
+// ═══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("WorkspaceProjectState saveAll calls registered save delegate",
+          "[ProjectState][save][delegate]") {
+    WorkspaceProjectState state;
+    StubAdapter adapter;
+    state.onProjectLoaded(&adapter, {});
+
+    int saveCalls = 0;
+    auto saveDelegate = [&](const std::string& docId,
+                            const std::string& filePath) -> bool {
+        (void)filePath;
+        ++saveCalls;
+        return docId != "fail_doc"; // simulate failure for "fail_doc"
+    };
+
+    state.openDocument(makeEntry("ok_doc", "OK Document", DocumentKind::Scene, true),
+                       saveDelegate);
+    state.openDocument(makeEntry("clean_doc", "Clean", DocumentKind::Asset, false));
+
+    auto result = state.saveAll();
+    REQUIRE(result.status     == ProjectSaveStatus::Ok);
+    REQUIRE(result.savedCount == 1);
+    REQUIRE(saveCalls         == 1);
+    REQUIRE_FALSE(state.hasUnsavedChanges());
+}
+
+TEST_CASE("WorkspaceProjectState saveAll reports PartialFailure when delegate fails",
+          "[ProjectState][save][delegate]") {
+    WorkspaceProjectState state;
+    StubAdapter adapter;
+    state.onProjectLoaded(&adapter, {});
+
+    auto okSave   = [](const std::string&, const std::string&) { return true;  };
+    auto failSave = [](const std::string&, const std::string&) { return false; };
+
+    state.openDocument(makeEntry("ok_doc", "OK", DocumentKind::Scene, true), okSave);
+    state.openDocument(makeEntry("fail_doc", "Fail", DocumentKind::Material, true), failSave);
+
+    auto result = state.saveAll();
+    REQUIRE(result.status      == ProjectSaveStatus::PartialFailure);
+    REQUIRE(result.savedCount  == 1);
+    REQUIRE(result.failedCount == 1);
+    // The failed document should still be dirty
+    REQUIRE(state.findDocument("fail_doc")->isDirty);
+    REQUIRE_FALSE(state.findDocument("ok_doc")->isDirty);
+}
+
+TEST_CASE("WorkspaceProjectState saveAll without delegate skips pathless dirty docs",
+          "[ProjectState][save][delegate]") {
+    WorkspaceProjectState state;
+    StubAdapter adapter;
+    state.onProjectLoaded(&adapter, {});
+
+    // No delegate, no filePath → cannot be saved
+    state.openDocument(makeEntry("orphan", "Orphan Doc", DocumentKind::Scene, true));
+
+    auto result = state.saveAll();
+    REQUIRE(result.status == ProjectSaveStatus::NothingDirty);
+    REQUIRE(result.savedCount  == 0);
+    REQUIRE(result.failedCount == 0);
+    // Document is still dirty (we couldn't save it)
+    REQUIRE(state.findDocument("orphan")->isDirty);
+}
+
+TEST_CASE("WorkspaceProjectState setSaveDelegate after openDocument",
+          "[ProjectState][save][delegate]") {
+    WorkspaceProjectState state;
+    StubAdapter adapter;
+    state.onProjectLoaded(&adapter, {});
+
+    state.openDocument(makeEntry("doc1", "Doc", DocumentKind::Scene, true));
+    // Initially no delegate — cannot save
+    auto result1 = state.saveAll();
+    REQUIRE(result1.status == ProjectSaveStatus::NothingDirty);
+    REQUIRE(state.findDocument("doc1")->isDirty);
+
+    // Wire in a delegate after the fact
+    state.setSaveDelegate("doc1", [](const std::string&, const std::string&) { return true; });
+    auto result2 = state.saveAll();
+    REQUIRE(result2.status     == ProjectSaveStatus::Ok);
+    REQUIRE(result2.savedCount == 1);
+    REQUIRE_FALSE(state.findDocument("doc1")->isDirty);
+}
+
+TEST_CASE("WorkspaceProjectState closeDocument clears save delegate",
+          "[ProjectState][save][delegate]") {
+    WorkspaceProjectState state;
+    StubAdapter adapter;
+    state.onProjectLoaded(&adapter, {});
+
+    int saveCalls = 0;
+    state.openDocument(
+        makeEntry("doc1", "Doc", DocumentKind::Scene, true),
+        [&](const std::string&, const std::string&) { ++saveCalls; return true; });
+    state.closeDocument("doc1");
+
+    // Re-open without delegate
+    state.openDocument(makeEntry("doc1", "Doc", DocumentKind::Scene, true));
+    state.saveAll();
+    REQUIRE(saveCalls == 0); // old delegate was cleaned up
+}
+
+TEST_CASE("WorkspaceProjectState onProjectUnloaded clears save delegates",
+          "[ProjectState][save][delegate]") {
+    WorkspaceProjectState state;
+    StubAdapter adapter;
+    state.onProjectLoaded(&adapter, {});
+
+    state.openDocument(
+        makeEntry("doc1", "Doc", DocumentKind::Scene, true),
+        [](const std::string&, const std::string&) { return true; });
+
+    state.onProjectUnloaded();
+    REQUIRE(state.openDocumentCount() == 0);
+
+    // Reload — delegate should not carry over
+    state.onProjectLoaded(&adapter, {});
+    state.openDocument(makeEntry("doc1", "Doc", DocumentKind::Scene, true));
+    auto result = state.saveAll();
+    REQUIRE(result.status == ProjectSaveStatus::NothingDirty); // no delegate, no path
 }

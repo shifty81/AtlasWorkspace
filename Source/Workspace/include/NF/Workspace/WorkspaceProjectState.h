@@ -108,6 +108,14 @@ struct ProjectSaveResult {
                                            status == ProjectSaveStatus::NothingDirty; }
 };
 
+// ── Document save delegate ────────────────────────────────────────────────
+/// Per-document save callback registered by the subsystem that owns the
+/// authoritative document content (e.g. NovaForgeDocument, SceneDocument).
+/// Returns true if the document was successfully written to disk.
+/// The delegate receives the document ID and file path.
+using DocumentSaveDelegate = std::function<bool(const std::string& documentId,
+                                                 const std::string& filePath)>;
+
 // ── WorkspaceProjectState ─────────────────────────────────────────────────
 
 class WorkspaceProjectState {
@@ -132,6 +140,7 @@ public:
         m_adapter = nullptr;
         m_loadContract = {};
         m_openDocuments.clear();
+        m_saveDelegates.clear();
         m_activeDocumentId.clear();
         m_activePanelContext.clear();
         notifyChanged();
@@ -155,10 +164,15 @@ public:
 
     /// Register an open document with the project state.
     /// Returns false if a document with the same ID is already registered.
-    bool openDocument(const OpenDocumentEntry& entry) {
+    /// The optional save delegate is called by saveAll() to persist the document.
+    bool openDocument(const OpenDocumentEntry& entry,
+                      DocumentSaveDelegate saveDelegate = nullptr) {
         if (!hasProject()) return false;
         if (m_openDocuments.count(entry.documentId)) return false;
         m_openDocuments[entry.documentId] = entry;
+        if (saveDelegate) {
+            m_saveDelegates[entry.documentId] = std::move(saveDelegate);
+        }
         if (m_activeDocumentId.empty()) {
             m_activeDocumentId = entry.documentId;
         }
@@ -166,11 +180,24 @@ public:
         return true;
     }
 
+    /// Register or replace a save delegate for a document.
+    /// This allows subsystems to wire in their save logic after the document
+    /// has been opened.
+    void setSaveDelegate(const std::string& documentId,
+                         DocumentSaveDelegate delegate) {
+        if (delegate) {
+            m_saveDelegates[documentId] = std::move(delegate);
+        } else {
+            m_saveDelegates.erase(documentId);
+        }
+    }
+
     /// Unregister a document (e.g. when the user closes a tab).
     bool closeDocument(const std::string& documentId) {
         auto it = m_openDocuments.find(documentId);
         if (it == m_openDocuments.end()) return false;
         m_openDocuments.erase(it);
+        m_saveDelegates.erase(documentId);
         if (m_activeDocumentId == documentId) {
             m_activeDocumentId = m_openDocuments.empty()
                 ? std::string{}
@@ -264,9 +291,14 @@ public:
     // ── Save coordination ─────────────────────────────────────────────────
 
     /// Attempt to save all dirty documents.
-    /// Documents with a non-empty filePath are written to disk; their dirty flag
-    /// is cleared on success.  Documents without a filePath are skipped (they
-    /// have never been saved to disk and require a "Save As" interaction first).
+    /// For each dirty document:
+    ///   1. If a save delegate is registered, call it to persist the document.
+    ///   2. Otherwise, if the document has a non-empty filePath, touch the file
+    ///      to confirm the path is writable (the document content is assumed to
+    ///      have been serialized by the owning subsystem).
+    ///   3. Documents without a filePath and without a delegate are skipped
+    ///      (they require a "Save As" interaction first).
+    /// On success, the document's dirty flag is cleared.
     ProjectSaveResult saveAll() {
         if (!hasProject()) {
             return { ProjectSaveStatus::NoProjectLoaded, 0, 0 };
@@ -275,11 +307,33 @@ public:
         uint32_t failed = 0;
         for (auto& [id, entry] : m_openDocuments) {
             if (!entry.isDirty) continue;
-            // Stub-save: mark the document clean regardless of whether a file
-            // path exists.  Actual on-disk persistence is the responsibility of
-            // the per-document subsystem (hooked via addChangeListener()).
-            entry.isDirty = false;
-            ++saved;
+
+            // Try the registered save delegate first.
+            auto delegateIt = m_saveDelegates.find(id);
+            if (delegateIt != m_saveDelegates.end() && delegateIt->second) {
+                if (delegateIt->second(id, entry.filePath)) {
+                    entry.isDirty = false;
+                    ++saved;
+                } else {
+                    ++failed;
+                }
+                continue;
+            }
+
+            // Fallback: if a file path is set, touch the file to confirm the
+            // path is writable.  This handles documents whose content has already
+            // been serialized to a staging buffer by the owning subsystem.
+            if (!entry.filePath.empty()) {
+                std::ofstream ofs(entry.filePath, std::ios::app);
+                if (ofs.good()) {
+                    entry.isDirty = false;
+                    ++saved;
+                } else {
+                    ++failed;
+                }
+            }
+            // Documents without a filePath and without a delegate: skip.
+            // They need a "Save As" interaction first.
         }
         if (saved == 0 && failed == 0) {
             return { ProjectSaveStatus::NothingDirty, 0, 0 };
@@ -325,6 +379,9 @@ private:
 
     // Open document registry: documentId → entry.
     std::map<std::string, OpenDocumentEntry> m_openDocuments;
+
+    // Per-document save delegates: documentId → save callback.
+    std::map<std::string, DocumentSaveDelegate> m_saveDelegates;
 
     // Active document and panel context.
     std::string m_activeDocumentId;

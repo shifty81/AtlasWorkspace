@@ -51,6 +51,7 @@
 #include "NF/Workspace/LayoutPersistence.h"
 #include "NF/Workspace/WorkspaceProjectState.h"
 #include "NF/Workspace/WorkspaceRecentFiles.h"
+#include "NF/Workspace/UndoRedoSystem.h"
 #include <cstdlib>
 #include <fstream>
 #include <functional>
@@ -237,6 +238,13 @@ public:
         // Notify WorkspaceProjectState — the session-level authority for project truth.
         m_projectState.onProjectLoaded(m_projectAdapter.get(), contract);
 
+        // Record the project in recent files for persistence across sessions.
+        m_recentFiles.record(
+            projectRoot,
+            m_projectAdapter->projectDisplayName(),
+            RecentFileKind::Project,
+            static_cast<uint64_t>(contract.loadTimestampMs));
+
         // Publish project-loaded event so all bus subscribers are notified.
         m_eventBus.post({"project.loaded", m_projectAdapter->projectId(),
                           EditorEventPriority::High});
@@ -337,6 +345,9 @@ public:
     [[nodiscard]] RecentFilesManager&         recentFiles()             { return m_recentFiles;      }
     [[nodiscard]] const RecentFilesManager&   recentFiles()       const { return m_recentFiles;      }
 
+    [[nodiscard]] UndoRedoSystem&             undoRedoSystem()          { return m_undoRedoSystem;   }
+    [[nodiscard]] const UndoRedoSystem&       undoRedoSystem()    const { return m_undoRedoSystem;   }
+
     [[nodiscard]] ShellPhase phase() const { return m_phase; }
 
 private:
@@ -372,6 +383,8 @@ private:
         m_panelRegistry.registerPanel({"notifications",    "Notifications",   SharedPanelCategory::Status});
         m_panelRegistry.registerPanel({"command_palette",  "Command Palette", SharedPanelCategory::Editing, false});
         m_panelRegistry.registerPanel({"asset_preview",    "Asset Preview",   SharedPanelCategory::Preview, false});
+        m_panelRegistry.registerPanel({"preferences",      "Preferences",     SharedPanelCategory::Editing, false});
+        m_panelRegistry.registerPanel({"project_settings", "Project Settings", SharedPanelCategory::Editing, false});
     }
 
     // Seed the command bus with the default workspace-level command set.
@@ -401,8 +414,15 @@ private:
         addCmd("workspace.project.settings", ConsoleCmdScope::Global,
                "Open project settings",
                [this]() -> ConsoleCmdExecResult {
+                   if (!hasProject()) {
+                       m_shellContract.postNotification(
+                           Notification{"No project loaded — cannot open project settings."});
+                       return ConsoleCmdExecResult::PermissionDenied;
+                   }
+                   m_panelRegistry.toggleVisible("project_settings");
                    m_shellContract.postNotification(
-                       Notification{"Project settings — not yet implemented."});
+                       Notification{"Project settings: " +
+                                    m_projectAdapter->projectDisplayName()});
                    return ConsoleCmdExecResult::Ok;
                });
 
@@ -410,8 +430,7 @@ private:
         addCmd("workspace.preferences", ConsoleCmdScope::Global,
                "Open workspace preferences",
                [this]() -> ConsoleCmdExecResult {
-                   m_shellContract.postNotification(
-                       Notification{"Preferences — not yet implemented."});
+                   m_panelRegistry.toggleVisible("preferences");
                    return ConsoleCmdExecResult::Ok;
                });
 
@@ -509,20 +528,31 @@ private:
                    return ConsoleCmdExecResult::Ok;
                });
 
-        // Undo / Redo — routed through command bus; actual undo stacks live in tools
+        // Undo / Redo — routed through command bus; the workspace-level
+        // UndoRedoSystem manages the global undo stack.
         addCmd("workspace.undo", ConsoleCmdScope::Global,
                "Undo the last action",
                [this]() -> ConsoleCmdExecResult {
+                   if (m_undoRedoSystem.undo()) {
+                       m_shellContract.postNotification(
+                           Notification{"Undo successful."});
+                       return ConsoleCmdExecResult::Ok;
+                   }
                    m_shellContract.postNotification(
-                       Notification{"Undo — undo/redo stack not yet connected to tools."});
+                       Notification{"Nothing to undo."});
                    return ConsoleCmdExecResult::Ok;
                });
 
         addCmd("workspace.redo", ConsoleCmdScope::Global,
                "Redo the last undone action",
                [this]() -> ConsoleCmdExecResult {
+                   if (m_undoRedoSystem.redo()) {
+                       m_shellContract.postNotification(
+                           Notification{"Redo successful."});
+                       return ConsoleCmdExecResult::Ok;
+                   }
                    m_shellContract.postNotification(
-                       Notification{"Redo — undo/redo stack not yet connected to tools."});
+                       Notification{"Nothing to redo."});
                    return ConsoleCmdExecResult::Ok;
                });
 
@@ -531,10 +561,17 @@ private:
                "Close the active document or editor tab",
                [this]() -> ConsoleCmdExecResult {
                    if (!hasProject()) return ConsoleCmdExecResult::PermissionDenied;
-                   // Delegate to the active tool's close-document logic if it exposes one.
-                   // For now, notify — real routing requires active tool context.
+                   const std::string& activeId = m_projectState.activeDocumentId();
+                   if (activeId.empty()) {
+                       m_shellContract.postNotification(
+                           Notification{"No active document to close."});
+                       return ConsoleCmdExecResult::Ok;
+                   }
+                   const auto* doc = m_projectState.activeDocument();
+                   std::string title = doc ? doc->displayTitle : activeId;
+                   m_projectState.closeDocument(activeId);
                    m_shellContract.postNotification(
-                       Notification{"Close document — delegate to active tool."});
+                       Notification{"Closed document: " + title});
                    return ConsoleCmdExecResult::Ok;
                });
 
@@ -674,6 +711,7 @@ private:
     SettingsStore             m_settingsStore;
     LayoutPersistenceManager  m_layoutPersistence;
     RecentFilesManager        m_recentFiles;
+    UndoRedoSystem            m_undoRedoSystem;
 
     std::vector<ToolFactory>  m_toolFactories;   // pending factories (before init)
     std::unique_ptr<IGameProjectAdapter> m_projectAdapter;
