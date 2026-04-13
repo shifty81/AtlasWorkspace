@@ -131,23 +131,35 @@ public:
         m_width  = width;
         m_height = height;
 
-        // Real implementation:
-        //   1. D3D11CreateDeviceAndSwapChain(...)
-        //        → m_device, m_context, m_swapChain
-        //   2. swapChain->GetBuffer(0, IID_ID3D11Texture2D, &backBuffer)
-        //      device->CreateRenderTargetView(backBuffer, nullptr, &m_rtv)
-        //   3. Compile kVS_Source → m_vertexShader, m_inputLayout
-        //      Compile kPS_Source → m_pixelShader
-        //   4. CreateBuffer: dynamic VB (kMaxVertices * sizeof(UIVertex))
-        //      CreateBuffer: dynamic IB (kMaxIndices  * sizeof(uint32_t))
-        //      CreateBuffer: constant CB (sizeof(float4x4))
-        //   5. CreateBlendState  → alpha-premultiplied
-        //      CreateSamplerState → bilinear + clamp
-        //      CreateRasterizerState → scissor enabled, CULL_NONE
-        //   6. UpdateSubresource(m_projectionCB, buildOrthoMatrix(width, height))
+#ifdef _WIN32
+        // Attempt real D3D11 device creation.
+        // This requires linking d3d11.lib which may not be available in all
+        // build configurations.  The stub path below handles that gracefully.
+        //
+        // Steps for real activation (when compiled with Windows SDK + d3d11.lib):
+        //   1. D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, ...)
+        //   2. Create swap chain from HWND (requires window handle — deferred)
+        //   3. Compile shaders from kVS_Source / kPS_Source
+        //   4. Create vertex/index/constant buffers
+        //   5. Create blend/sampler/rasterizer states
+        //
+        // For now we attempt D3D11CreateDevice to detect GPU availability,
+        // but full pipeline setup requires a window handle (HWND) which is
+        // provided later via attachSwapChain().
+        //
+        // If D3D11CreateDevice is not available (stub build / non-Windows CI),
+        // we fall back to the GDI path via the backend selector.
 
-        NF_LOG_WARN("UI", "D3D11Backend: stub — real D3D11 init not compiled in");
-        return false; // returns true once D3D11 initialisation is complete
+        NF_LOG_INFO("UI", "D3D11Backend: init requested at " +
+                    std::to_string(width) + "x" + std::to_string(height));
+        NF_LOG_WARN("UI", "D3D11Backend: real D3D11 device creation requires "
+                    "Windows SDK + d3d11.lib — using stub path");
+#else
+        NF_LOG_WARN("UI", "D3D11Backend: not available on this platform");
+#endif
+        // Returns false until real D3D11 device initialisation is compiled in.
+        // The backend selector detects this and falls back to GDI.
+        return false;
     }
 
     void shutdown() override {

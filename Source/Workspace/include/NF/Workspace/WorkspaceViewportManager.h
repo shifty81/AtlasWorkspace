@@ -26,6 +26,8 @@
 #include "NF/Workspace/ViewportFrameLoop.h"
 #include "NF/Workspace/ViewportCompositor.h"
 #include "NF/Workspace/GizmoRenderer.h"
+#include "NF/Workspace/SoftwareViewportRenderer.h"
+#include <memory>
 #include <vector>
 #include <string>
 
@@ -194,6 +196,28 @@ public:
     [[nodiscard]] ViewportFrameLoop&               frameLoop()         { return m_frameLoop; }
     [[nodiscard]] const ViewportFrameLoop&         frameLoop()         const { return m_frameLoop; }
 
+    // ── Software renderer ─────────────────────────────────────────────────────
+
+    /// Install the built-in SoftwareViewportRenderer as the frame loop's
+    /// render callback.  This draws a visible placeholder grid into each
+    /// viewport so the pipeline is proven end-to-end even without a GPU.
+    /// Call this after construction to enable visible viewport content.
+    void installSoftwareRenderer() {
+        if (!m_softRenderer)
+            m_softRenderer = std::make_unique<SoftwareViewportRenderer>();
+        m_frameLoop.setRenderCallback(
+            [this](IViewportSurface& surface,
+                   const ViewportSlot& slot,
+                   const ViewportSceneState& scene) {
+                m_softRenderer->renderGrid(surface, slot, scene);
+            });
+    }
+
+    /// Returns the software renderer (nullptr if not installed).
+    [[nodiscard]] SoftwareViewportRenderer* softwareRenderer() const {
+        return m_softRenderer.get();
+    }
+
 private:
     ViewportHostRegistry          m_viewportReg;
     ViewportSurfaceRegistry       m_surfaceReg;
@@ -201,6 +225,7 @@ private:
     ViewportFrameLoop             m_frameLoop;
     ViewportCompositor            m_compositor;
     GizmoRenderer                 m_gizmoRenderer;
+    std::unique_ptr<SoftwareViewportRenderer> m_softRenderer;
 };
 
 } // namespace NF

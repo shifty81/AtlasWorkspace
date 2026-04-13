@@ -18,6 +18,7 @@
 #include "NF/Workspace/IViewportSurface.h"
 #include "NF/Workspace/IViewportSceneProvider.h"
 #include "NF/Workspace/GizmoRenderer.h"
+#include <functional>
 #include <vector>
 
 namespace NF {
@@ -54,6 +55,15 @@ public:
     /// gizmoRenderer->renderToSurface() for every slot that was rendered.
     void setGizmoRenderer(GizmoRenderer* r) { m_gizmoRenderer = r; }
 
+    /// Optional: set a render callback that is invoked between bind() and
+    /// unbind() on each active viewport surface.  This is the injection point
+    /// for backend-specific draw calls (placeholder grid, real scene rendering,
+    /// etc.).  The callback receives the surface, the slot, and the scene state.
+    using RenderCallback = std::function<void(IViewportSurface& surface,
+                                              const ViewportSlot& slot,
+                                              const ViewportSceneState& scene)>;
+    void setRenderCallback(RenderCallback cb) { m_renderCallback = std::move(cb); }
+
     [[nodiscard]] ViewportHostRegistry*            viewportRegistry() const { return m_viewportReg; }
     [[nodiscard]] ViewportSceneProviderRegistry*   sceneRegistry()    const { return m_sceneReg; }
     [[nodiscard]] ViewportSurfaceRegistry*         surfaceRegistry()  const { return m_surfaceReg; }
@@ -83,13 +93,18 @@ public:
             if (m_sceneReg)
                 result.sceneState = m_sceneReg->dispatchProvide(slot);
 
-            // Step 2 — bind surface, execute (placeholder) render, unbind
+            // Step 2 — bind surface, execute render, unbind
             if (m_surfaceReg) {
                 if (auto* surface = m_surfaceReg->findSurface(slot.handle)) {
                     if (surface->isValid()) {
                         surface->bind();
-                        // Real render backends inject draw calls between bind/unbind.
-                        // The frame loop itself is backend-agnostic.
+
+                        // Invoke the render callback if one is registered.
+                        // This is where backends inject real draw calls
+                        // (placeholder grid, scene geometry, etc.).
+                        if (m_renderCallback)
+                            m_renderCallback(*surface, slot, result.sceneState);
+
                         surface->unbind();
 
                         // Step 3 — composite gizmo overlay onto the surface
@@ -126,6 +141,7 @@ private:
     ViewportSceneProviderRegistry* m_sceneReg      = nullptr;
     ViewportSurfaceRegistry*       m_surfaceReg    = nullptr;
     GizmoRenderer*                 m_gizmoRenderer = nullptr;
+    RenderCallback                 m_renderCallback;
     ViewportFrameStats             m_stats;
 };
 

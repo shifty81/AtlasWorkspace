@@ -35,7 +35,7 @@ Current Phase: **All Phases A–I Complete** — Atlas Workspace v1.0 Milestone 
 
 ### What Does NOT Work (Stubs, Shells, Not Wired)
 
-- **Viewport rendering:** Shows placeholder grid, not a real scene. No 3D rendering.
+- **Viewport rendering:** Placeholder grid via SoftwareViewportRenderer, proving the viewport pipeline end-to-end. No real 3D/GPU rendering yet. D3D11 backend is architecturally complete but awaits Windows SDK + d3d11.lib for real device init.
 - **Panel content:** All panels display chrome (titles, fake rows) but edit nothing real.
 - **NovaForge panels:** Have `projectRoot` and `ready` flag, but no schemas, no data, no save targets.
 - **Project load depth:** Loading .atlas selects the adapter and registers descriptors, but does not load asset registries, gameplay data, or documents.

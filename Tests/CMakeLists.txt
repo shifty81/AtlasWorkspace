@@ -1384,3 +1384,36 @@ target_link_libraries(NF_EditorS195Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_EditorS195Tests)
+
+# S196 — SpriteEditorV1, TilemapEditorV1, TexturePainterV1
+add_executable(NF_EditorS196Tests
+    Editor/Legacy/test_s196_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS196Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS196Tests)
+
+# S197 — PhysicsJointEditorV1, DestructionEditorV1, WindFieldEditorV1
+add_executable(NF_EditorS197Tests
+    Editor/Legacy/test_s197_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS197Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS197Tests)
+
+# S198 — CameraRigEditorV1, LevelStreamEditorV1, AtmosphereEditorV1
+add_executable(NF_EditorS198Tests
+    Editor/Legacy/test_s198_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS198Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS198Tests)
