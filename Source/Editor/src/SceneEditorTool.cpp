@@ -211,10 +211,10 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         // Entity list — each entity has an implicit ID equal to its index + 1.
         // Rows are hit-tested so clicking selects the entity via SelectionService.
         float ey = ctx.y + 48.f;
-        uint32_t limit = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
+        uint32_t visibleEntityCount = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
                        ? m_stats.entityCount
                        : static_cast<uint32_t>(kEntityCount);
-        for (uint32_t i = 0; i < limit; ++i) {
+        for (uint32_t i = 0; i < visibleEntityCount; ++i) {
             EntityID eid = static_cast<EntityID>(i + 1);
             bool selected = (eid == primarySel);
             bool hovered  = ctx.isHovered({ctx.x + 4.f, ey - 2.f, hierW - 8.f, 18.f});
@@ -282,10 +282,10 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             { 0.38f, 0.55f, 0x8888AAFF }, // Environment     — grey-blue
             { 0.65f, 0.35f, 0xDDAAFFFF }, // SkyDome         — lavender
         };
-        uint32_t limit = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
+        uint32_t visibleEntityCount = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
                        ? m_stats.entityCount
                        : static_cast<uint32_t>(kEntityCount);
-        for (uint32_t i = 0; i < limit; ++i) {
+        for (uint32_t i = 0; i < visibleEntityCount; ++i) {
             EntityID eid = static_cast<EntityID>(i + 1);
             bool selected = (eid == primarySel);
 

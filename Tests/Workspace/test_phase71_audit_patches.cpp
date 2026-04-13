@@ -82,12 +82,14 @@ TEST_CASE("classifyExtension — project files and custom", "[Audit][Patch9]") {
 }
 
 TEST_CASE("classifyExtension — data files", "[Audit][Patch9]") {
-    REQUIRE(NF::classifyExtension(".json")  == NF::AssetTypeTag::Data);
     REQUIRE(NF::classifyExtension(".yaml")  == NF::AssetTypeTag::Data);
     REQUIRE(NF::classifyExtension(".yml")   == NF::AssetTypeTag::Data);
     REQUIRE(NF::classifyExtension(".toml")  == NF::AssetTypeTag::Data);
     REQUIRE(NF::classifyExtension(".csv")   == NF::AssetTypeTag::Data);
     REQUIRE(NF::classifyExtension(".ini")   == NF::AssetTypeTag::Data);
+    REQUIRE(NF::classifyExtension(".xml")   == NF::AssetTypeTag::Data);
+    REQUIRE(NF::classifyExtension(".cfg")   == NF::AssetTypeTag::Data);
+    REQUIRE(NF::classifyExtension(".conf")  == NF::AssetTypeTag::Data);
 }
 
 TEST_CASE("classifyExtension — case insensitive", "[Audit][Patch9]") {
