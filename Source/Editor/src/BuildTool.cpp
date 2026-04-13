@@ -6,8 +6,17 @@
 #include "NF/Editor/BuildTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
 #include "NF/Workspace/WorkspaceShell.h"
+#include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
+
+#if defined(_WIN32)
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+#else
+#  include <cstdlib>
+#endif
 
 namespace NF {
 
@@ -43,6 +52,8 @@ bool BuildTool::initialize() {
     m_buildMode    = BuildMode::Incremental;
     m_stats        = {};
     m_activeTarget = {};
+    clearLog();
+    appendLogLine("[INFO]  Build system ready");
     m_state        = HostedToolState::Ready;
     return true;
 }
@@ -68,13 +79,99 @@ void BuildTool::suspend() {
 }
 
 void BuildTool::update(float /*dt*/) {
-    // Build progress is driven by async build-log events, not per-frame polling.
+    // Poll the active build process pipe for new output lines.
+    if (m_buildProcess) {
+        char buf[512];
+        if (std::fgets(buf, sizeof(buf), m_buildProcess)) {
+            // Strip trailing newline
+            std::string line(buf);
+            if (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
+                line.pop_back();
+            if (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
+                line.pop_back();
+            // Count errors and warnings
+            if (line.find("error:") != std::string::npos ||
+                line.find("Error:") != std::string::npos ||
+                line.find("[ERROR]") != std::string::npos)
+                ++m_stats.errorCount;
+            else if (line.find("warning:") != std::string::npos ||
+                     line.find("Warning:") != std::string::npos ||
+                     line.find("[WARN]") != std::string::npos)
+                ++m_stats.warningCount;
+            appendLogLine(line);
+        } else {
+            // Process finished (EOF or error)
+#if defined(_WIN32)
+            int exitCode = _pclose(m_buildProcess);
+#else
+            int exitCode = pclose(m_buildProcess);
+#endif
+            m_buildProcess = nullptr;
+            setBuilding(false);
+            m_viewBuildRequested = false;
+
+            auto now = std::chrono::steady_clock::now();
+            float elapsedMs = std::chrono::duration<float, std::milli>(
+                now - m_buildStartTime).count();
+            setLastBuildMs(elapsedMs);
+
+            if (exitCode == 0 && m_stats.errorCount == 0) {
+                appendLogLine("[OK]  Build succeeded in " +
+                    std::to_string(static_cast<int>(elapsedMs)) + " ms");
+            } else {
+                appendLogLine("[ERROR]  Build failed (exit " +
+                    std::to_string(exitCode) + ")");
+            }
+        }
+        return;
+    }
+
+    // Kick off a new build if requested (via "Build Now" button or build.start command).
+    if (m_viewBuildRequested && !m_stats.isBuilding) {
+        clearStats();
+        setBuilding(true);
+        clearLog();
+
+        // Build the cmake invocation.
+        // Prefer the project root if available; fall back to the current directory.
+        std::string buildDir = m_buildRootPath.empty() ? "." : m_buildRootPath;
+        // Remove trailing separator
+        while (!buildDir.empty() && (buildDir.back() == '/' || buildDir.back() == '\\'))
+            buildDir.pop_back();
+
+        std::string cmd = "cmake --build \"" + buildDir + "\" 2>&1";
+
+        appendLogLine("[INFO]  Starting build: " + cmd);
+        m_buildStartTime = std::chrono::steady_clock::now();
+
+#if defined(_WIN32)
+        m_buildProcess = _popen(cmd.c_str(), "r");
+#else
+        m_buildProcess = popen(cmd.c_str(), "r");
+#endif
+
+        if (!m_buildProcess) {
+            appendLogLine("[ERROR]  Failed to launch build process");
+            setBuilding(false);
+            m_viewBuildRequested = false;
+        }
+    }
 }
 
 void BuildTool::onProjectLoaded(const std::string& projectId) {
     m_activeProjectId = projectId;
     m_stats           = {};
     m_activeTarget    = {};
+    // The projectId is used as a hint for the build directory;
+    // the caller (WorkspaceShell) may also set m_buildRootPath directly.
+    // Use the projectId as the build root fallback when it looks like a path.
+    if (!projectId.empty() && (projectId.find('/') != std::string::npos ||
+                                projectId.find('\\') != std::string::npos)) {
+        m_buildRootPath = projectId + "/build";
+    }
+    clearLog();
+    appendLogLine("[INFO]  Project loaded: " + projectId);
+    appendLogLine("[INFO]  Mode: " + std::string(buildModeName(m_buildMode)));
 }
 
 void BuildTool::onProjectUnloaded() {
@@ -105,6 +202,18 @@ void BuildTool::setErrorCount(uint32_t count) {
 
 void BuildTool::clearStats() {
     m_stats = {};
+}
+
+void BuildTool::appendLogLine(const std::string& line) {
+    m_logLines.push_back(line);
+    // Keep the log buffer bounded
+    static constexpr size_t kMaxLogLines = 500;
+    if (m_logLines.size() > kMaxLogLines)
+        m_logLines.erase(m_logLines.begin());
+}
+
+void BuildTool::clearLog() {
+    m_logLines.clear();
 }
 
 void BuildTool::setActiveTarget(const std::string& target) {
@@ -245,17 +354,35 @@ void BuildTool::renderToolView(const ToolViewRenderContext& ctx) const {
             ly += 18.f;
         }
 
-        // Stub log lines
-        static const char* kLogLines[] = {
-            "[INFO]  Build system ready",
-            "[INFO]  Target: Windows x64",
-            "[INFO]  Mode: Incremental",
-            "[INFO]  Awaiting start...",
-        };
-        for (auto* line : kLogLines) {
-            if (ly + 16.f > ctx.y + ctx.h - 4.f) break;
-            ctx.ui.drawText(ctx.x + configW + 8.f, ly, line, ctx.kTextSecond);
-            ly += 16.f;
+        // Live build log — streamed by runBuildProcess() / build.start handler
+        if (m_logLines.empty()) {
+            ctx.ui.drawText(ctx.x + configW + 8.f, ly, "[INFO]  Awaiting start...", ctx.kTextSecond);
+        } else {
+            // Render the most recent lines that fit in the panel
+            size_t firstVisible = 0;
+            {
+                float avail = ctx.y + ctx.h - 4.f - ly;
+                size_t maxLines = static_cast<size_t>(avail / 16.f);
+                if (m_logLines.size() > maxLines)
+                    firstVisible = m_logLines.size() - maxLines;
+            }
+            for (size_t i = firstVisible; i < m_logLines.size(); ++i) {
+                if (ly + 16.f > ctx.y + ctx.h - 4.f) break;
+                const auto& line = m_logLines[i];
+                // Colour-code the line by prefix
+                uint32_t col = ctx.kTextSecond;
+                if (line.find("[ERROR]") != std::string::npos ||
+                    line.find("error:") != std::string::npos)
+                    col = ctx.kRed;
+                else if (line.find("[WARN]") != std::string::npos ||
+                         line.find("warning:") != std::string::npos)
+                    col = 0xE09020FFu;
+                else if (line.find("[OK]") != std::string::npos ||
+                         line.find("Succeeded") != std::string::npos)
+                    col = ctx.kGreen;
+                ctx.ui.drawText(ctx.x + configW + 8.f, ly, line.c_str(), col);
+                ly += 16.f;
+            }
         }
     }
 

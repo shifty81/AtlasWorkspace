@@ -10,6 +10,8 @@
 #include "NF/Workspace/AssetCatalog.h"
 #include <cstdio>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 
 namespace NF {
 
@@ -106,6 +108,19 @@ void IDETool::openFile(const std::string& path) {
         ++m_stats.openFileCount;
     }
     m_activeFile = path;
+
+    // Load file content from disk if not already cached.
+    if (m_fileContents.find(path) == m_fileContents.end()) {
+        std::ifstream ifs(path);
+        std::vector<std::string> lines;
+        if (ifs.good()) {
+            std::string line;
+            while (std::getline(ifs, line)) {
+                lines.push_back(line);
+            }
+        }
+        m_fileContents[path] = std::move(lines);
+    }
 }
 
 void IDETool::closeFile(const std::string& path) {
@@ -117,6 +132,8 @@ void IDETool::closeFile(const std::string& path) {
     if (m_activeFile == path) {
         m_activeFile = m_openFiles.empty() ? std::string{} : m_openFiles.back();
     }
+    // Remove cached content to free memory.
+    m_fileContents.erase(path);
 }
 
 void IDETool::markDirty()  { m_stats.isDirty = true;  }
@@ -127,13 +144,6 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
     const float treeW   = ctx.w * 0.20f;
     const float editorW = ctx.w * 0.60f;
     const float outputW = ctx.w - treeW - editorW;
-
-    // Stub file list for the tree panel (used when no project is open)
-    static const char* kStubFiles[] = {
-        "GameManager.cpp", "Player.cpp", "Enemy.cpp",
-        "InputHandler.cpp", "SceneLoader.cpp"
-    };
-    static constexpr int kStubCount = 5;
 
     // ── File Tree panel ───────────────────────────────────────────
     ctx.drawPanel(ctx.x, ctx.y, treeW, ctx.h, "File Tree");
@@ -173,18 +183,13 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
             ctx.ui.drawText(ctx.x + 8.f, ty, "No scripts in project", ctx.kTextMuted);
         }
     } else {
-        // Stub file list when no project is open
-        for (int i = 0; i < kStubCount && ty + 18.f < ctx.y + ctx.h - 4.f; ++i) {
-            bool isActive = (m_viewSelectedFile == i);
-            bool hov = ctx.isHovered({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f});
-            uint32_t bg = isActive ? 0x1A3A6AFF : (hov ? 0x2A2A3AFF : 0x00000000u);
-            if (bg) ctx.ui.drawRect({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f}, bg);
-            ctx.ui.drawText(ctx.x + 10.f, ty, kStubFiles[i],
-                            isActive ? ctx.kTextPrimary : ctx.kTextSecond);
-            if (ctx.hitRegion({ctx.x + 2.f, ty - 2.f, treeW - 4.f, 18.f}, false))
-                m_viewSelectedFile = isActive ? -1 : i;
-            ty += 18.f;
-        }
+        // No project loaded — show an empty state with an open prompt.
+        const char* prompt = "Open a project to browse files";
+        ctx.ui.drawText(ctx.x + 8.f, ty, prompt, ctx.kTextMuted);
+        ty += 22.f;
+        if (ctx.drawButton(ctx.x + 8.f, ty, treeW - 16.f, 20.f, "Open Project"))
+            if (ctx.shell)
+                (void)ctx.shell->commandBus().execute("workspace.project.open");
     }
 
     // ── Code Editor panel ─────────────────────────────────────────
@@ -235,14 +240,6 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
                 (void)ctx.shell->commandBus().execute("ide.open_file:" + m_openFiles[i]);
             tabX += tw + 2.f;
         }
-    } else if (m_viewSelectedFile >= 0) {
-        // Show the stub file name in a pseudo tab
-        const char* fname = m_viewSelectedFile < kStubCount
-                          ? kStubFiles[m_viewSelectedFile] : kStubFiles[0];
-        float tw = static_cast<float>(std::strlen(fname)) * 8.f + 16.f;
-        ctx.ui.drawRect({ex + 8.f, ctx.y + 50.f, tw, 20.f}, ctx.kAccentBlue);
-        ctx.ui.drawRectOutline({ex + 8.f, ctx.y + 50.f, tw, 20.f}, ctx.kBorder, 1.f);
-        ctx.ui.drawText(ex + 14.f, ctx.y + 53.f, fname, ctx.kTextPrimary);
     }
 
     // Editor body — line number gutter + code area
@@ -254,34 +251,53 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
         ctx.ui.drawRect({ex, bodyY, gutterW, bodyH}, 0x1E1E1EFF);
         ctx.ui.drawRect({ex + gutterW, bodyY, 1.f, bodyH}, ctx.kBorder);
 
-        for (float ly = bodyY + 4.f; ly < bodyY + bodyH - 4.f; ly += 18.f) {
-            int lineNo = static_cast<int>((ly - bodyY) / 18.f) + 1;
-            char lnBuf[16];
-            std::snprintf(lnBuf, sizeof(lnBuf), "%3d", lineNo);
-            ctx.ui.drawText(ex + 2.f, ly, lnBuf, ctx.kTextMuted);
-        }
-
         ctx.ui.drawRect({ex + gutterW + 1.f, bodyY, editorW - gutterW - 1.f, bodyH},
                         0x1A1A1AFF);
 
-        bool hasFile = !m_activeFile.empty() || m_viewSelectedFile >= 0;
-        if (!hasFile) {
+        if (m_activeFile.empty()) {
             float hx = ex + gutterW + (editorW - gutterW - 160.f) * 0.5f;
             float hy = bodyY + (bodyH - 14.f) * 0.5f;
             ctx.ui.drawText(hx, hy, "Select a file to edit", ctx.kTextMuted);
         } else {
-            // Active line highlight + cursor
+            // Render loaded file content line-by-line.
+            auto contentIt = m_fileContents.find(m_activeFile);
+            const std::vector<std::string>* lines = (contentIt != m_fileContents.end())
+                                                    ? &contentIt->second : nullptr;
+
+            // Active line highlight
             ctx.ui.drawRect({ex + gutterW + 1.f, bodyY + 2.f,
                              editorW - gutterW - 1.f, 18.f}, 0x2A3A2AFF);
-            ctx.ui.drawText(ex + gutterW + 8.f, bodyY + 4.f, "|", ctx.kAccentBlue);
 
-            // Show filename as first comment line
-            const char* fn = !m_activeFile.empty() ? m_activeFile.c_str()
-                           : (m_viewSelectedFile >= 0 && m_viewSelectedFile < kStubCount
-                              ? kStubFiles[m_viewSelectedFile] : "");
-            if (*fn) {
-                std::string comment = std::string("// ") + fn;
+            float ly = bodyY + 4.f;
+            int lineNo = 1;
+            static constexpr size_t kMaxLineDisplayChars = 80;
+            if (lines && !lines->empty()) {
+                for (const auto& codeLine : *lines) {
+                    if (ly + 14.f > bodyY + bodyH - 4.f) break;
+                    // Line number gutter
+                    char lnBuf[16];
+                    std::snprintf(lnBuf, sizeof(lnBuf), "%3d", lineNo);
+                    ctx.ui.drawText(ex + 2.f, ly, lnBuf, ctx.kTextMuted);
+                    // Code text (truncated to fit)
+                    std::string display = codeLine;
+                    if (display.size() > kMaxLineDisplayChars)
+                        display = display.substr(0, kMaxLineDisplayChars - 1) + "\xE2\x80\xA6";
+                    ctx.ui.drawText(ex + gutterW + 8.f, ly, display.c_str(), ctx.kTextPrimary);
+                    ly += 16.f;
+                    ++lineNo;
+                }
+            } else {
+                // File could not be read or is empty — show a placeholder line count.
+                for (; ly < bodyY + bodyH - 4.f; ly += 16.f) {
+                    char lnBuf[16];
+                    std::snprintf(lnBuf, sizeof(lnBuf), "%3d", lineNo);
+                    ctx.ui.drawText(ex + 2.f, ly, lnBuf, ctx.kTextMuted);
+                    ++lineNo;
+                }
+                // Show the active file path as a comment at the top.
+                std::string comment = "// " + m_activeFile;
                 ctx.ui.drawText(ex + gutterW + 8.f, bodyY + 22.f, comment, ctx.kTextMuted);
+                ctx.ui.drawText(ex + gutterW + 8.f, bodyY + 42.f, "// (file not readable)", ctx.kTextMuted);
             }
         }
     }

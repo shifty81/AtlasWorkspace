@@ -24,6 +24,7 @@
 #include "NF/UI/IUIBackendInterfaces.h"
 #include "NF/UI/D3D11Backend.h"
 #include "NF/UI/DirectWriteTextBackend.h"
+#include "NF/UI/GDIBackend.h"
 #include <memory>
 #include <string>
 
@@ -115,9 +116,8 @@ inline std::unique_ptr<UIBackend> selectUIBackend(
         return nullptr;
 
     case UIBackendType::GDI:
-        // Real implementation: return std::make_unique<GDIBackend>();
-        NF_LOG_WARN("UI", "GDIBackend creation deferred to platform init");
-        return nullptr;
+        // Instantiate GDIBackend — the Win32 fallback/bootstrap render path.
+        return std::make_unique<GDIBackend>();
 
     case UIBackendType::Null:
     default:

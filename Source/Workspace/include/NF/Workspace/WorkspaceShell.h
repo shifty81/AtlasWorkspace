@@ -387,6 +387,40 @@ private:
                    return ConsoleCmdExecResult::Ok;
                });
 
+        // File commands
+        addCmd("workspace.save", ConsoleCmdScope::Global,
+               "Save all dirty documents in the active project",
+               [this]() -> ConsoleCmdExecResult {
+                   auto result = m_projectState.saveAll();
+                   switch (result.status) {
+                   case ProjectSaveStatus::Ok:
+                       m_shellContract.postNotification(
+                           Notification{"Saved " + std::to_string(result.savedCount) + " document(s)."});
+                       return ConsoleCmdExecResult::Ok;
+                   case ProjectSaveStatus::NothingDirty:
+                       m_shellContract.postNotification(
+                           Notification{"Nothing to save — all documents are clean."});
+                       return ConsoleCmdExecResult::Ok;
+                   case ProjectSaveStatus::PartialFailure:
+                       m_shellContract.postNotification(
+                           Notification{"Save partially failed: " +
+                                        std::to_string(result.failedCount) + " document(s) failed."});
+                       return ConsoleCmdExecResult::RuntimeError;
+                   case ProjectSaveStatus::NoProjectLoaded:
+                       m_shellContract.postNotification(
+                           Notification{"No project loaded — nothing to save."});
+                       return ConsoleCmdExecResult::PermissionDenied;
+                   }
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        // Build command — delegates to the build.start handler registered by BuildTool
+        addCmd("workspace.build", ConsoleCmdScope::Global,
+               "Start a build of the active project",
+               [this]() -> ConsoleCmdExecResult {
+                   return m_commandBus.execute("build.start");
+               });
+
         addCmd("workspace.diagnostics", ConsoleCmdScope::Global,
                "Open diagnostics panel",
                [this]() -> ConsoleCmdExecResult {

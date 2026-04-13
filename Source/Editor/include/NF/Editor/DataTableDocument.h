@@ -13,8 +13,10 @@
 
 #include "NF/Core/Core.h"
 #include <cstdint>
+#include <fstream>
 #include <functional>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -283,7 +285,7 @@ public:
         return errorCount;
     }
 
-    // ── CSV import/export (stubs) ──────────────────────────────────────────────
+    // ── CSV import/export ──────────────────────────────────────────────────────
 
     [[nodiscard]] std::string exportCsv() const {
         std::string out;
@@ -298,37 +300,330 @@ public:
             for (size_t i = 0; i < m_columns.size(); ++i) {
                 if (i > 0) out += ",";
                 auto it = row.cells.find(m_columns[i].id);
-                if (it != row.cells.end()) out += it->second;
+                if (it != row.cells.end()) {
+                    // Wrap in quotes if the value contains a comma or quote.
+                    const std::string& v = it->second;
+                    if (v.find(',') != std::string::npos ||
+                        v.find('"') != std::string::npos) {
+                        out += '"';
+                        for (char c : v) {
+                            if (c == '"') out += '"'; // escape embedded quotes
+                            out += c;
+                        }
+                        out += '"';
+                    } else {
+                        out += v;
+                    }
+                }
             }
             out += "\n";
         }
         return out;
     }
 
-    bool importCsv(const std::string& /*csv*/) {
-        // Stub: real implementation would parse CSV and populate rows
+    /// Parse a CSV string and populate rows/cells.
+    /// The first row is treated as a header that defines (or maps to) columns.
+    /// If a header name matches an existing column, cells are mapped to it;
+    /// otherwise a new String column is created.
+    bool importCsv(const std::string& csv) {
+        if (csv.empty()) return false;
+
+        std::vector<std::string> csvLines;
+        {
+            std::string line;
+            for (char c : csv) {
+                if (c == '\n') {
+                    csvLines.push_back(line);
+                    line.clear();
+                } else if (c != '\r') {
+                    line += c;
+                }
+            }
+            if (!line.empty()) csvLines.push_back(line);
+        }
+
+        if (csvLines.empty()) return false;
+
+        // Parse a single CSV field: handles quoted fields and embedded commas.
+        auto parseRow = [](const std::string& rowStr) -> std::vector<std::string> {
+            std::vector<std::string> fields;
+            std::string field;
+            bool inQuotes = false;
+            for (size_t k = 0; k < rowStr.size(); ++k) {
+                char c = rowStr[k];
+                if (inQuotes) {
+                    if (c == '"') {
+                        if (k + 1 < rowStr.size() && rowStr[k + 1] == '"') {
+                            field += '"'; ++k; // escaped quote
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        field += c;
+                    }
+                } else {
+                    if (c == '"') {
+                        inQuotes = true;
+                    } else if (c == ',') {
+                        fields.push_back(field);
+                        field.clear();
+                    } else {
+                        field += c;
+                    }
+                }
+            }
+            fields.push_back(field);
+            return fields;
+        };
+
+        // Header row → column mapping
+        auto headers = parseRow(csvLines[0]);
+        std::vector<DataColumnId> colIds;
+        colIds.reserve(headers.size());
+        for (const auto& h : headers) {
+            DataColumnId id = findColumnByName(h);
+            if (id == kInvalidDataColumnId) {
+                // Create a new String column for this CSV header.
+                id = addColumn(h, DataColumnType::String);
+            }
+            colIds.push_back(id);
+        }
+
+        // Data rows
+        for (size_t r = 1; r < csvLines.size(); ++r) {
+            if (csvLines[r].empty()) continue;
+            auto fields = parseRow(csvLines[r]);
+            DataRowId rowId = addRow();
+            for (size_t f = 0; f < fields.size() && f < colIds.size(); ++f) {
+                setCell(rowId, colIds[f], fields[f]);
+            }
+        }
+
         markDirty();
         return true;
     }
 
     // ── Save / load ────────────────────────────────────────────────────────────
 
+    /// Serialize the table to JSON and write it to the asset path.
+    /// Returns false if no path is set or the file cannot be written.
     bool save(const std::string& path = "") {
         if (!path.empty()) m_assetPath = path;
         if (m_assetPath.empty()) return false;
+        try {
+            std::ofstream ofs(m_assetPath, std::ios::out | std::ios::trunc);
+            if (!ofs.good()) return false;
+            ofs << serialize();
+            clearDirty();
+            return true;
+        } catch (...) {
+            return false;
+        }
+    }
+
+    /// Deserialize the table from a JSON string previously produced by serialize().
+    /// This is a minimal reader: it restores column schema and row data.
+    bool load(const std::string& json) {
+        if (json.empty()) return false;
+
+        // Helper: find the value of a JSON string key.
+        // E.g. for '"name":"Foo"' findJsonString("name") returns "Foo".
+        auto findJsonString = [&](const std::string& key) -> std::string {
+            std::string needle = "\"" + key + "\":\"";
+            auto pos = json.find(needle);
+            if (pos == std::string::npos) return {};
+            pos += needle.size();
+            std::string val;
+            for (; pos < json.size() && json[pos] != '"'; ++pos) {
+                if (json[pos] == '\\' && pos + 1 < json.size()) {
+                    ++pos; val += json[pos];
+                } else {
+                    val += json[pos];
+                }
+            }
+            return val;
+        };
+
+        // Restore table name.
+        std::string name = findJsonString("table");
+        if (!name.empty()) m_tableName = name;
+
+        // Restore columns from "columns" JSON array.
+        // Format: "columns":[{"id":1,"name":"Col","type":"String","default":""},...]
+        {
+            auto pos = json.find("\"columns\":[");
+            if (pos != std::string::npos) {
+                pos += 11;
+                size_t end = json.find(']', pos);
+                if (end != std::string::npos) {
+                    m_columns.clear();
+                    m_nextColumnId = 0;
+                    // Parse each {...} object in the array.
+                    while (pos < end) {
+                        auto objStart = json.find('{', pos);
+                        if (objStart == std::string::npos || objStart >= end) break;
+                        auto objEnd = json.find('}', objStart);
+                        if (objEnd == std::string::npos || objEnd > end) break;
+                        std::string obj = json.substr(objStart, objEnd - objStart + 1);
+                        DataColumn col;
+                        // Parse "id"
+                        auto idPos = obj.find("\"id\":");
+                        if (idPos != std::string::npos) {
+                            col.id = static_cast<DataColumnId>(
+                                std::stoul(obj.substr(idPos + 5)));
+                            if (col.id > m_nextColumnId) m_nextColumnId = col.id;
+                        }
+                        // Parse "name"
+                        auto nPos = obj.find("\"name\":\"");
+                        if (nPos != std::string::npos) {
+                            nPos += 8;
+                            while (nPos < obj.size() && obj[nPos] != '"') col.name += obj[nPos++];
+                        }
+                        // Parse "type"
+                        auto tPos = obj.find("\"type\":\"");
+                        if (tPos != std::string::npos) {
+                            tPos += 8;
+                            std::string typeName;
+                            while (tPos < obj.size() && obj[tPos] != '"') typeName += obj[tPos++];
+                            if      (typeName == "Int")    col.type = DataColumnType::Int;
+                            else if (typeName == "Float")  col.type = DataColumnType::Float;
+                            else if (typeName == "Bool")   col.type = DataColumnType::Bool;
+                            else if (typeName == "Enum")   col.type = DataColumnType::Enum;
+                            else                           col.type = DataColumnType::String;
+                        }
+                        // Parse "default"
+                        auto dPos = obj.find("\"default\":\"");
+                        if (dPos != std::string::npos) {
+                            dPos += 11;
+                            while (dPos < obj.size() && obj[dPos] != '"') col.defaultValue += obj[dPos++];
+                        }
+                        if (col.id != kInvalidDataColumnId && !col.name.empty())
+                            m_columns.push_back(col);
+                        pos = objEnd + 1;
+                    }
+                }
+            }
+        }
+
+        // Restore rows from "rows" JSON array.
+        // Format: "rows":[{"id":1,"cells":{"1":"val","2":"val"}},...]
+        {
+            auto pos = json.find("\"rows\":[");
+            if (pos != std::string::npos) {
+                pos += 8;
+                size_t arrayEnd = json.find(']', pos);
+                if (arrayEnd != std::string::npos) {
+                    m_rows.clear();
+                    m_nextRowId = 0;
+                    while (pos < arrayEnd) {
+                        auto objStart = json.find('{', pos);
+                        if (objStart == std::string::npos || objStart >= arrayEnd) break;
+                        // Find matching closing brace (accounting for nested cells object)
+                        int depth = 0;
+                        size_t objEnd = objStart;
+                        for (; objEnd < json.size(); ++objEnd) {
+                            if (json[objEnd] == '{') ++depth;
+                            else if (json[objEnd] == '}') { if (--depth == 0) break; }
+                        }
+                        if (objEnd >= json.size()) break;
+                        std::string obj = json.substr(objStart, objEnd - objStart + 1);
+                        DataRow row;
+                        // Parse "id"
+                        auto idPos = obj.find("\"id\":");
+                        if (idPos != std::string::npos) {
+                            row.id = static_cast<DataRowId>(
+                                std::stoul(obj.substr(idPos + 5)));
+                            if (row.id > m_nextRowId) m_nextRowId = row.id;
+                        }
+                        // Parse cells: "cells":{"colId":"value",...}
+                        auto cellsPos = obj.find("\"cells\":{");
+                        if (cellsPos != std::string::npos) {
+                            cellsPos += 9;
+                            size_t cellsEnd = obj.find('}', cellsPos);
+                            if (cellsEnd != std::string::npos) {
+                                size_t cp = cellsPos;
+                                while (cp < cellsEnd) {
+                                    // Find next key
+                                    auto kq = obj.find('"', cp);
+                                    if (kq == std::string::npos || kq >= cellsEnd) break;
+                                    auto kq2 = obj.find('"', kq + 1);
+                                    if (kq2 == std::string::npos) break;
+                                    std::string colIdStr = obj.substr(kq + 1, kq2 - kq - 1);
+                                    // Find value
+                                    auto vq = obj.find('"', kq2 + 2);
+                                    if (vq == std::string::npos) break;
+                                    auto vq2 = obj.find('"', vq + 1);
+                                    if (vq2 == std::string::npos) break;
+                                    std::string val = obj.substr(vq + 1, vq2 - vq - 1);
+                                    try {
+                                        DataColumnId cid = static_cast<DataColumnId>(
+                                            std::stoul(colIdStr));
+                                        row.cells[cid] = val;
+                                    } catch (...) {}
+                                    cp = vq2 + 1;
+                                }
+                            }
+                        }
+                        if (row.id != kInvalidDataRowId)
+                            m_rows.push_back(row);
+                        pos = objEnd + 1;
+                    }
+                }
+            }
+        }
+
         clearDirty();
         return true;
     }
 
-    bool load(const std::string& /*json*/) {
-        clearDirty();
-        return true;
-    }
-
+    /// Produce a complete JSON serialization of the table schema and rows.
     [[nodiscard]] std::string serialize() const {
-        std::string out = "{\"table\":\"" + m_tableName + "\",";
-        out += "\"columns\":" + std::to_string(m_columns.size()) + ",";
-        out += "\"rows\":" + std::to_string(m_rows.size()) + "}";
+        std::string out = "{\n";
+        // Escape a JSON string value.
+        auto escapeJson = [](const std::string& s) -> std::string {
+            std::string r;
+            for (char c : s) {
+                if      (c == '"')  r += "\\\"";
+                else if (c == '\\') r += "\\\\";
+                else if (c == '\n') r += "\\n";
+                else if (c == '\r') r += "\\r";
+                else if (c == '\t') r += "\\t";
+                else                r += c;
+            }
+            return r;
+        };
+
+        out += "  \"table\": \"" + escapeJson(m_tableName) + "\",\n";
+        out += "  \"columns\": [\n";
+        for (size_t i = 0; i < m_columns.size(); ++i) {
+            const auto& col = m_columns[i];
+            out += "    {\"id\":" + std::to_string(col.id);
+            out += ",\"name\":\"" + escapeJson(col.name) + "\"";
+            out += ",\"type\":\"" + std::string(dataColumnTypeName(col.type)) + "\"";
+            out += ",\"default\":\"" + escapeJson(col.defaultValue) + "\"";
+            out += ",\"required\":" + std::string(col.required ? "true" : "false");
+            out += "}";
+            if (i + 1 < m_columns.size()) out += ",";
+            out += "\n";
+        }
+        out += "  ],\n";
+        out += "  \"rows\": [\n";
+        for (size_t i = 0; i < m_rows.size(); ++i) {
+            const auto& row = m_rows[i];
+            out += "    {\"id\":" + std::to_string(row.id);
+            out += ",\"cells\":{";
+            bool first = true;
+            for (const auto& [colId, val] : row.cells) {
+                if (!first) out += ",";
+                out += "\"" + std::to_string(colId) + "\":\"" + escapeJson(val) + "\"";
+                first = false;
+            }
+            out += "}}";
+            if (i + 1 < m_rows.size()) out += ",";
+            out += "\n";
+        }
+        out += "  ]\n";
+        out += "}\n";
         return out;
     }
 

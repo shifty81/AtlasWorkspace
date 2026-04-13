@@ -396,6 +396,47 @@ int main(int argc, char* argv[]) {
         std::string("Bootstrap complete. Tools: ")
         + std::to_string(bootResult.toolsRegistered));
 
+    // ── Tool-specific command wiring ──────────────────────────────
+    // Register real handlers for commands that need direct tool access.
+    // These supplement the generic handlers created by registerAllToolCommands().
+    {
+        using namespace NF;
+
+        // build.start — activate BuildTool and request a cmake build.
+        // Note: build.start is NOT in BuildTool's descriptor.commands, so it has
+        // no generic handler.  We register the authoritative handler here.
+        if (auto* rawBuildTool = shell.toolRegistry().find(HostToolId::BuildTool)) {
+            if (auto* bt = dynamic_cast<BuildTool*>(rawBuildTool)) {
+                ConsoleCommand buildCmd("build.start", ConsoleCmdScope::Global,
+                                       ConsoleCmdArgType::None);
+                buildCmd.setDescription("Start a build of the active project");
+                buildCmd.setEnabled(true);
+                (void)shell.commandBus().registerCommand(buildCmd,
+                    [&shell, bt]() -> ConsoleCmdExecResult {
+                        shell.toolRegistry().activateTool(HostToolId::BuildTool);
+                        bt->requestBuild();
+                        return ConsoleCmdExecResult::Ok;
+                    });
+                NF_LOG_INFO("AtlasWorkspace", "build.start command wired to BuildTool");
+            }
+        }
+
+        // tools.launch_atlas_ai — activate AtlasAITool.
+        // This is a menu-level command not declared in AtlasAITool's descriptor.
+        {
+            ConsoleCommand aiCmd("tools.launch_atlas_ai", ConsoleCmdScope::Global,
+                                  ConsoleCmdArgType::None);
+            aiCmd.setDescription("Open the AtlasAI assistant");
+            aiCmd.setEnabled(true);
+            (void)shell.commandBus().registerCommand(aiCmd,
+                [&shell]() -> ConsoleCmdExecResult {
+                    shell.toolRegistry().activateTool(HostToolId::AtlasAI);
+                    return ConsoleCmdExecResult::Ok;
+                });
+            NF_LOG_INFO("AtlasWorkspace", "tools.launch_atlas_ai command wired to AtlasAITool");
+        }
+    }
+
     // ── Viewport wiring ───────────────────────────────────────────
     // Wire the SceneEditorTool to the workspace viewport manager so it drives
     // a real scene view instead of placeholder geometry.

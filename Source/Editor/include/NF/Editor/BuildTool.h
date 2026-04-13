@@ -14,7 +14,10 @@
 
 #include "NF/Workspace/IHostedTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include <chrono>
+#include <cstdio>
 #include <string>
+#include <vector>
 
 namespace NF {
 
@@ -89,6 +92,16 @@ public:
     [[nodiscard]] const std::string& activeTarget() const { return m_activeTarget; }
     void                             setActiveTarget(const std::string& target);
 
+    // ── Build log access ──────────────────────────────────────────
+    [[nodiscard]] const std::vector<std::string>& logLines() const { return m_logLines; }
+    void appendLogLine(const std::string& line);
+    void clearLog();
+
+    // ── Build trigger ─────────────────────────────────────────────
+    /// Request a build to start on the next update() tick.
+    /// Can be called from the command bus handler without render context.
+    void requestBuild() { m_viewBuildRequested = true; }
+
     // ── Render contract ───────────────────────────────────────────
     // Renders: Build Config | Build Log | Metrics — three-column layout.
     void renderToolView(const ToolViewRenderContext& ctx) const override;
@@ -100,6 +113,10 @@ private:
     BuildToolStats       m_stats;
     std::string          m_activeTarget;
     std::string          m_activeProjectId;
+    std::string          m_buildRootPath;          ///< cmake build directory (set on project load)
+    std::vector<std::string> m_logLines;           ///< live build log (streamed from build process)
+    std::FILE*           m_buildProcess = nullptr; ///< active popen pipe
+    std::chrono::steady_clock::time_point m_buildStartTime;
 
     // ── Mutable per-view UI state (safe from const renderToolView) ─
     mutable bool m_viewBuildRequested = false;
