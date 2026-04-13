@@ -395,9 +395,14 @@ private:
     void populateAssetCatalog() {
         if (!m_projectAdapter) return;
         m_assetCatalog.clear();
-        // Content roots are registered but not scanned at this layer.
-        // In production, AssetCatalogPopulator would scan the filesystem.
-        // For now, we record the roots so consumers can discover them.
+        AssetCatalogPopulator populator;
+        for (const auto& root : m_projectAdapter->contentRoots()) {
+            auto result = populator.populateFromDirectory(m_assetCatalog, root, true);
+            NF_LOG_INFO("WorkspaceShell",
+                "Asset scan: " + root +
+                " — " + std::to_string(result.assetsAdded) + " assets added, " +
+                std::to_string(result.filesScanned) + " files scanned");
+        }
     }
 
     // ── Owned subsystems ──────────────────────────────────────────

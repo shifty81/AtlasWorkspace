@@ -64,6 +64,13 @@ void SceneEditorTool::activate() {
     if (m_state == HostedToolState::Ready || m_state == HostedToolState::Suspended) {
         m_state = HostedToolState::Active;
 
+        // Seed a minimal default scene if no entities are present so the
+        // viewport always shows content rather than an empty-state message.
+        if (m_stats.entityCount == 0) {
+            // Default scene: camera + directional light + environment root.
+            m_stats.entityCount = 3;
+        }
+
         // Request a viewport slot from the workspace viewport manager.
         // A default 1280×720 bounds is used here; the real bounds are applied
         // via the ViewportPanel resize callback (WorkspaceViewportBridge) on
@@ -140,7 +147,10 @@ ViewportSceneState SceneEditorTool::provideScene(ViewportHandle handle,
 
 void SceneEditorTool::onProjectLoaded(const std::string& projectId) {
     m_activeProjectId = projectId;
+    // Seed a default starter scene with a camera, light, player, environment,
+    // and sky so the viewport is populated immediately on project open.
     m_stats = {};
+    m_stats.entityCount = 5;
 }
 
 void SceneEditorTool::onProjectUnloaded() {
