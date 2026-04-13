@@ -117,7 +117,12 @@ inline std::unique_ptr<UIBackend> selectUIBackend(
 
     case UIBackendType::GDI:
         // Instantiate GDIBackend — the Win32 fallback/bootstrap render path.
+#if defined(_WIN32)
         return std::make_unique<GDIBackend>();
+#else
+        NF_LOG_WARN("UI", "GDIBackend requested on non-Win32 platform — falling back to Null");
+        return std::make_unique<NullBackend>();
+#endif
 
     case UIBackendType::Null:
     default:

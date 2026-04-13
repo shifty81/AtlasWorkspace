@@ -37,6 +37,7 @@ namespace HostToolId {
     inline constexpr const char* BuildTool           = "workspace.build_tool";
     inline constexpr const char* ProjectSystems      = "workspace.project_systems";
     inline constexpr const char* AtlasAI             = "workspace.atlasai";
+    inline constexpr const char* IDE                 = "workspace.ide";
 } // namespace HostToolId
 
 // ── ProjectSystemsTool ──────────────────────────────────────────

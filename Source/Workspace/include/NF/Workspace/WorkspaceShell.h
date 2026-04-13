@@ -50,6 +50,9 @@
 #include "NF/Workspace/SettingsStore.h"
 #include "NF/Workspace/LayoutPersistence.h"
 #include "NF/Workspace/WorkspaceProjectState.h"
+#include "NF/Workspace/WorkspaceRecentFiles.h"
+#include <cstdlib>
+#include <fstream>
 #include <functional>
 #include <memory>
 #include <string>
@@ -118,8 +121,18 @@ public:
         // Seed the command bus with default workspace commands
         registerDefaultCommands();
 
-        // Register default workspace settings
+        // Register default workspace settings (must come before loadFromFile so
+        // defaults are present for any key not present in the persisted file).
         registerDefaultSettings();
+
+        // Load persisted User/Project settings from disk.
+        m_settingsStore.loadFromFile(userSettingsPath());
+
+        // Load persisted layout presets from disk.
+        m_layoutPersistence.loadFromFile(userLayoutPath());
+
+        // Load recent files list from disk.
+        loadRecentFiles();
 
         // Invoke registered tool factories to populate the tool registry
         for (auto& factory : m_toolFactories) {
@@ -144,6 +157,11 @@ public:
     void shutdown() {
         if (m_phase != ShellPhase::Ready && m_phase != ShellPhase::Initializing) return;
         m_phase = ShellPhase::ShuttingDown;
+
+        // Persist settings and layout before tearing down subsystems.
+        m_settingsStore.saveToFile(userSettingsPath());
+        m_layoutPersistence.saveToFile(userLayoutPath());
+        saveRecentFiles();
 
         // Unload project adapter first
         unloadProject();
@@ -302,6 +320,9 @@ public:
     [[nodiscard]] LayoutPersistenceManager&   layoutPersistence()       { return m_layoutPersistence; }
     [[nodiscard]] const LayoutPersistenceManager& layoutPersistence() const { return m_layoutPersistence; }
 
+    [[nodiscard]] RecentFilesManager&         recentFiles()             { return m_recentFiles;      }
+    [[nodiscard]] const RecentFilesManager&   recentFiles()       const { return m_recentFiles;      }
+
     [[nodiscard]] ShellPhase phase() const { return m_phase; }
 
 private:
@@ -405,7 +426,7 @@ private:
                        m_shellContract.postNotification(
                            Notification{"Save partially failed: " +
                                         std::to_string(result.failedCount) + " document(s) failed."});
-                       return ConsoleCmdExecResult::RuntimeError;
+                       return ConsoleCmdExecResult::Error;
                    case ProjectSaveStatus::NoProjectLoaded:
                        m_shellContract.postNotification(
                            Notification{"No project loaded — nothing to save."});
@@ -473,6 +494,43 @@ private:
                        Notification{"Atlas Workspace — development host platform."});
                    return ConsoleCmdExecResult::Ok;
                });
+
+        // Undo / Redo — routed through command bus; actual undo stacks live in tools
+        addCmd("workspace.undo", ConsoleCmdScope::Global,
+               "Undo the last action",
+               [this]() -> ConsoleCmdExecResult {
+                   m_shellContract.postNotification(
+                       Notification{"Undo — undo/redo stack not yet connected to tools."});
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        addCmd("workspace.redo", ConsoleCmdScope::Global,
+               "Redo the last undone action",
+               [this]() -> ConsoleCmdExecResult {
+                   m_shellContract.postNotification(
+                       Notification{"Redo — undo/redo stack not yet connected to tools."});
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        // Close active document
+        addCmd("workspace.close_document", ConsoleCmdScope::Global,
+               "Close the active document or editor tab",
+               [this]() -> ConsoleCmdExecResult {
+                   if (!hasProject()) return ConsoleCmdExecResult::PermissionDenied;
+                   // Delegate to the active tool's close-document logic if it exposes one.
+                   // For now, notify — real routing requires active tool context.
+                   m_shellContract.postNotification(
+                       Notification{"Close document — delegate to active tool."});
+                   return ConsoleCmdExecResult::Ok;
+               });
+
+        // Dismiss — hides the command palette and any transient modal overlay
+        addCmd("workspace.dismiss", ConsoleCmdScope::Global,
+               "Dismiss active modal or command palette",
+               [this]() -> ConsoleCmdExecResult {
+                   m_panelRegistry.setVisible("command_palette", false);
+                   return ConsoleCmdExecResult::Ok;
+               });
     }
 
     // Populate default workspace settings.
@@ -526,6 +584,62 @@ private:
         }
     }
 
+    // ── Persistence helpers ───────────────────────────────────────
+
+    /// Returns the path to the user settings file.
+    /// Uses $HOME/.atlasworkspace/settings.cfg on POSIX, %APPDATA%\AtlasWorkspace\settings.cfg on Windows.
+    static std::string userSettingsPath() {
+#if defined(_WIN32)
+        const char* appdata = std::getenv("APPDATA");
+        std::string base = appdata ? appdata : ".";
+        return base + "\\AtlasWorkspace\\settings.cfg";
+#else
+        const char* home = std::getenv("HOME");
+        std::string base = home ? home : ".";
+        return base + "/.atlasworkspace/settings.cfg";
+#endif
+    }
+
+    /// Returns the path to the user layout presets file.
+    static std::string userLayoutPath() {
+#if defined(_WIN32)
+        const char* appdata = std::getenv("APPDATA");
+        std::string base = appdata ? appdata : ".";
+        return base + "\\AtlasWorkspace\\layout.cfg";
+#else
+        const char* home = std::getenv("HOME");
+        std::string base = home ? home : ".";
+        return base + "/.atlasworkspace/layout.cfg";
+#endif
+    }
+
+    /// Returns the path to the recent-files store.
+    static std::string userRecentFilesPath() {
+#if defined(_WIN32)
+        const char* appdata = std::getenv("APPDATA");
+        std::string base = appdata ? appdata : ".";
+        return base + "\\AtlasWorkspace\\recentfiles.cfg";
+#else
+        const char* home = std::getenv("HOME");
+        std::string base = home ? home : ".";
+        return base + "/.atlasworkspace/recentfiles.cfg";
+#endif
+    }
+
+    void loadRecentFiles() {
+        std::ifstream ifs(userRecentFilesPath());
+        if (!ifs.good()) return;
+        std::string text((std::istreambuf_iterator<char>(ifs)),
+                          std::istreambuf_iterator<char>());
+        m_recentFiles.deserialize(text);
+    }
+
+    void saveRecentFiles() const {
+        std::string text = m_recentFiles.serialize();
+        std::ofstream ofs(userRecentFilesPath(), std::ios::out | std::ios::trunc);
+        if (ofs.good()) ofs << text;
+    }
+
     // ── Owned subsystems ──────────────────────────────────────────
 
     ToolRegistry              m_toolRegistry;
@@ -542,6 +656,7 @@ private:
     AssetCatalog              m_assetCatalog;
     SettingsStore             m_settingsStore;
     LayoutPersistenceManager  m_layoutPersistence;
+    RecentFilesManager        m_recentFiles;
 
     std::vector<ToolFactory>  m_toolFactories;   // pending factories (before init)
     std::unique_ptr<IGameProjectAdapter> m_projectAdapter;

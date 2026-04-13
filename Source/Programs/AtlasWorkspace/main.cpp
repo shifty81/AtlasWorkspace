@@ -28,12 +28,14 @@
 #include "LocalProjectAdapter.h"
 #if defined(_WIN32)
 #  include <windows.h>
+#  include <shellapi.h>   // DragAcceptFiles / DragQueryFileW / DragFinish
 #  include <shlobj.h>     // SHBrowseForFolderW / SHGetPathFromIDListW
 #  include <commdlg.h>    // GetOpenFileNameW
 #  include "NF/Input/Win32InputAdapter.h"
 #  include "NF/UI/GDIBackend.h"
 #endif
 #include <chrono>
+#include <ctime>
 #include <filesystem>
 #include <string>
 
@@ -122,6 +124,9 @@ static void doNewProject(NF::WorkspaceShell& shell, HWND hwnd) {
             L"New Project", MB_OK | MB_ICONERROR);
     } else {
         NF_LOG_INFO("AtlasWorkspace", "New project loaded: " + name + " @ " + pathStr);
+        // Record in recent files so it appears in the welcome screen and File menu.
+        shell.recentFiles().record(pathStr, name, NF::RecentFileKind::Project,
+                                   static_cast<uint64_t>(std::time(nullptr)) * 1000ULL);
     }
 }
 
@@ -168,6 +173,9 @@ static void doOpenProject(NF::WorkspaceShell& shell, HWND hwnd) {
             L"Open Project", MB_OK | MB_ICONERROR);
     } else {
         NF_LOG_INFO("AtlasWorkspace", "Project opened: " + name + " @ " + pathStr);
+        // Record in recent files so it appears in the welcome screen and File menu.
+        shell.recentFiles().record(pathStr, name, NF::RecentFileKind::Project,
+                                   static_cast<uint64_t>(std::time(nullptr)) * 1000ULL);
     }
 }
 
@@ -255,11 +263,63 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
     case WM_LBUTTONUP:
         InvalidateRect(hwnd, nullptr, FALSE);
         break;
-    // Trigger repaints on keyboard events so text input updates immediately.
-    case WM_CHAR:
+    // Dispatch workspace hotkeys from keyboard events, then repaint.
     case WM_KEYDOWN:
+        if (g_shell) {
+            // Read modifier state at the time of the key press.
+            bool ctrl  = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+            bool shift = (GetKeyState(VK_SHIFT)   & 0x8000) != 0;
+
+            if (ctrl && shift && wParam == 'P') {
+                // Ctrl+Shift+P → Command Palette
+                (void)g_shell->commandBus().execute("workspace.command_palette");
+            } else if (ctrl && !shift && wParam == 'S') {
+                // Ctrl+S → Save
+                (void)g_shell->commandBus().execute("workspace.save");
+            } else if (ctrl && !shift && wParam == 'B') {
+                // Ctrl+B → Build
+                (void)g_shell->commandBus().execute("workspace.build");
+            } else if (ctrl && !shift && wParam == 'Z') {
+                // Ctrl+Z → Undo
+                (void)g_shell->commandBus().execute("workspace.undo");
+            } else if (ctrl && !shift && (wParam == 'Y')) {
+                // Ctrl+Y → Redo
+                (void)g_shell->commandBus().execute("workspace.redo");
+            } else if (ctrl && shift && wParam == 'Z') {
+                // Ctrl+Shift+Z → Redo (alternate binding)
+                (void)g_shell->commandBus().execute("workspace.redo");
+            } else if (ctrl && !shift && wParam == 'W') {
+                // Ctrl+W → Close active document
+                (void)g_shell->commandBus().execute("workspace.close_document");
+            } else if (wParam == VK_ESCAPE) {
+                // Escape → Dismiss command palette / cancel modal
+                (void)g_shell->commandBus().execute("workspace.dismiss");
+            }
+        }
         InvalidateRect(hwnd, nullptr, FALSE);
         break;
+    case WM_CHAR:
+        InvalidateRect(hwnd, nullptr, FALSE);
+        break;
+    case WM_DROPFILES:
+        // Route dropped files to the workspace shell for asset intake.
+        if (g_shell) {
+            HDROP hDrop = reinterpret_cast<HDROP>(wParam);
+            UINT count = DragQueryFileW(hDrop, 0xFFFFFFFF, nullptr, 0);
+            for (UINT i = 0; i < count; ++i) {
+                wchar_t buf[MAX_PATH] = {};
+                if (DragQueryFileW(hDrop, i, buf, MAX_PATH) > 0) {
+                    // Convert to UTF-8 and post as a workspace.import command.
+                    std::string path = wideToUtf8(buf);
+                    // The asset reimport pipeline is invoked via command bus;
+                    // the handler parses the path argument.
+                    (void)g_shell->commandBus().execute("workspace.import_file:" + path);
+                }
+            }
+            DragFinish(hDrop);
+            InvalidateRect(hwnd, nullptr, FALSE);
+        }
+        return 0;
     case WM_CLOSE:
         DestroyWindow(hwnd);
         return 0;
@@ -512,6 +572,7 @@ int main(int argc, char* argv[]) {
 
     gdiBackend.setWindowHandle(hwnd);
     inputAdapter.setWindowHandle(hwnd);  // enable mouse capture on click
+    DragAcceptFiles(hwnd, TRUE);          // enable WM_DROPFILES for asset drag-and-drop
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
     NF_LOG_INFO("AtlasWorkspace", "Workspace window created (1280x800)");

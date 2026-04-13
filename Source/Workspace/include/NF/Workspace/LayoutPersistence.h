@@ -1,6 +1,7 @@
 #pragma once
 // NF::Editor — Layout persistence: serialize/deserialize workspace layouts
 #include "NF/Workspace/WorkspaceLayout.h"
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -138,6 +139,64 @@ public:
 
     void setLastUsedPreset(const std::string& name) { m_lastUsed = name; }
     [[nodiscard]] const std::string& lastUsedPreset() const { return m_lastUsed; }
+
+    // ── File I/O ─────────────────────────────────────────────────
+    // Serializes all user presets (non-built-in) to a text file.
+    // Returns true on success.
+    bool saveToFile(const std::string& path) const {
+        std::ofstream ofs(path, std::ios::out | std::ios::trunc);
+        if (!ofs.good()) return false;
+        ofs << "# AtlasWorkspace layout presets\n";
+        ofs << "lastUsed:" << m_lastUsed << "\n";
+        for (const auto& p : m_presets) {
+            if (p.isBuiltIn) continue; // skip built-ins
+            ofs << "preset:" << p.name << "\n";
+            ofs << p.serializedData;
+            ofs << "end_preset\n";
+        }
+        return ofs.good();
+    }
+
+    // Loads user presets from a text file previously written by saveToFile().
+    // Built-in presets are not affected; duplicates are overwritten.
+    bool loadFromFile(const std::string& path) {
+        std::ifstream ifs(path);
+        if (!ifs.good()) return false;
+        std::string line;
+        std::string currentName;
+        std::string currentData;
+        bool inPreset = false;
+        while (std::getline(ifs, line)) {
+            if (line.empty() || line[0] == '#') continue;
+            if (line.substr(0, 10) == "lastUsed:") {
+                m_lastUsed = line.substr(10);
+            } else if (line.substr(0, 7) == "preset:") {
+                currentName = line.substr(7);
+                currentData.clear();
+                inPreset = true;
+            } else if (line == "end_preset") {
+                if (inPreset && !currentName.empty()) {
+                    // Overwrite if exists, else add
+                    auto* existing = findPresetMut(currentName);
+                    if (existing) {
+                        existing->serializedData = currentData;
+                    } else if (m_presets.size() < MAX_PRESETS) {
+                        LayoutPreset p;
+                        p.name = currentName;
+                        p.serializedData = currentData;
+                        p.isBuiltIn = false;
+                        m_presets.push_back(std::move(p));
+                    }
+                }
+                inPreset = false;
+                currentName.clear();
+                currentData.clear();
+            } else if (inPreset) {
+                currentData += line + "\n";
+            }
+        }
+        return true;
+    }
 
 private:
     [[nodiscard]] LayoutPreset* findPresetMut(const std::string& name) {

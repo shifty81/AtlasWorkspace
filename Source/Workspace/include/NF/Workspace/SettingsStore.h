@@ -19,6 +19,7 @@
 
 #include "NF/Workspace/WorkspaceProjectFile.h"
 #include <cstdint>
+#include <fstream>
 #include <functional>
 #include <string>
 #include <vector>
@@ -202,6 +203,34 @@ public:
         deserializeLayer(SettingsLayer::User,    file);
         deserializeLayer(SettingsLayer::Project, file);
         deserializeLayer(SettingsLayer::Default, file);
+    }
+
+    // ── File I/O ──────────────────────────────────────────────────
+    // Saves the User and Project layers to a settings file.
+    // The Default layer is never persisted (it is always rebuilt from code).
+    bool saveToFile(const std::string& path) const {
+        WorkspaceProjectFile pf;
+        serializeLayer(SettingsLayer::User,    pf);
+        serializeLayer(SettingsLayer::Project, pf);
+        std::string text = pf.serialize();
+        std::ofstream ofs(path, std::ios::out | std::ios::trunc);
+        if (!ofs.good()) return false;
+        ofs << text;
+        return ofs.good();
+    }
+
+    // Loads User and Project layers from a settings file previously written by saveToFile().
+    // The Default layer is not affected.
+    bool loadFromFile(const std::string& path) {
+        std::ifstream ifs(path);
+        if (!ifs.good()) return false;
+        std::string text((std::istreambuf_iterator<char>(ifs)),
+                          std::istreambuf_iterator<char>());
+        WorkspaceProjectFile pf;
+        if (!WorkspaceProjectFile::parse(text, pf)) return false;
+        deserializeLayer(SettingsLayer::User,    pf);
+        deserializeLayer(SettingsLayer::Project, pf);
+        return true;
     }
 
 private:
