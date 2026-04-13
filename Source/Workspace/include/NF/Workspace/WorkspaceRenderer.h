@@ -892,11 +892,12 @@ private:
             if (rows.empty()) {
                 ui.drawText(rx, ry, "No data loaded.", kTextMuted);
             } else {
+                static constexpr float kRowOverflowMargin = 10.f; // bottom margin guard
                 for (const auto& [label, value] : rows) {
                     ui.drawText(rx, ry, label, kTextSecondary);
                     ui.drawText(rx + kLabelColW, ry, value, kTextPrimary);
                     ry += 18.f;
-                    if (ry > cy + kContentH - 10.f) break; // guard against overflow
+                    if (ry > cy + kContentH - kRowOverflowMargin) break;
                 }
             }
 

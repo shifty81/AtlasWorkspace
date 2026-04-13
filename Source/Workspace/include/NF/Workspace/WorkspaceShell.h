@@ -213,6 +213,7 @@ public:
         if (!m_projectAdapter) return;
         const std::string pid = m_projectAdapter->projectId();
         m_toolRegistry.notifyProjectUnloaded();
+        m_projectSystemsTool.notifyProjectUnloaded();
         m_assetCatalog.clear();
         m_settingsStore.clearLayer(SettingsLayer::Project);
         m_projectAdapter->shutdown();
