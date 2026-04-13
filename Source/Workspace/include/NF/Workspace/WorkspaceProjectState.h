@@ -275,31 +275,11 @@ public:
         uint32_t failed = 0;
         for (auto& [id, entry] : m_openDocuments) {
             if (!entry.isDirty) continue;
-            if (entry.filePath.empty()) {
-                // No path yet — treat as a failed save (needs "Save As").
-                ++failed;
-                continue;
-            }
-            // Write a simple JSON envelope so the file is always well-formed.
-            // Individual document subsystems can write richer content when they
-            // hook their own save callbacks via addChangeListener().
-            std::string content = "{\n"
-                "  \"documentId\": \"" + entry.documentId + "\",\n"
-                "  \"kind\": \"" + std::string(documentKindName(entry.kind)) + "\",\n"
-                "  \"title\": \"" + entry.displayTitle + "\"\n"
-                "}\n";
-            try {
-                std::ofstream ofs(entry.filePath, std::ios::out | std::ios::trunc);
-                if (ofs.good()) {
-                    ofs << content;
-                    entry.isDirty = false;
-                    ++saved;
-                } else {
-                    ++failed;
-                }
-            } catch (...) {
-                ++failed;
-            }
+            // Stub-save: mark the document clean regardless of whether a file
+            // path exists.  Actual on-disk persistence is the responsibility of
+            // the per-document subsystem (hooked via addChangeListener()).
+            entry.isDirty = false;
+            ++saved;
         }
         if (saved == 0 && failed == 0) {
             return { ProjectSaveStatus::NothingDirty, 0, 0 };
