@@ -144,9 +144,13 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
             });
             for (size_t i = 0; i < scripts.size() && ty + 18.f < ctx.y + ctx.h - 4.f; ++i) {
                 const auto* desc = scripts[i];
+                if (!desc) continue;
                 bool isActive = (desc->sourcePath == m_activeFile);
                 std::string name = desc->displayName;
-                if (name.size() > 18) name = name.substr(0, 15) + "...";
+                static constexpr size_t kMaxNameDisplayLen = 18;
+                static constexpr size_t kTruncatedNameLen  = 15;
+                if (name.size() > kMaxNameDisplayLen)
+                    name = name.substr(0, kTruncatedNameLen) + "...";
                 ctx.ui.drawText(ctx.x + 10.f, ty,
                                 name.c_str(),
                                 isActive ? ctx.kTextPrimary : ctx.kTextSecond);

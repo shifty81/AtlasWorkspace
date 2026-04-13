@@ -279,7 +279,8 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             static const char* kEntityNames[] = {
                 "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
             };
-            if (primarySel != INVALID_ENTITY && primarySel <= 5u) {
+            static constexpr size_t kEntityCount = std::size(kEntityNames);
+            if (primarySel != INVALID_ENTITY && primarySel <= kEntityCount) {
                 ctx.ui.drawText(ix + 8.f, ctx.y + 50.f,
                                 kEntityNames[primarySel - 1u], ctx.kTextPrimary);
             }

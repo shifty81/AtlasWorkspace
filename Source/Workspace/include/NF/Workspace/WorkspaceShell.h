@@ -436,7 +436,10 @@ private:
                 ConsoleCommand cmd(cmdName, ConsoleCmdScope::Editor, ConsoleCmdArgType::None);
                 cmd.setDescription(desc->displayName + ": " + cmdName);
                 cmd.setEnabled(true);
-                // Handler: activate the owning tool (if not already active) and log.
+                // Lifetime: m_commandBus and the captured members (m_toolRegistry,
+                // m_shellContract) are all members of WorkspaceShell.  The command
+                // bus is destroyed with the shell, so these handlers cannot outlive
+                // the shell.  No weak reference is needed.
                 (void)m_commandBus.registerCommand(cmd,
                     [this, toolId, cmdName]() -> ConsoleCmdExecResult {
                         m_toolRegistry.activateTool(toolId);

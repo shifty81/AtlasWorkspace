@@ -202,9 +202,21 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             if (tx + 72.f > ctx.x + browserW - 4.f) { tx = ctx.x + 8.f; ty += 64.f; }
             if (ty + 60.f > ctx.y + ctx.h - 4.f) break;
 
-            bool sel = (m_filterMode != AssetFilterMode::All &&
-                        assetFilterModeName(m_filterMode) ==
-                        assetTypeTagName(te.tag));
+            bool sel = false;
+            if (m_filterMode != AssetFilterMode::All) {
+                // Map filter mode to type tag for direct comparison (no string lookup).
+                AssetTypeTag filterTag = AssetTypeTag::Custom;
+                switch (m_filterMode) {
+                    case AssetFilterMode::Textures:  filterTag = AssetTypeTag::Texture;  break;
+                    case AssetFilterMode::Materials: filterTag = AssetTypeTag::Material; break;
+                    case AssetFilterMode::Meshes:    filterTag = AssetTypeTag::Mesh;     break;
+                    case AssetFilterMode::Audio:     filterTag = AssetTypeTag::Audio;    break;
+                    case AssetFilterMode::Scripts:   filterTag = AssetTypeTag::Script;   break;
+                    case AssetFilterMode::Prefabs:   filterTag = AssetTypeTag::Prefab;   break;
+                    default:                         filterTag = AssetTypeTag::Custom;   break;
+                }
+                sel = (te.tag == filterTag);
+            }
             ctx.ui.drawRect({tx, ty, 68.f, 58.f},
                             sel ? 0x2A3A5AFF : 0x333333FF);
             ctx.ui.drawRectOutline({tx, ty, 68.f, 58.f},

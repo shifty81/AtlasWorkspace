@@ -748,7 +748,7 @@ private:
         ui.drawText(8.f, y + 5.f, left, 0xFFFFFFFF);
 
         // Centre-left: FPS indicator derived from last frame time.
-        if (m_lastFrameMs > 0.f) {
+        if (m_lastFrameMs > 0.001f) {
             char fpsBuf[32];
             float fps = 1000.f / m_lastFrameMs;
             std::snprintf(fpsBuf, sizeof(fpsBuf), "%.0f FPS  %.1f ms", fps, m_lastFrameMs);
