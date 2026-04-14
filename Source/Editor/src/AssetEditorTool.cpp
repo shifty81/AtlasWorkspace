@@ -6,6 +6,7 @@
 
 #include "NF/Editor/AssetEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include "NF/Workspace/AssetCatalog.h"
 #include <cstdio>
@@ -313,6 +314,11 @@ void AssetEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         if (ctx.shell)
             (void)ctx.shell->commandBus().execute("asset.import");
     }
+}
+
+
+void AssetEditorTool::syncPanels(WorkspacePanelHost& host) const {
+    (void)host;
 }
 
 } // namespace NF

@@ -5,6 +5,7 @@
 
 #include "NF/Editor/AnimationEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -804,6 +805,11 @@ void AnimationEditorTool::renderToolView(const ToolViewRenderContext& ctx) const
         ctx.drawStatusPill(ctx.x + 90.f, ctx.y + ctx.h - 18.f, "PLAYING", ctx.kGreen);
     if (m_stats.isRecording || m_viewIsRecording)
         ctx.drawStatusPill(ctx.x + 160.f, ctx.y + ctx.h - 18.f, "REC", ctx.kRed);
+}
+
+
+void AnimationEditorTool::syncPanels(WorkspacePanelHost& host) const {
+    (void)host;
 }
 
 } // namespace NF

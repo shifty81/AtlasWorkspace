@@ -7,9 +7,13 @@
 #include "NF/Editor/SceneEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
 #include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
+#include "NF/UI/AtlasUI/Panels/ViewportPanel.h"
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
+#include <utility>
 
 namespace NF {
 
@@ -52,7 +56,24 @@ bool SceneEditorTool::initialize() {
     if (m_state != HostedToolState::Unloaded) return false;
     m_editMode = SceneEditMode::Select;
     m_stats    = {};
-    m_state    = HostedToolState::Ready;
+
+    // Seed default world-space transforms so the five starter entities are
+    // immediately spread across the viewport rather than piled at the origin.
+    // Values are in world units; the viewport renders them top-down at 6 px/unit.
+    //
+    //  Entity 0 — Camera_Main:      behind the scene, slightly above ground
+    //  Entity 1 — DirectionalLight: high up, offset right/forward
+    //  Entity 2 — Player:           scene origin
+    //  Entity 3 — Environment:      left and forward
+    //  Entity 4 — SkyDome:          far right and forward (large radius)
+
+    m_entityTransforms[0] = { {  0.f,  5.f, -10.f }, { 0.f,  0.f, 0.f }, { 1.f, 1.f, 1.f } };
+    m_entityTransforms[1] = { { 10.f, 20.f,   5.f }, { -45.f, 30.f, 0.f }, { 1.f, 1.f, 1.f } };
+    m_entityTransforms[2] = { {  0.f,  0.f,   0.f }, { 0.f,  0.f, 0.f }, { 1.f, 1.f, 1.f } };
+    m_entityTransforms[3] = { { -8.f,  0.f,   8.f }, { 0.f,  0.f, 0.f }, { 1.f, 1.f, 1.f } };
+    m_entityTransforms[4] = { { 12.f, 30.f,  12.f }, { 0.f,  0.f, 0.f }, { 1.f, 1.f, 1.f } };
+
+    m_state = HostedToolState::Ready;
     return true;
 }
 
@@ -272,16 +293,33 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         ctx.ui.drawText(axX + 10.f, axY - 4.f,  "Y", 0x4EC94EFF);
 
         // ── Entity dot markers ────────────────────────────────────
-        // Pseudo top-down positions spread around the viewport centre.
-        // Each entity is represented as a coloured square with its name.
-        struct EntityLayout { float rx; float ry; uint32_t color; };
-        static constexpr EntityLayout kEntityLayout[] = {
-            { 0.50f, 0.40f, 0xFFCC44FF }, // Camera_Main     — gold
-            { 0.55f, 0.30f, 0xAADDFFFF }, // DirectionalLight — light-blue
-            { 0.50f, 0.50f, 0x44DD88FF }, // Player          — green
-            { 0.38f, 0.55f, 0x8888AAFF }, // Environment     — grey-blue
-            { 0.65f, 0.35f, 0xDDAAFFFF }, // SkyDome         — lavender
+        // Top-down world-space projection: World X → screen X, World Z → screen Y
+        // (Z forward = upward on screen).  Scale: 6 pixels per world unit.
+        // Dot positions are driven by m_entityTransforms[], so Inspector sliders
+        // move the dots in real time.  Clicking a dot selects the entity.
+        static constexpr uint32_t kEntityColors[] = {
+            0xFFCC44FF, // Camera_Main     — gold
+            0xAADDFFFF, // DirectionalLight — light-blue
+            0x44DD88FF, // Player          — green
+            0x8888AAFF, // Environment     — grey-blue
+            0xDDAAFFFF, // SkyDome         — lavender
         };
+        constexpr float kWorldToPixel = 6.f;
+        // Minimum pixel inset from the viewport edge so no dot is drawn off-screen.
+        constexpr float kDotInsetMargin = 12.f;
+        // Extra padding around the visual dot that makes the click hit area larger.
+        constexpr float kHitRegionPadding = 3.f;
+
+        // Project one entity's world position to viewport screen coords (top-down).
+        auto worldToScreen = [&](uint32_t idx) -> std::pair<float, float> {
+            const auto& xf = m_entityTransforms[idx];
+            float sx = vcx + xf.pos[0] * kWorldToPixel;
+            float sy = vcy - xf.pos[2] * kWorldToPixel; // Z forward → up on screen
+            sx = std::clamp(sx, vpx + kDotInsetMargin, vpx + viewW - kDotInsetMargin);
+            sy = std::clamp(sy, vpy + kDotInsetMargin, vpy + vph  - kDotInsetMargin);
+            return {sx, sy};
+        };
+
         uint32_t visibleEntityCount = m_stats.entityCount < static_cast<uint32_t>(kEntityCount)
                        ? m_stats.entityCount
                        : static_cast<uint32_t>(kEntityCount);
@@ -289,8 +327,7 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             EntityID eid = static_cast<EntityID>(i + 1);
             bool selected = (eid == primarySel);
 
-            float ex = vpx + kEntityLayout[i].rx * viewW;
-            float ey = vpy + kEntityLayout[i].ry * vph;
+            auto [ex, ey] = worldToScreen(i);
             float sz = selected ? 10.f : 7.f;
 
             // Selection halo
@@ -298,8 +335,17 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
                 ctx.ui.drawRect({ex - sz - 2.f, ey - sz - 2.f,
                                  sz * 2.f + 4.f, sz * 2.f + 4.f}, ctx.kAccentBlue);
 
-            ctx.ui.drawRect({ex - sz, ey - sz, sz * 2.f, sz * 2.f}, kEntityLayout[i].color);
+            ctx.ui.drawRect({ex - sz, ey - sz, sz * 2.f, sz * 2.f}, kEntityColors[i]);
             ctx.ui.drawText(ex + sz + 4.f, ey - 6.f, kEntityNames[i], ctx.kTextSecond);
+
+            // Click selects entity exclusively via SelectionService.
+            // Hit area is kHitRegionPadding pixels larger than the visual dot on each side.
+            if (ctx.hitRegion({ex - sz - kHitRegionPadding, ey - sz - kHitRegionPadding,
+                               sz * 2.f + kHitRegionPadding * 2.f,
+                               sz * 2.f + kHitRegionPadding * 2.f}, false)) {
+                if (ctx.shell)
+                    ctx.shell->selectionService().selectExclusive(eid);
+            }
         }
 
         // ── 2D gizmo overlay for the selected entity ─────────────
@@ -307,8 +353,7 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         if (liveSelCount > 0 && primarySel != INVALID_ENTITY
                 && primarySel <= static_cast<EntityID>(kEntityCount)) {
             uint32_t pidx = primarySel - 1u;
-            float gx2 = vpx + kEntityLayout[pidx].rx * viewW;
-            float gy2 = vpy + kEntityLayout[pidx].ry * vph;
+            auto [gx2, gy2] = worldToScreen(pidx);
             constexpr float kArm = 32.f;
 
             switch (m_editMode) {
@@ -555,6 +600,45 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             }
         }
     }
+}
+
+void SceneEditorTool::syncPanels(WorkspacePanelHost& host) const {
+    // ── Hierarchy panel ────────────────────────────────────────────
+    host.hierarchy().clearEntities();
+    static const char* kEntityNames[] = {
+        "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
+    };
+    uint32_t count = m_stats.entityCount < kMaxEntities
+                   ? m_stats.entityCount
+                   : static_cast<uint32_t>(kMaxEntities);
+    for (uint32_t i = 0; i < count; ++i) {
+        bool selected = (static_cast<int>(i) == m_viewSelectedEntity);
+        host.hierarchy().addEntity(static_cast<int>(i + 1),
+                                   kEntityNames[i], selected, 0);
+    }
+
+    // ── Inspector panel ────────────────────────────────────────────
+    if (m_viewSelectedEntity >= 0 &&
+        static_cast<size_t>(m_viewSelectedEntity) < kMaxEntities) {
+        const EntityTransform& t = m_entityTransforms[
+            static_cast<size_t>(m_viewSelectedEntity)];
+        host.inspector().setSelectedEntityId(m_viewSelectedEntity + 1);
+        host.inspector().setTransform(t.pos[0], t.pos[1], t.pos[2]);
+    } else {
+        host.inspector().setSelectedEntityId(-1);
+    }
+
+    // ── Viewport panel ─────────────────────────────────────────────
+    using VM = UI::AtlasUI::ViewportToolMode;
+    VM vmode = VM::Select;
+    switch (m_editMode) {
+        case SceneEditMode::Translate: vmode = VM::Move;   break;
+        case SceneEditMode::Rotate:    vmode = VM::Rotate; break;
+        case SceneEditMode::Scale:     vmode = VM::Scale;  break;
+        case SceneEditMode::Paint:     vmode = VM::Paint;  break;
+        default:                       vmode = VM::Select; break;
+    }
+    host.viewport().setToolMode(vmode);
 }
 
 } // namespace NF

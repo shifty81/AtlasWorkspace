@@ -22,6 +22,8 @@
 #include "NF/Workspace/IGameProjectAdapter.h"
 #include "NF/Workspace/WorkspaceViewportBridge.h"
 #include "NF/Workspace/ViewportHostContract.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
+#include "NF/Workspace/IViewportSurface.h"
 #include "NF/Editor/CoreToolRoster.h"
 #include "NF/Editor/SceneEditorTool.h"
 #include "NovaForge/EditorAdapter/NovaForgeAdapter.h"
@@ -34,10 +36,14 @@
 #  include "NF/Input/Win32InputAdapter.h"
 #  include "NF/UI/GDIBackend.h"
 #endif
+#include <algorithm>
 #include <chrono>
 #include <ctime>
 #include <filesystem>
 #include <string>
+
+static NF::WorkspacePanelHost*     g_panelHost = nullptr;
+static NF::DockLayout*             g_toolDock  = nullptr;
 
 // ── Global state for Win32 WndProc ───────────────────────────────
 #if defined(_WIN32)
@@ -246,6 +252,44 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
                                static_cast<float>(g_clientW),
                                static_cast<float>(g_clientH),
                                *g_shell, mouse, g_launchSvc);
+
+            // ── WorkspacePanelHost: AtlasUI panels drawn over chrome ──
+            // When a tool is active, syncPanels() + renderPanels() fill the
+            // content area (right of sidebar, below header bar) with real
+            // AtlasUI Hierarchy, Viewport, and Inspector panels.
+            if (g_panelHost && g_toolDock) {
+                const NF::IHostedTool* activeTool =
+                    g_shell->toolRegistry().activeTool();
+                if (activeTool) {
+                    const bool consoleVis =
+                        g_shell->panelRegistry().isPanelVisible("console");
+                    NF::Rect area = NF::WorkspaceRenderer::contentAreaBounds(
+                        static_cast<float>(g_clientW),
+                        static_cast<float>(g_clientH),
+                        true, consoleVis);
+                    // Three-column layout: Hierarchy | Viewport | Inspector
+                    static constexpr float kHierW = 250.f;
+                    static constexpr float kInspW = 300.f;
+                    const float viewW = std::max(0.f, area.w - kHierW - kInspW);
+                    if (auto* dp = g_toolDock->findPanel("Hierarchy")) {
+                        dp->visible = true;
+                        dp->bounds  = {area.x, area.y, kHierW, area.h};
+                    }
+                    if (auto* dp = g_toolDock->findPanel("Viewport")) {
+                        dp->visible = true;
+                        dp->bounds  = {area.x + kHierW, area.y, viewW, area.h};
+                    }
+                    if (auto* dp = g_toolDock->findPanel("Inspector")) {
+                        dp->visible = true;
+                        dp->bounds  = {area.x + kHierW + viewW, area.y,
+                                       kInspW, area.h};
+                    }
+                    activeTool->syncPanels(*g_panelHost);
+                    g_panelHost->renderPanels(*g_toolDock);
+                    g_panelHost->handleInput(*g_toolDock, *g_inputSystem);
+                }
+            }
+
             g_gdiBackend->endFrame();
             g_shell->inputRouter().endFrame();
         }
@@ -414,6 +458,16 @@ static std::string resolveBaseDir(const char* argv0) {
 }
 
 int main(int argc, char* argv[]) {
+#if defined(_WIN32)
+    // Suppress the external Win32 console window so all log output is funnelled
+    // exclusively into the Workspace SYSTEM tab (WorkspaceRenderer registers a
+    // Logger sink for this in its constructor).  This must be the very first call
+    // so no console window ever flashes on screen, even during startup.
+    // NOTE: stdout/stderr writes after this point are silently discarded.  Use
+    //       NF_LOG_* macros (which write to the Logger sink and the SYSTEM tab)
+    //       for all diagnostic output.
+    FreeConsole();
+#endif
     // Resolve the directory containing AtlasWorkspace.exe so the launch
     // service can locate sibling executables (NovaForgeEditor.exe etc.).
     std::string binDir = resolveBaseDir(argc > 0 ? argv[0] : nullptr);
@@ -506,6 +560,7 @@ int main(int argc, char* argv[]) {
     // ── Viewport wiring ───────────────────────────────────────────
     // Wire the SceneEditorTool to the workspace viewport manager so it drives
     // a real scene view instead of placeholder geometry.
+    NF::ViewportHandle sceneVh = NF::kInvalidViewportHandle;
     {
         using namespace NF;
 
@@ -518,13 +573,13 @@ int main(int argc, char* argv[]) {
         IHostedTool* rawTool = shell.toolRegistry().find(HostToolId::SceneEditor);
         if (auto* sceneTool = dynamic_cast<SceneEditorTool*>(rawTool)) {
             // Request a full-window primary viewport slot for the scene editor.
-            ViewportHandle vh = shell.viewportManager().requestViewport(
+            sceneVh = shell.viewportManager().requestViewport(
                 HostToolId::SceneEditor, {0.f, 0.f, 1280.f, 800.f});
-            if (vh != kInvalidViewportHandle) {
+            if (sceneVh != kInvalidViewportHandle) {
                 sceneTool->attachViewportManager(&shell.viewportManager());
-                shell.viewportManager().activateViewport(vh);
+                shell.viewportManager().activateViewport(sceneVh);
                 NF_LOG_INFO("AtlasWorkspace", "SceneEditorTool viewport wired (handle="
-                            + std::to_string(vh) + ")");
+                            + std::to_string(sceneVh) + ")");
             }
         }
     }
@@ -540,6 +595,18 @@ int main(int argc, char* argv[]) {
     // ── Frame controller ──────────────────────────────────────────
     NF::WorkspaceFrameController frameCtrl;
     frameCtrl.setTargetFPS(60.f);
+
+    // ── WorkspacePanelHost + DockLayout ───────────────────────────
+    // Created early so the objects live on the stack for the full session.
+    // setRenderer() is called after ui.setBackend() below.
+    NF::WorkspacePanelHost panelHost;
+    NF::DockLayout         toolDock;
+    toolDock.addPanel("Hierarchy", NF::DockSlot::Left);
+    toolDock.addPanel("Viewport",  NF::DockSlot::Center);
+    toolDock.addPanel("Inspector", NF::DockSlot::Right);
+    // NullViewportSurface — headless surface registered so ViewportFrameLoop
+    // has a valid bind/unbind target until a real GPU surface is attached.
+    NF::NullViewportSurface viewportSurface(1280, 800);
 
 #if defined(_WIN32)
     NF::WorkspaceRenderer wsRenderer;
@@ -596,6 +663,23 @@ int main(int argc, char* argv[]) {
     ui.setBackend(&nullBackend);
 #endif
 
+    // ── Finalise WorkspacePanelHost wiring ────────────────────────
+    // Must happen after ui.setBackend() so DrawListDispatcher has a backend.
+    panelHost.setRenderer(&ui);
+    g_panelHost = &panelHost;
+    g_toolDock  = &toolDock;
+
+    // Connect ViewportPanel → WorkspaceViewportBridge → ViewportFrameLoop.
+    // The NullViewportSurface gives the frame loop a valid bind/unbind target
+    // on all platforms, including those without a real GPU surface attached yet.
+    if (sceneVh != NF::kInvalidViewportHandle) {
+        NF::WorkspaceViewportBridge::connect(
+            &panelHost.viewport(), shell.viewportManager(),
+            sceneVh, &viewportSurface);
+        NF_LOG_INFO("AtlasWorkspace",
+            "WorkspaceViewportBridge connected (handle=" + std::to_string(sceneVh) + ")");
+    }
+
     NF_LOG_INFO("AtlasWorkspace", "Workspace ready — entering main loop");
 
     auto lastTime = std::chrono::high_resolution_clock::now();
@@ -627,6 +711,17 @@ int main(int argc, char* argv[]) {
 
         input.update();
         shell.update(fr.dt);
+
+        // Tick the viewport frame loop — executes the software renderer callback
+        // for each active slot and returns per-slot results.  Results are forwarded
+        // to ViewportPanel::setColorAttachment() so the panel blits any live texture.
+        {
+            auto frameResults = shell.viewportManager().renderFrame();
+            if (g_panelHost)
+                NF::WorkspaceViewportBridge::forwardFrameResults(
+                    &g_panelHost->viewport(), frameResults);
+        }
+
         frameCtrl.markUpdateDone();
 
 #if defined(_WIN32)
@@ -651,6 +746,8 @@ int main(int argc, char* argv[]) {
     g_inputSystem  = nullptr;
     g_launchSvc    = nullptr;
     g_gdiBackend  = nullptr;
+    g_panelHost   = nullptr;
+    g_toolDock    = nullptr;
 #endif
 
     input.shutdown();

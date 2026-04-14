@@ -128,6 +128,11 @@ public:
     // Status bar row shows mode, dirty flag, entity/selection counts.
     void renderToolView(const ToolViewRenderContext& ctx) const override;
 
+    // ── Panel sync contract ───────────────────────────────────────
+    // Pushes scene state into WorkspacePanelHost each frame so AtlasUI panels
+    // show live entity/selection/transform data.
+    void syncPanels(WorkspacePanelHost& host) const override;
+
 private:
     HostedToolDescriptor     m_descriptor;
     HostedToolState          m_state      = HostedToolState::Unloaded;

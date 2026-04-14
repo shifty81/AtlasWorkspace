@@ -5,6 +5,7 @@
 
 #include "NF/Editor/VisualLogicEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include <algorithm>
 #include <cmath>
@@ -739,6 +740,11 @@ void VisualLogicEditorTool::renderToolView(const ToolViewRenderContext& ctx) con
                        visualLogicModeName(m_editMode), ctx.kAccentBlue);
     if (m_stats.isDirty)
         ctx.ui.drawText(ctx.x + 90.f, ctx.y + ctx.h - 16.f, "* unsaved", ctx.kRed);
+}
+
+
+void VisualLogicEditorTool::syncPanels(WorkspacePanelHost& host) const {
+    (void)host;
 }
 
 } // namespace NF
