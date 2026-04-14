@@ -848,6 +848,21 @@ private:
         ui.drawRectOutline(backR, kBorder, 1.f);
         ui.drawText(backR.x + 8.f, backR.y + 4.f, "< Dashboard", kTextSecondary);
 
+        // ── Per-tool panel layout ──────────────────────────────────
+        // Delegate to the tool's own render contract.
+        // The tool renders its own panel layout backed by live runtime state.
+        // SceneEditorTool's panels are driven by WorkspacePanelHost (main.cpp),
+        // so its renderToolView is a no-op — all other tools draw their custom
+        // layout here (data tables, timelines, code views, etc.).
+        {
+            m_ctx.begin(ui, mouse, m_wsTheme, 0.f);
+            ToolViewRenderContext toolCtx{ui, mouse,
+                                          x, y + kHeaderH, w, kMainH,
+                                          &shell, &m_ctx};
+            tool->renderToolView(toolCtx);
+            m_ctx.end();
+        }
+
         // ── Bottom strip: Console + Metrics ───────────────────────
         // Only rendered when the console panel is visible in PanelRegistry.
         if (consoleVisible)
