@@ -303,15 +303,18 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             0xDDAAFFFF, // SkyDome         — lavender
         };
         constexpr float kWorldToPixel = 6.f;
+        // Minimum pixel inset from the viewport edge so no dot is drawn off-screen.
+        constexpr float kDotInsetMargin = 12.f;
+        // Extra padding around the visual dot that makes the click hit area larger.
+        constexpr float kHitRegionPadding = 3.f;
 
         // Project one entity's world position to viewport screen coords (top-down).
-        // Clamps to a 12 px inset so no dot is ever drawn off-screen.
         auto worldToScreen = [&](uint32_t idx) -> std::pair<float, float> {
             const auto& xf = m_entityTransforms[idx];
             float sx = vcx + xf.pos[0] * kWorldToPixel;
             float sy = vcy - xf.pos[2] * kWorldToPixel; // Z forward → up on screen
-            sx = std::clamp(sx, vpx + 12.f, vpx + viewW - 12.f);
-            sy = std::clamp(sy, vpy + 12.f, vpy + vph  - 12.f);
+            sx = std::clamp(sx, vpx + kDotInsetMargin, vpx + viewW - kDotInsetMargin);
+            sy = std::clamp(sy, vpy + kDotInsetMargin, vpy + vph  - kDotInsetMargin);
             return {sx, sy};
         };
 
@@ -334,9 +337,10 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             ctx.ui.drawText(ex + sz + 4.f, ey - 6.f, kEntityNames[i], ctx.kTextSecond);
 
             // Click selects entity exclusively via SelectionService.
-            // Hit area is slightly larger than the dot for comfortable clicking.
-            if (ctx.hitRegion({ex - sz - 3.f, ey - sz - 3.f,
-                               sz * 2.f + 6.f, sz * 2.f + 6.f}, false)) {
+            // Hit area is kHitRegionPadding pixels larger than the visual dot on each side.
+            if (ctx.hitRegion({ex - sz - kHitRegionPadding, ey - sz - kHitRegionPadding,
+                               sz * 2.f + kHitRegionPadding * 2.f,
+                               sz * 2.f + kHitRegionPadding * 2.f}, false)) {
                 if (ctx.shell)
                     ctx.shell->selectionService().selectExclusive(eid);
             }

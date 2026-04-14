@@ -64,10 +64,14 @@ public:
 
     void arrange(const NF::Rect& bounds) override {
         PanelBase::arrange(bounds);
-        // Position the grid below the panel header.
-        NF::Rect gridBounds = {bounds.x + 4.f, bounds.y + 68.f,
-                               std::max(0.f, bounds.w - 8.f),
-                               std::max(0.f, bounds.h - 72.f)};
+        // Title bar (22 px) + entity-ID row (20 px) + separator/header (26 px) = 68 px.
+        // The grid fills the remaining height with a 4 px horizontal inset each side.
+        static constexpr float kGridTopOffset  = 68.f; // pixels below panel top
+        static constexpr float kGridSideInset  =  4.f; // pixels inset on each side
+        NF::Rect gridBounds = {bounds.x + kGridSideInset,
+                               bounds.y + kGridTopOffset,
+                               std::max(0.f, bounds.w - kGridSideInset * 2.f),
+                               std::max(0.f, bounds.h - kGridTopOffset - kGridSideInset)};
         m_grid->arrange(gridBounds);
     }
 
