@@ -21,7 +21,7 @@ void InspectorPanel::paint(IPaintContext& context) {
     const float contentW = m_bounds.w - 16.f;
 
     if (m_selectedEntityId >= 0) {
-        // Entity ID
+        // Entity ID row
         char idBuf[32];
         std::snprintf(idBuf, sizeof(idBuf), "Entity #%d", m_selectedEntityId);
         context.drawText({left, y, contentW, 16.f}, idBuf, 0, Theme::ColorToken::Text);
@@ -31,32 +31,23 @@ void InspectorPanel::paint(IPaintContext& context) {
         context.fillRect({left, y, contentW, 1.f}, Theme::ColorToken::Border);
         y += Theme::Spacing::Small;
 
-        // Transform header
+        // Transform header (quick summary above the PropertyGrid)
         context.drawText({left, y, contentW, 16.f}, "Transform", 0, Theme::ColorToken::Accent);
         y += 18.f;
 
-        // Transform values
-        char buf[48];
-        std::snprintf(buf, sizeof(buf), "X: %.2f", m_transformX);
-        context.drawText({left + 8.f, y, contentW - 8.f, 14.f}, buf, 0, Theme::ColorToken::TextMuted);
-        y += 16.f;
-        std::snprintf(buf, sizeof(buf), "Y: %.2f", m_transformY);
-        context.drawText({left + 8.f, y, contentW - 8.f, 14.f}, buf, 0, Theme::ColorToken::TextMuted);
-        y += 16.f;
-        std::snprintf(buf, sizeof(buf), "Z: %.2f", m_transformZ);
-        context.drawText({left + 8.f, y, contentW - 8.f, 14.f}, buf, 0, Theme::ColorToken::TextMuted);
-        y += 20.f;
-
-        // Custom properties
-        for (const auto& prop : m_properties) {
-            if (y > m_bounds.y + m_bounds.h - 4.f) break;
-            context.drawText({left, y, contentW * 0.4f, 14.f}, prop.label, 0, Theme::ColorToken::TextMuted);
-            context.drawText({left + contentW * 0.4f, y, contentW * 0.6f, 14.f}, prop.value, 0, Theme::ColorToken::Text);
-            y += 16.f;
-        }
+        // The PropertyGrid occupies the remainder of the panel (arranged in arrange()).
+        m_grid->paint(context);
     } else {
         context.drawText({left, y, contentW, 16.f}, "No entity selected", 0, Theme::ColorToken::TextMuted);
     }
+}
+
+bool InspectorPanel::handleInput(IInputContext& context) {
+    if (!m_visible) return false;
+    if (m_selectedEntityId < 0) return false;
+    // Forward all input to the PropertyGrid child.  It handles hover, click,
+    // group toggle, and will host editable text entry as the grid matures.
+    return m_grid->handleInput(context);
 }
 
 } // namespace NF::UI::AtlasUI

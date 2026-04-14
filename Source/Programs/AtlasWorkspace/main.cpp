@@ -414,6 +414,16 @@ static std::string resolveBaseDir(const char* argv0) {
 }
 
 int main(int argc, char* argv[]) {
+#if defined(_WIN32)
+    // Suppress the external Win32 console window so all log output is funnelled
+    // exclusively into the Workspace SYSTEM tab (WorkspaceRenderer registers a
+    // Logger sink for this in its constructor).  This must be the very first call
+    // so no console window ever flashes on screen, even during startup.
+    // NOTE: stdout/stderr writes after this point are silently discarded.  Use
+    //       NF_LOG_* macros (which write to the Logger sink and the SYSTEM tab)
+    //       for all diagnostic output.
+    FreeConsole();
+#endif
     // Resolve the directory containing AtlasWorkspace.exe so the launch
     // service can locate sibling executables (NovaForgeEditor.exe etc.).
     std::string binDir = resolveBaseDir(argc > 0 ? argv[0] : nullptr);

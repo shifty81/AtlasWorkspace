@@ -1672,7 +1672,8 @@ private:
 
     // ── Console / System tab state ────────────────────────────────
     // 0 = Console (project context), 1 = System (full Logger stream).
-    int m_consoleTab = 0;
+    // Default to 1 (System) so live log output is visible immediately on startup.
+    int m_consoleTab = 1;
 
     // System log: all NF_LOG_* lines captured via Logger sink.
     static constexpr size_t kSysLogMax = 500;
