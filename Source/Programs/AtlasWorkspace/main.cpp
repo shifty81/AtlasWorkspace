@@ -26,7 +26,13 @@
 #include "NF/Workspace/IViewportSurface.h"
 #include "NF/Editor/CoreToolRoster.h"
 #include "NF/Editor/SceneEditorTool.h"
+#include "NF/Editor/AssetEditorTool.h"
+#include "NF/Editor/MaterialEditorTool.h"
+#include "NF/Editor/AnimationEditorTool.h"
 #include "NovaForge/EditorAdapter/NovaForgeAdapter.h"
+#include "NovaForge/EditorAdapter/NovaForgePreviewRuntime.h"
+#include "NovaForge/EditorAdapter/NovaForgeAssetPreview.h"
+#include "NovaForge/EditorAdapter/NovaForgeMaterialPreview.h"
 #include "LocalProjectAdapter.h"
 #if defined(_WIN32)
 #  include <windows.h>
@@ -560,10 +566,19 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // ── Preview runtime instances ─────────────────────────────────
+    // All preview objects are created here and passed by pointer to their tools.
+    // The tools do NOT own these objects — they are owned here and destroyed
+    // after shell.shutdown().
+    NovaForge::NovaForgePreviewRuntime novaPreviewRuntime;
+    novaPreviewRuntime.start();
+
+    NovaForge::NovaForgeAssetPreview    novaAssetPreview;
+    NovaForge::NovaForgeMaterialPreview novaMaterialPreview;
+
     // ── Viewport wiring ───────────────────────────────────────────
-    // Wire the SceneEditorTool to the workspace viewport manager so it drives
-    // a real scene view instead of placeholder geometry.
-    NF::ViewportHandle sceneVh = NF::kInvalidViewportHandle;
+    // Attach the workspace viewport manager to each tool that manages a
+    // viewport slot.  The tools own the slot lifecycle via activate()/suspend().
     {
         using namespace NF;
 
@@ -573,17 +588,36 @@ int main(int argc, char* argv[]) {
         shell.viewportManager().installSoftwareRenderer();
         NF_LOG_INFO("AtlasWorkspace", "Software viewport renderer installed");
 
-        IHostedTool* rawTool = shell.toolRegistry().find(HostToolId::SceneEditor);
-        if (auto* sceneTool = dynamic_cast<SceneEditorTool*>(rawTool)) {
-            // Request a full-window primary viewport slot for the scene editor.
-            sceneVh = shell.viewportManager().requestViewport(
-                HostToolId::SceneEditor, {0.f, 0.f, 1280.f, 800.f});
-            if (sceneVh != kInvalidViewportHandle) {
-                sceneTool->attachViewportManager(&shell.viewportManager());
-                shell.viewportManager().activateViewport(sceneVh);
-                NF_LOG_INFO("AtlasWorkspace", "SceneEditorTool viewport wired (handle="
-                            + std::to_string(sceneVh) + ")");
-            }
+        // SceneEditorTool — primary 3D scene viewport.
+        IHostedTool* rawSceneTool = shell.toolRegistry().find(HostToolId::SceneEditor);
+        if (auto* sceneTool = dynamic_cast<SceneEditorTool*>(rawSceneTool)) {
+            sceneTool->attachViewportManager(&shell.viewportManager());
+            sceneTool->attachSceneProvider(&novaPreviewRuntime);
+            // Activate SceneEditor as the default primary tool so it immediately
+            // requests its viewport slot.
+            shell.activateTool(HostToolId::SceneEditor);
+            NF_LOG_INFO("AtlasWorkspace", "SceneEditorTool wired (viewport slot owned by tool)");
+        }
+
+        // AssetEditorTool — asset preview viewport.
+        IHostedTool* rawAssetTool = shell.toolRegistry().find(HostToolId::AssetEditor);
+        if (auto* assetTool = dynamic_cast<AssetEditorTool*>(rawAssetTool)) {
+            assetTool->attachAssetPreviewProvider(&novaAssetPreview);
+            NF_LOG_INFO("AtlasWorkspace", "AssetEditorTool preview provider wired");
+        }
+
+        // MaterialEditorTool — material preview viewport.
+        IHostedTool* rawMatTool = shell.toolRegistry().find(HostToolId::MaterialEditor);
+        if (auto* matTool = dynamic_cast<MaterialEditorTool*>(rawMatTool)) {
+            matTool->attachMaterialPreviewProvider(&novaMaterialPreview);
+            NF_LOG_INFO("AtlasWorkspace", "MaterialEditorTool preview provider wired");
+        }
+
+        // AnimationEditorTool — animation preview viewport.
+        IHostedTool* rawAnimTool = shell.toolRegistry().find(HostToolId::AnimationEditor);
+        if (auto* animTool = dynamic_cast<AnimationEditorTool*>(rawAnimTool)) {
+            animTool->attachViewportManager(&shell.viewportManager());
+            NF_LOG_INFO("AtlasWorkspace", "AnimationEditorTool viewport manager wired");
         }
     }
 
@@ -675,12 +709,21 @@ int main(int argc, char* argv[]) {
     // Connect ViewportPanel → WorkspaceViewportBridge → ViewportFrameLoop.
     // The NullViewportSurface gives the frame loop a valid bind/unbind target
     // on all platforms, including those without a real GPU surface attached yet.
-    if (sceneVh != NF::kInvalidViewportHandle) {
-        NF::WorkspaceViewportBridge::connect(
-            &panelHost.viewport(), shell.viewportManager(),
-            sceneVh, &viewportSurface);
-        NF_LOG_INFO("AtlasWorkspace",
-            "WorkspaceViewportBridge connected (handle=" + std::to_string(sceneVh) + ")");
+    // The handle is obtained from the SceneEditorTool (which owns the slot).
+    {
+        NF::ViewportHandle sceneVh = NF::kInvalidViewportHandle;
+        if (auto* rawTool = shell.toolRegistry().find(NF::HostToolId::SceneEditor)) {
+            if (auto* sceneTool = dynamic_cast<NF::SceneEditorTool*>(rawTool)) {
+                sceneVh = sceneTool->viewportHandle();
+            }
+        }
+        if (sceneVh != NF::kInvalidViewportHandle) {
+            NF::WorkspaceViewportBridge::connect(
+                &panelHost.viewport(), shell.viewportManager(),
+                sceneVh, &viewportSurface);
+            NF_LOG_INFO("AtlasWorkspace",
+                "WorkspaceViewportBridge connected (handle=" + std::to_string(sceneVh) + ")");
+        }
     }
 
     NF_LOG_INFO("AtlasWorkspace", "Workspace ready — entering main loop");

@@ -16,8 +16,13 @@
 #include <unordered_map>
 #include "NF/Editor/EditorPanel.h"
 #include "NF/UI/ViewportRenderMode.h"
+#include "NF/Workspace/IViewportSceneProvider.h"
 
 namespace NF {
+
+// Forward declaration so panels can hold a WorkspaceViewportManager* without
+// pulling in the full WorkspaceViewportManager.h header.
+class WorkspaceViewportManager;
 
 // ViewportRenderMode and viewportRenderModeName() are defined in NF/UI/ViewportRenderMode.h
 
@@ -158,7 +163,7 @@ struct MeshViewerAsset {
     [[nodiscard]] bool isComplete()  const { return hasNormals && hasUVs && loaded; }
 };
 
-class MeshViewerPanel : public NFRenderViewport {
+class MeshViewerPanel : public NFRenderViewport, public IViewportSceneProvider {
 public:
     static constexpr size_t MAX_MESHES = 256;
 
@@ -214,13 +219,32 @@ public:
         size_t n = 0; for (auto& m : m_meshes) if (m.isComplete()) ++n; return n;
     }
 
+    // ── IViewportSceneProvider ────────────────────────────────────────────
+    ViewportSceneState provideScene(ViewportHandle /*handle*/,
+                                    const ViewportSlot& /*slot*/) override {
+        ViewportSceneState st;
+        st.hasContent  = !m_activeMesh.empty();
+        st.entityCount = static_cast<uint32_t>(m_meshes.size());
+        return st;
+    }
+
+    void attachViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
+    [[nodiscard]] ViewportHandle viewportHandle() const { return m_viewportHandle; }
+
 private:
     std::vector<MeshViewerAsset> m_meshes;
     std::string                  m_activeMesh;
     MeshDisplayMode              m_displayMode = MeshDisplayMode::Lit;
+    WorkspaceViewportManager*    m_viewportMgr    = nullptr;
+    ViewportHandle               m_viewportHandle = kInvalidViewportHandle;
 };
 
 // ── M1-C — MaterialEditorPanel (enhanced with NFRenderViewport) ──
+//
+// DEPRECATED: Use MaterialEditorTool + NovaForgeMaterialPreview instead.
+// This panel is retained only to avoid breaking compile dependencies.
+// It will be removed in a follow-up cleanup pass.
+#pragma message("MaterialEditorPanel in AdvancedViewports.h is deprecated. Use MaterialEditorTool + NovaForgeMaterialPreview.")
 
 enum class MaterialPreviewShape : uint8_t {
     Sphere, Cube, Cylinder, Plane, Custom
@@ -237,7 +261,7 @@ inline const char* materialPreviewShapeName(MaterialPreviewShape s) {
     return "Unknown";
 }
 
-class MaterialEditorPanel : public NFRenderViewport {
+class MaterialEditorPanel : public NFRenderViewport, public IViewportSceneProvider {
 public:
     static constexpr size_t MAX_MATERIALS = 128;
 
@@ -291,12 +315,28 @@ public:
         return n;
     }
 
+    // ── IViewportSceneProvider ────────────────────────────────────────────
+    // Delegates to the authoritative MaterialEditorTool provider when one is
+    // set; falls back to the local material list state.
+    ViewportSceneState provideScene(ViewportHandle /*handle*/,
+                                    const ViewportSlot& /*slot*/) override {
+        ViewportSceneState st;
+        st.hasContent  = !m_activeMaterial.empty();
+        st.entityCount = static_cast<uint32_t>(m_materials.size());
+        return st;
+    }
+
+    void attachViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
+    [[nodiscard]] ViewportHandle viewportHandle() const { return m_viewportHandle; }
+
 private:
     std::vector<MaterialAsset>  m_materials;
     std::string                 m_activeMaterial;
     MaterialPreviewShape        m_previewShape  = MaterialPreviewShape::Sphere;
     bool                        m_autoRecompile = true;
     bool                        m_livePreview   = true;
+    WorkspaceViewportManager*   m_viewportMgr    = nullptr;
+    ViewportHandle              m_viewportHandle = kInvalidViewportHandle;
 };
 
 // ── M1-C — SkeletalEditorPanel ────────────────────────────────────
@@ -381,7 +421,7 @@ struct SkeletalAsset {
     [[nodiscard]] bool isComplex() const { return bones.size() >= 50; }
 };
 
-class SkeletalEditorPanel : public NFRenderViewport {
+class SkeletalEditorPanel : public NFRenderViewport, public IViewportSceneProvider {
 public:
     static constexpr size_t MAX_SKELETONS = 128;
 
@@ -441,6 +481,18 @@ public:
         size_t n = 0; for (auto& s : m_skeletons) if (s.isComplex()) ++n; return n;
     }
 
+    // ── IViewportSceneProvider ────────────────────────────────────────────
+    ViewportSceneState provideScene(ViewportHandle /*handle*/,
+                                    const ViewportSlot& /*slot*/) override {
+        ViewportSceneState st;
+        st.hasContent  = !m_activeSkeleton.empty();
+        st.entityCount = static_cast<uint32_t>(m_skeletons.size());
+        return st;
+    }
+
+    void attachViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
+    [[nodiscard]] ViewportHandle viewportHandle() const { return m_viewportHandle; }
+
 private:
     std::vector<SkeletalAsset> m_skeletons;
     std::string                m_activeSkeleton;
@@ -448,6 +500,8 @@ private:
     WeightPaintMode            m_weightPaint   = WeightPaintMode::Off;
     float                      m_brushRadius   = 5.0f;
     float                      m_brushStrength = 0.5f;
+    WorkspaceViewportManager*  m_viewportMgr    = nullptr;
+    ViewportHandle             m_viewportHandle = kInvalidViewportHandle;
 };
 
 // ── M1-C — AnimationEditorPanel ───────────────────────────────────
@@ -502,7 +556,7 @@ struct AnimClipAsset {
     [[nodiscard]] bool isReady()  const { return loaded && !dirty; }
 };
 
-class AnimationEditorPanel : public NFRenderViewport {
+class AnimationEditorPanel : public NFRenderViewport, public IViewportSceneProvider {
 public:
     static constexpr size_t MAX_CLIPS = 256;
 
@@ -577,6 +631,18 @@ public:
         size_t n = 0; for (auto& c : m_clips) if (c.blendType == t) ++n; return n;
     }
 
+    // ── IViewportSceneProvider ────────────────────────────────────────────
+    ViewportSceneState provideScene(ViewportHandle /*handle*/,
+                                    const ViewportSlot& /*slot*/) override {
+        ViewportSceneState st;
+        st.hasContent  = !m_activeClip.empty();
+        st.entityCount = static_cast<uint32_t>(m_clips.size());
+        return st;
+    }
+
+    void attachViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
+    [[nodiscard]] ViewportHandle viewportHandle() const { return m_viewportHandle; }
+
 private:
     std::vector<AnimClipAsset> m_clips;
     std::string                m_activeClip;
@@ -586,6 +652,8 @@ private:
     float                      m_timelineZoom  = 1.0f;
     bool                       m_onionSkinning = false;
     bool                       m_showBlendTree = false;
+    WorkspaceViewportManager*  m_viewportMgr    = nullptr;
+    ViewportHandle             m_viewportHandle = kInvalidViewportHandle;
 };
 
 // ── M1-C — PrefabEditorPanel ──────────────────────────────────────
@@ -618,7 +686,7 @@ struct PrefabInstance {
     [[nodiscard]] bool isScaled()    const { return scale != 1.0f; }
 };
 
-class PrefabEditorPanel : public NFRenderViewport {
+class PrefabEditorPanel : public NFRenderViewport, public IViewportSceneProvider {
 public:
     static constexpr size_t MAX_INSTANCES = 512;
 
@@ -678,6 +746,18 @@ public:
         size_t n = 0; for (auto& i : m_instances) if (i.isScaled()) ++n; return n;
     }
 
+    // ── IViewportSceneProvider ────────────────────────────────────────────
+    ViewportSceneState provideScene(ViewportHandle /*handle*/,
+                                    const ViewportSlot& /*slot*/) override {
+        ViewportSceneState st;
+        st.hasContent  = !m_activeInstance.empty();
+        st.entityCount = static_cast<uint32_t>(m_instances.size());
+        return st;
+    }
+
+    void attachViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
+    [[nodiscard]] ViewportHandle viewportHandle() const { return m_viewportHandle; }
+
 private:
     std::vector<PrefabInstance> m_instances;
     std::string                m_activeInstance;
@@ -685,6 +765,8 @@ private:
     bool                       m_snapToGrid    = true;
     float                      m_snapSize      = 0.5f;
     bool                       m_isolationMode = false;
+    WorkspaceViewportManager*  m_viewportMgr    = nullptr;
+    ViewportHandle             m_viewportHandle = kInvalidViewportHandle;
 };
 
 } // namespace NF

@@ -73,12 +73,33 @@ public:
     NF::ViewportSceneState provideScene(NF::ViewportHandle       /*handle*/,
                                         const NF::ViewportSlot&  /*slot*/) override {
         NF::ViewportSceneState st;
-        st.hasContent    = m_running;
-        st.entityCount   = m_world.entityCount();
-        st.overrideCamera = false;
-        st.clearColor    = 0x1A1A2EFFu;
+        const bool hasEntities = m_world.entityCount() > 0;
+        // Content is available whenever there are entities in the preview world,
+        // whether the runtime is running (play mode) or paused (static preview).
+        st.hasContent     = hasEntities;
+        st.entityCount    = m_world.entityCount();
+        // The fly-camera is authoritative (overrides slot camera) only while running.
+        st.overrideCamera = m_running;
+        st.clearColor     = m_skyColor;
         return st;
     }
+
+    // ── Document binding ──────────────────────────────────────────────────
+    // Stub implementations for the binder layer to call.
+    // Full implementations will push document state into the preview world.
+
+    void bindWorldDocument(const std::string& /*worldId*/)   { m_previewDirty = true; }
+    void bindLevelDocument(const std::string& /*levelId*/)   { m_previewDirty = true; }
+    void rebuildFromDocument()                                { m_previewDirty = false; }
+
+    struct PreviewTransform {
+        float px = 0.f, py = 0.f, pz = 0.f;
+        float rx = 0.f, ry = 0.f, rz = 0.f;
+        float sx = 1.f, sy = 1.f, sz = 1.f;
+    };
+
+    void applyEntityChange(EntityId /*id*/, const PreviewTransform& /*t*/) {}
+    void applySelection(EntityId /*id*/)                                     {}
 
     // ── Scene world ───────────────────────────────────────────────────────
 
@@ -209,12 +230,17 @@ public:
         return result;
     }
 
+    void setSkyColor(uint32_t rrggbbaa) { m_skyColor = rrggbbaa; }
+    [[nodiscard]] uint32_t skyColor() const { return m_skyColor; }
+
 private:
     NovaForgePreviewWorld m_world;
     FlyCameraState        m_camera;
-    GizmoMode             m_gizmoMode = GizmoMode::Translate;
-    bool                  m_running   = false;
-    float                 m_elapsed   = 0.f;
+    GizmoMode             m_gizmoMode  = GizmoMode::Translate;
+    bool                  m_running    = false;
+    float                 m_elapsed    = 0.f;
+    uint32_t              m_skyColor   = 0x1A1A2EFFu; ///< clear color (RRGGBBAA)
+    bool                  m_previewDirty = false;
 };
 
 } // namespace NovaForge

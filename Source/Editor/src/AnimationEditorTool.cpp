@@ -51,6 +51,14 @@ bool AnimationEditorTool::initialize() {
 }
 
 void AnimationEditorTool::shutdown() {
+    // Release viewport slot if still held.
+    if (m_viewportMgr && m_viewportHandle != kInvalidViewportHandle) {
+        m_viewportMgr->unregisterSceneProvider(kToolId);
+        m_viewportMgr->releaseViewport(m_viewportHandle);
+        m_viewportHandle = kInvalidViewportHandle;
+    }
+    m_animPreviewProvider = nullptr;
+
     m_state           = HostedToolState::Unloaded;
     m_editMode        = AnimationEditMode::Timeline;
     m_stats           = {};
@@ -60,6 +68,16 @@ void AnimationEditorTool::shutdown() {
 void AnimationEditorTool::activate() {
     if (m_state == HostedToolState::Ready || m_state == HostedToolState::Suspended) {
         m_state = HostedToolState::Active;
+
+        // Request a viewport slot when the tool has a viewport manager.
+        if (m_viewportMgr && m_viewportHandle == kInvalidViewportHandle) {
+            m_viewportHandle = m_viewportMgr->requestViewport(
+                kToolId, {0.f, 0.f, 1280.f, 720.f});
+            if (m_viewportHandle != kInvalidViewportHandle) {
+                m_viewportMgr->registerSceneProvider(kToolId, this);
+                m_viewportMgr->activateViewport(m_viewportHandle);
+            }
+        }
     }
 }
 
@@ -68,12 +86,31 @@ void AnimationEditorTool::suspend() {
         // Stop playback / recording when backgrounded
         m_stats.isPlaying  = false;
         m_stats.isRecording = false;
+
+        // Release viewport slot so it can be reused by another tool.
+        if (m_viewportMgr && m_viewportHandle != kInvalidViewportHandle) {
+            m_viewportMgr->unregisterSceneProvider(kToolId);
+            m_viewportMgr->releaseViewport(m_viewportHandle);
+            m_viewportHandle = kInvalidViewportHandle;
+        }
+
         m_state = HostedToolState::Suspended;
     }
 }
 
 void AnimationEditorTool::update(float /*dt*/) {
     // Playback cursor advancement is driven by the engine runtime, not here.
+}
+
+ViewportSceneState AnimationEditorTool::provideScene(ViewportHandle handle,
+                                                      const ViewportSlot& slot) {
+    // Delegate to an attached animation preview provider when available.
+    if (m_animPreviewProvider) {
+        return m_animPreviewProvider->provideScene(handle, slot);
+    }
+    // Stub: no preview runtime attached yet — return empty state.
+    // A real animation preview runtime will be wired in a future pass.
+    return ViewportSceneState{};
 }
 
 void AnimationEditorTool::onProjectLoaded(const std::string& projectId) {
