@@ -252,12 +252,34 @@ TEST_CASE("D.1 Runtime: provideScene hasContent=false when stopped", "[phase_d][
     REQUIRE_FALSE(state.hasContent);
 }
 
-TEST_CASE("D.1 Runtime: provideScene hasContent=true when running", "[phase_d][d1][runtime]") {
+TEST_CASE("D.1 Runtime: provideScene hasContent=true when running with entities", "[phase_d][d1][runtime]") {
     NovaForgePreviewRuntime rt;
     rt.start();
+    rt.world().createEntity("TestEntity");
     NF::ViewportSlot slot;
     auto state = rt.provideScene(1, slot);
     REQUIRE(state.hasContent);
+}
+
+TEST_CASE("D.1 Runtime: provideScene hasContent=true when stopped but has entities", "[phase_d][d1][runtime]") {
+    NovaForgePreviewRuntime rt;
+    // Not started — static preview mode
+    rt.world().createEntity("StaticEntity");
+    NF::ViewportSlot slot;
+    auto state = rt.provideScene(1, slot);
+    REQUIRE(state.hasContent);      // content exists even when paused
+    REQUIRE_FALSE(state.overrideCamera); // camera is NOT authoritative when stopped
+}
+
+TEST_CASE("D.1 Runtime: provideScene overrideCamera=true only when running", "[phase_d][d1][runtime]") {
+    NovaForgePreviewRuntime rt;
+    rt.world().createEntity("E");
+    NF::ViewportSlot slot;
+    auto stopped = rt.provideScene(1, slot);
+    REQUIRE_FALSE(stopped.overrideCamera);
+    rt.start();
+    auto running = rt.provideScene(1, slot);
+    REQUIRE(running.overrideCamera);
 }
 
 TEST_CASE("D.1 Runtime: provideScene entityCount matches world", "[phase_d][d1][runtime]") {

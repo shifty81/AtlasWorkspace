@@ -14,6 +14,9 @@
 // See Docs/Roadmap/04_EDITOR_CONSOLIDATION.md for Phase 3 status.
 
 #include "NF/Workspace/IHostedTool.h"
+#include "NF/Workspace/IViewportSceneProvider.h"
+#include "NF/Workspace/ViewportHostContract.h"
+#include "NF/Workspace/WorkspaceViewportManager.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
 #include <string>
 
@@ -53,7 +56,7 @@ struct AnimationEditorStats {
 
 // ── AnimationEditorTool ───────────────────────────────────────────
 
-class AnimationEditorTool final : public IHostedTool {
+class AnimationEditorTool final : public IHostedTool, public IViewportSceneProvider {
 public:
     static constexpr const char* kToolId = "workspace.animation_editor";
 
@@ -72,6 +75,26 @@ public:
     void update(float dt) override;
 
     [[nodiscard]] HostedToolState state() const override { return m_state; }
+
+    // ── IViewportSceneProvider ────────────────────────────────────
+    ViewportSceneState provideScene(ViewportHandle handle,
+                                    const ViewportSlot& slot) override;
+
+    // ── Viewport slot access ──────────────────────────────────────
+    [[nodiscard]] ViewportHandle viewportHandle() const { return m_viewportHandle; }
+
+    /// Attach the workspace viewport manager so this tool can request/release slots.
+    void attachViewportManager(WorkspaceViewportManager* mgr) { m_viewportMgr = mgr; }
+
+    /// Attach an animation preview provider so provideScene() delegates to it.
+    /// Pass nullptr to detach and revert to stub state (hasContent = false).
+    void attachAnimationPreviewProvider(IViewportSceneProvider* provider) {
+        m_animPreviewProvider = provider;
+    }
+
+    [[nodiscard]] IViewportSceneProvider* animationPreviewProvider() const {
+        return m_animPreviewProvider;
+    }
 
     // ── Project adapter hooks ─────────────────────────────────────
     void onProjectLoaded(const std::string& projectId) override;
@@ -110,6 +133,11 @@ private:
     mutable AnimationEditMode m_editMode = AnimationEditMode::Timeline;
     AnimationEditorStats  m_stats;
     std::string           m_activeProjectId;
+
+    // ── Viewport provider members ─────────────────────────────────
+    WorkspaceViewportManager*  m_viewportMgr         = nullptr;
+    ViewportHandle             m_viewportHandle       = kInvalidViewportHandle;
+    IViewportSceneProvider*    m_animPreviewProvider  = nullptr;
 
     // ── Mutable per-view UI state (safe from const renderToolView) ─
     mutable int  m_viewSelectedClip    = -1;
