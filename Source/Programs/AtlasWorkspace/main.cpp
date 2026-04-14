@@ -567,9 +567,9 @@ int main(int argc, char* argv[]) {
     }
 
     // ── Preview runtime instances ─────────────────────────────────
-    // All preview objects are created here and passed by pointer to their tools.
-    // The tools do NOT own these objects — they are owned here and destroyed
-    // after shell.shutdown().
+    // All preview objects are stack-allocated here and passed by pointer to their tools.
+    // The tools do NOT own these objects — they hold non-owning pointers.
+    // Cleanup is automatic via stack unwinding after shell.shutdown() below.
     NovaForge::NovaForgePreviewRuntime novaPreviewRuntime;
     novaPreviewRuntime.start();
 
