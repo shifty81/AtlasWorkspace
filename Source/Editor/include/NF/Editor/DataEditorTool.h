@@ -90,6 +90,7 @@ public:
     // ── Render contract ───────────────────────────────────────────
     // Renders: Tables | Data Grid | Inspector — three-column layout.
     void renderToolView(const ToolViewRenderContext& ctx) const override;
+    void syncPanels(WorkspacePanelHost& host) const override;
 
 private:
     HostedToolDescriptor m_descriptor;

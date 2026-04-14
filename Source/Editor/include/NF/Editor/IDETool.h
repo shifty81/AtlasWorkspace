@@ -78,6 +78,7 @@ public:
 
     // ── Render ───────────────────────────────────────────────────
     void renderToolView(const ToolViewRenderContext& ctx) const override;
+    void syncPanels(WorkspacePanelHost& host) const override;
 
     // ── IDE Tool interface ────────────────────────────────────────
     [[nodiscard]] IDEEditMode         editMode()   const { return m_editMode;        }

@@ -7,6 +7,8 @@
 #include "NF/Editor/SceneEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
 #include "NF/Workspace/WorkspaceShell.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
+#include "NF/UI/AtlasUI/Panels/ViewportPanel.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -598,6 +600,45 @@ void SceneEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
             }
         }
     }
+}
+
+void SceneEditorTool::syncPanels(WorkspacePanelHost& host) const {
+    // ── Hierarchy panel ────────────────────────────────────────────
+    host.hierarchy().clearEntities();
+    static const char* kEntityNames[] = {
+        "Camera_Main", "DirectionalLight", "Player", "Environment", "SkyDome"
+    };
+    uint32_t count = m_stats.entityCount < kMaxEntities
+                   ? m_stats.entityCount
+                   : static_cast<uint32_t>(kMaxEntities);
+    for (uint32_t i = 0; i < count; ++i) {
+        bool selected = (static_cast<int>(i) == m_viewSelectedEntity);
+        host.hierarchy().addEntity(static_cast<int>(i + 1),
+                                   kEntityNames[i], selected, 0);
+    }
+
+    // ── Inspector panel ────────────────────────────────────────────
+    if (m_viewSelectedEntity >= 0 &&
+        static_cast<size_t>(m_viewSelectedEntity) < kMaxEntities) {
+        const EntityTransform& t = m_entityTransforms[
+            static_cast<size_t>(m_viewSelectedEntity)];
+        host.inspector().setSelectedEntityId(m_viewSelectedEntity + 1);
+        host.inspector().setTransform(t.pos[0], t.pos[1], t.pos[2]);
+    } else {
+        host.inspector().setSelectedEntityId(-1);
+    }
+
+    // ── Viewport panel ─────────────────────────────────────────────
+    using VM = UI::AtlasUI::ViewportToolMode;
+    VM vmode = VM::Select;
+    switch (m_editMode) {
+        case SceneEditMode::Translate: vmode = VM::Move;   break;
+        case SceneEditMode::Rotate:    vmode = VM::Rotate; break;
+        case SceneEditMode::Scale:     vmode = VM::Scale;  break;
+        case SceneEditMode::Paint:     vmode = VM::Paint;  break;
+        default:                       vmode = VM::Select; break;
+    }
+    host.viewport().setToolMode(vmode);
 }
 
 } // namespace NF

@@ -6,6 +6,7 @@
 
 #include "NF/Editor/AtlasAITool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include <cctype>
 #include <cstdio>
@@ -280,6 +281,11 @@ void AtlasAITool::renderToolView(const ToolViewRenderContext& ctx) const {
         if (projName.size() > 18) projName = projName.substr(0, 15) + "...";
         ctx.ui.drawText(cpx + 8.f, ctx.y + 86.f, projName, ctx.kTextMuted);
     }
+}
+
+
+void AtlasAITool::syncPanels(WorkspacePanelHost& host) const {
+    (void)host;
 }
 
 } // namespace NF

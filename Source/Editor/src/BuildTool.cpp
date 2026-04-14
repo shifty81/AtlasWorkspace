@@ -5,6 +5,7 @@
 
 #include "NF/Editor/BuildTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include <chrono>
 #include <cstdio>
@@ -403,6 +404,11 @@ void BuildTool::renderToolView(const ToolViewRenderContext& ctx) const {
     ctx.drawStatRow(mx + 8.f, ctx.y + 68.f, "Errors:", errStr);
     char warnStr[16]; std::snprintf(warnStr, sizeof(warnStr), "%u", m_stats.warningCount);
     ctx.drawStatRow(mx + 8.f, ctx.y + 86.f, "Warnings:", warnStr);
+}
+
+
+void BuildTool::syncPanels(WorkspacePanelHost& host) const {
+    (void)host;
 }
 
 } // namespace NF

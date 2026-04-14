@@ -5,6 +5,7 @@
 
 #include "NF/Editor/DataEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include <cstdio>
 #include <cstring>
@@ -308,6 +309,11 @@ void DataEditorTool::renderToolView(const ToolViewRenderContext& ctx) const {
         ctx.ui.drawText(ix + 8.f, ctx.y + 30.f, "Row Properties", ctx.kTextSecond);
         ctx.ui.drawText(ix + 8.f, ctx.y + 50.f, "Select a row", ctx.kTextMuted);
     }
+}
+
+
+void DataEditorTool::syncPanels(WorkspacePanelHost& host) const {
+    (void)host;
 }
 
 } // namespace NF

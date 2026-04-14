@@ -6,6 +6,7 @@
 
 #include "NF/Editor/IDETool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include "NF/Workspace/AssetCatalog.h"
 #include <cstdio>
@@ -349,6 +350,11 @@ void IDETool::renderToolView(const ToolViewRenderContext& ctx) const {
             ctx.drawStatusPill(ox + 8.f, ctx.y + ctx.h - 28.f, "Running...", ctx.kGreen);
         }
     }
+}
+
+
+void IDETool::syncPanels(WorkspacePanelHost& host) const {
+    (void)host;
 }
 
 } // namespace NF

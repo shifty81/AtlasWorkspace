@@ -18,6 +18,7 @@
 #include "NF/UI/AtlasUI/Panels/GraphEditorPanel.h"
 #include "NF/UI/AtlasUI/Panels/PipelineMonitorPanel.h"
 
+#include "NF/Workspace/SelectionService.h"
 #include "NF/Editor/DockLayout.h"
 #include "NF/Workspace/WorkspaceInputBridge.h"
 #include "NF/Input/Input.h"

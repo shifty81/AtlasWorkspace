@@ -5,6 +5,7 @@
 
 #include "NF/Editor/MaterialEditorTool.h"
 #include "NF/Workspace/ToolViewRenderContext.h"
+#include "NF/Workspace/WorkspacePanelHost.h"
 #include "NF/Workspace/WorkspaceShell.h"
 #include <algorithm>
 #include <cmath>
@@ -549,6 +550,11 @@ void MaterialEditorTool::renderToolView(const ToolViewRenderContext& ctx) const 
             sy += 18.f;
         }
     }
+}
+
+
+void MaterialEditorTool::syncPanels(WorkspacePanelHost& host) const {
+    (void)host;
 }
 
 } // namespace NF

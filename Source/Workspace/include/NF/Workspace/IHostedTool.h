@@ -15,6 +15,7 @@
 #include <vector>
 
 namespace NF { struct ToolViewRenderContext; } // forward — defined in ToolViewRenderContext.h
+namespace NF { class WorkspacePanelHost; }   // forward — defined in WorkspacePanelHost.h
 
 namespace NF {
 
@@ -136,6 +137,14 @@ public:
     // own panel layout (hierarchy, viewport, inspector, log, etc.) into the
     // content area described by ctx.  The default no-op keeps non-UI tools valid.
     virtual void renderToolView(const ToolViewRenderContext& /*ctx*/) const {}
+
+    // ── Panel sync contract ───────────────────────────────────────
+    // Called by the main render loop each frame after WorkspaceRenderer::render()
+    // when this tool is active.  The tool pushes its current data model into the
+    // AtlasUI panel host so that WorkspacePanelHost::renderPanels() shows live
+    // content rather than static placeholders.  Default is a no-op — tools that
+    // do not use WorkspacePanelHost need not override this.
+    virtual void syncPanels(WorkspacePanelHost& /*host*/) const {}
 };
 
 } // namespace NF
