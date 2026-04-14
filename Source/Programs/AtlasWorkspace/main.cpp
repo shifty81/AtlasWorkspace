@@ -254,13 +254,16 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
                                *g_shell, mouse, g_launchSvc);
 
             // ── WorkspacePanelHost: AtlasUI panels drawn over chrome ──
-            // When a tool is active, syncPanels() + renderPanels() fill the
-            // content area (right of sidebar, below header bar) with real
-            // AtlasUI Hierarchy, Viewport, and Inspector panels.
+            // Only used for the Scene Editor — it owns the Hierarchy, Viewport,
+            // and Inspector panels.  All other tools render their own custom
+            // layout via renderToolView() in WorkspaceRenderer (see above).
+            // Panels for non-scene tools are handled entirely by renderToolView.
             if (g_panelHost && g_toolDock) {
                 const NF::IHostedTool* activeTool =
                     g_shell->toolRegistry().activeTool();
-                if (activeTool) {
+                if (activeTool &&
+                    activeTool->descriptor().category ==
+                        NF::HostedToolCategory::SceneEditing) {
                     const bool consoleVis =
                         g_shell->panelRegistry().isPanelVisible("console");
                     NF::Rect area = NF::WorkspaceRenderer::contentAreaBounds(
