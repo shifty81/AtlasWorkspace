@@ -208,9 +208,18 @@ TEST_CASE("WorkspaceShell — settingsStore accessor exists", "[Audit][Patch11]"
 TEST_CASE("WorkspaceShell — default settings populated on initialize", "[Audit][Patch11]") {
     NF::WorkspaceShell shell;
     shell.initialize();
-    REQUIRE(shell.settingsStore().get("workspace.theme") == "dark");
-    REQUIRE(shell.settingsStore().get("workspace.auto_save") == "true");
-    REQUIRE(shell.settingsStore().get("workspace.show_welcome") == "true");
+    // Check the Default layer specifically — the test validates that built-in
+    // defaults are registered, not the cascaded value which may be overridden
+    // by a persisted user settings file on disk.
+    const auto* theme = shell.settingsStore().getFromLayer("workspace.theme", NF::SettingsLayer::Default);
+    REQUIRE(theme != nullptr);
+    REQUIRE(*theme == "dark");
+    const auto* autoSave = shell.settingsStore().getFromLayer("workspace.auto_save", NF::SettingsLayer::Default);
+    REQUIRE(autoSave != nullptr);
+    REQUIRE(*autoSave == "true");
+    const auto* showWelcome = shell.settingsStore().getFromLayer("workspace.show_welcome", NF::SettingsLayer::Default);
+    REQUIRE(showWelcome != nullptr);
+    REQUIRE(*showWelcome == "true");
     shell.shutdown();
 }
 
