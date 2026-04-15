@@ -974,7 +974,29 @@ target_link_libraries(NF_Phase71Tests PRIVATE
 )
 catch_discover_tests(NF_Phase71Tests)
 
-# Phase B — Real Project Load
+# Phase 72 — Viewport entity projection: SoftwareViewportRenderer draws scene entities
+#   72.1: NovaForgePreviewRuntime::provideScene() populates ViewportSceneState::entities
+#   72.2: SoftwareViewportRenderer::projectPoint() correctly projects world→screen
+#   72.3: renderGrid() writes entity-coloured pixels when entities are in front of camera
+#   72.4: Behind-camera entities are culled
+#   72.5: Selected entities use selectColor
+#   72.6: End-to-end provideScene → renderGrid → pixels
+if(TARGET NF::NovaForgeAdapter)
+    add_executable(NF_Phase72Tests
+        Workspace/test_phase72_viewport_entity_render.cpp
+        catch_main.cpp
+    )
+    target_include_directories(NF_Phase72Tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/NovaForge/Source/EditorAdapter/include
+    )
+    target_link_libraries(NF_Phase72Tests PRIVATE
+        NF::NovaForgeAdapter NF::Editor NF::Workspace NF::UI NF::Core
+        Catch2::Catch2
+    )
+    catch_discover_tests(NF_Phase72Tests)
+endif()
+
+
 #   B.1: ProjectBootstrapResult + AtlasProjectFileLoader manifest validation
 #   B.2: NovaForgeProjectBootstrap service + adapter wiring
 #   B.3: NovaForgeDocumentType / NovaForgeDocument / NovaForgeDocumentRegistry

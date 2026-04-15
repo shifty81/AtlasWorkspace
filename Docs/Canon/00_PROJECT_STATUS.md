@@ -42,6 +42,7 @@ Current Phase: **All Phases A–I Complete** — Atlas Workspace v1.0 Milestone 
 - **Viewport software renderer → screen:** `SoftwareViewportRenderer` now writes pixels into `IViewportSurface` via `writeScanlines()`; `GDIViewportSurface` copies them into the DIB scanline buffer so `BitBlt` displays the grid (Phase 67)
 - **Fly-camera wired:** `SceneEditorTool` owns camera state (pos/yaw/pitch) + `SceneViewportCameraController`; `update()` drives WASD + mouse-look when `InputSystem` is attached; `provideScene()` sets `overrideCamera=true` (Phase 67)
 - **Input attached to SceneEditorTool:** `main.cpp` calls `onAttachInput(&input)` after setup and `onDetachInput()` before shutdown (Phase 67)
+- **Viewport entity projection (Phase 72):** `NovaForgePreviewRuntime::provideScene()` populates `ViewportSceneState::entities` with `ViewportEntityProxy` (position, half-extents, selected flag). `SoftwareViewportRenderer` now does real 3D→2D projection (yaw/pitch camera → view space → perspective divide → screen) and draws a cross marker + projected wireframe quad per entity. Behind-camera entities are culled. Selected entities render in `selectColor`. 22 new tests, all green.
 
 ### What Does NOT Work (Stubs, Shells, Not Wired)
 

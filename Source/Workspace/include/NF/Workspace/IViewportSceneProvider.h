@@ -16,6 +16,23 @@
 
 namespace NF {
 
+// ── ViewportEntityProxy ───────────────────────────────────────────────────────
+// Minimal per-entity data passed from a scene provider to the render pass.
+// Carries only what the software renderer needs to project entities to screen:
+// world-space position, half-extents for a bounding box, whether the entity
+// is selected, and an optional display label.
+//
+// This is NOT a full scene graph node — it is a lightweight draw-list entry.
+
+struct ViewportEntityProxy {
+    float       x = 0.f, y = 0.f, z = 0.f;   ///< world-space centre position
+    float       halfW = 0.5f;                  ///< half-width  (X extent)
+    float       halfH = 0.5f;                  ///< half-height (Y extent)
+    float       halfD = 0.5f;                  ///< half-depth  (Z extent)
+    bool        selected = false;              ///< draw with selection colour
+    const char* label    = nullptr;            ///< optional entity name (may be null)
+};
+
 // ── ViewportSceneState ────────────────────────────────────────────────────────
 // Lightweight, renderer-agnostic snapshot of what a tool wants to render.
 // The frame loop uses this to decide how to drive the render backend.
@@ -25,6 +42,11 @@ struct ViewportSceneState {
     uint32_t entityCount    = 0;     ///< number of entities / draw calls in scene
     bool     overrideCamera = false; ///< provider has updated slot.camera already
     uint32_t clearColor     = 0x1E1E1EFFu; ///< suggested clear color (RRGGBBAA)
+
+    /// Per-entity proxy list for the software renderer.
+    /// Populated by IViewportSceneProvider::provideScene() when hasContent=true.
+    /// GPU backends ignore this and use their own scene graph access instead.
+    std::vector<ViewportEntityProxy> entities;
 };
 
 // ── IViewportSceneProvider ────────────────────────────────────────────────────

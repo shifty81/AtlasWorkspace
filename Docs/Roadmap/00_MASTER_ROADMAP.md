@@ -556,6 +556,52 @@ phases (A–H) and genuine project load confidence.
 
 ---
 
+## Phase 72 — Viewport Entity Projection
+
+**Status: Complete**
+
+**Goal:** The software viewport renderer becomes scene-aware. Entities from
+`NovaForgePreviewWorld` are projected into screen space and drawn as wireframe
+boxes with cross markers, proving the full data pipeline end-to-end.
+
+### Milestone 72.1 — ViewportEntityProxy carrier ✅
+- [x] `ViewportEntityProxy` struct added to `IViewportSceneProvider.h`
+  - World position (x/y/z), half-extents (halfW/H/D), selected flag, label ptr
+- [x] `ViewportSceneState::entities` vector — carries one proxy per visible entity
+
+### Milestone 72.2 — Scene provider populates proxies ✅
+- [x] `NovaForgePreviewRuntime::provideScene()` iterates `m_world.entities()`
+- [x] Populates position from `e.transform.position`, scale*0.5 as half-extents
+- [x] Sets `proxy.selected` from `m_world.selectedEntityId()`
+- [x] Skips invisible entities (`e.visible == false`)
+
+### Milestone 72.3 — SoftwareViewportRenderer 3D→2D projection ✅
+- [x] `buildCamera()` — derives right/up/forward from yaw/pitch, computes halfFovTan
+- [x] `worldToView()` — transforms world point to camera space via dot products
+- [x] `viewToScreen()` — perspective divide + NDC→pixel mapping
+- [x] `projectPoint()` — public API, returns false for behind-camera points
+- [x] `drawEntity()` — draws cross marker + projected bounding quad per entity
+- [x] Selected entities use `selectColor`; others use `entityColor`
+- [x] Behind-camera entities (vz ≤ 0) are culled
+
+### Milestone 72.4 — Tests ✅
+- [x] 22 new tests, 48 assertions, all green (test_phase72_viewport_entity_render.cpp)
+  - Entity proxy population from `provideScene()`
+  - Projection to correct screen positions (centre, left, right, up, down)
+  - Behind-camera culling
+  - Selected entity pixel colour
+  - Hidden entity not rendered
+  - End-to-end: world entity → `provideScene()` → `renderGrid()` → pixel
+
+**Success Criteria:** ✅
+- `provideScene()` populates `ViewportSceneState::entities` with correct positions/flags
+- `projectPoint()` projects origin to screen centre for front-facing camera
+- `renderGrid()` writes `entityColor`/`selectColor` pixels when entities are in scene
+- Behind-camera entities do not produce entity pixels
+- 22 new tests, all green
+
+---
+
 ## Version Target
 
 When Phases A–I are complete, the repository reaches **Atlas Workspace v1.0** — a

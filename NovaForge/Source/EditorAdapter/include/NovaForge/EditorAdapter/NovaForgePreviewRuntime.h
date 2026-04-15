@@ -81,6 +81,24 @@ public:
         // The fly-camera is authoritative (overrides slot camera) only while running.
         st.overrideCamera = m_running;
         st.clearColor     = m_skyColor;
+
+        // Populate entity proxies so the software renderer can project them.
+        // Each visible entity contributes one proxy carrying its world position
+        // and selection state.  Scale is used as a rough half-extent hint.
+        st.entities.reserve(m_world.entityCount());
+        for (const auto& e : m_world.entities()) {
+            if (!e.visible) continue;
+            NF::ViewportEntityProxy proxy;
+            proxy.x        = e.transform.position.x;
+            proxy.y        = e.transform.position.y;
+            proxy.z        = e.transform.position.z;
+            proxy.halfW    = e.transform.scale.x * 0.5f;
+            proxy.halfH    = e.transform.scale.y * 0.5f;
+            proxy.halfD    = e.transform.scale.z * 0.5f;
+            proxy.selected = (e.id == m_world.selectedEntityId());
+            proxy.label    = e.name.c_str();
+            st.entities.push_back(proxy);
+        }
         return st;
     }
 
