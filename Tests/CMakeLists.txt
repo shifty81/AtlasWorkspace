@@ -1483,3 +1483,14 @@ target_link_libraries(NF_ViewportCameraTests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_ViewportCameraTests)
+
+# Phase 73 — PIE Viewport Full Integration (game rendering in PIE mode)
+add_executable(NF_Phase73PIEViewportTests
+    Workspace/test_phase73_pie_viewport.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_Phase73PIEViewportTests PRIVATE
+    NF::Editor NF::Workspace NF::UI NF::Core NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_Phase73PIEViewportTests)
