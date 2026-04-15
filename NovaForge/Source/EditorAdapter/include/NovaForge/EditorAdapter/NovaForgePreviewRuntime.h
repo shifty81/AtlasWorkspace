@@ -152,7 +152,6 @@ public:
 
         // Right = forward × world-up (0,1,0)
         const float rightX =  std::cos(yawR);
-        const float rightY =  0.f;
         const float rightZ = -std::sin(yawR);
 
         const float move = m_camera.speed * dt;

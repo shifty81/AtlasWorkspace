@@ -1351,10 +1351,10 @@ TEST_CASE("WorkspaceShell: preferences panel toggles via command", "[workspace][
     REQUIRE(shell.panelRegistry().isRegistered("preferences"));
     REQUIRE_FALSE(shell.panelRegistry().isPanelVisible("preferences"));
 
-    shell.commandBus().execute("workspace.preferences");
+    (void)shell.commandBus().execute("workspace.preferences");
     REQUIRE(shell.panelRegistry().isPanelVisible("preferences"));
 
-    shell.commandBus().execute("workspace.preferences");
+    (void)shell.commandBus().execute("workspace.preferences");
     REQUIRE_FALSE(shell.panelRegistry().isPanelVisible("preferences"));
 
     shell.shutdown();

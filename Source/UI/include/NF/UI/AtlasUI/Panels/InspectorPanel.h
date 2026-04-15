@@ -68,7 +68,6 @@ public:
         // The grid fills the remaining height with a 4 px horizontal inset each side.
         static constexpr float kGridTopOffset  = 68.f;
         static constexpr float kGridSideInset  =  4.f;
-        static constexpr float kScrollW        = 10.f;
         NF::Rect gridBounds = {bounds.x + kGridSideInset,
                                bounds.y + kGridTopOffset,
                                std::max(0.f, bounds.w - kGridSideInset * 2.f - kScrollW),
