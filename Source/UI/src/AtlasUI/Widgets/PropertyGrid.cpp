@@ -136,7 +136,7 @@ bool PropertyGrid::handleInput(IInputContext& context) {
         NF::Rect rowRect = {m_bounds.x, m_flatNodes[i].y, m_bounds.w, m_rowHeight};
         if (rectContains(rowRect, context.mousePosition())) {
             m_hoveredRow = static_cast<int>(i);
-            if (context.primaryDown()) {
+            if (context.primaryPressed()) {
                 if (m_flatNodes[i].isGroupHeader) {
                     toggleGroup(m_flatNodes[i].item->name);
                     return true;

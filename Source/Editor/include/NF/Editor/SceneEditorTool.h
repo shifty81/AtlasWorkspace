@@ -190,6 +190,11 @@ public:
     // Scene entity count (updated each frame from scene runtime)
     void setEntityCount(uint32_t count);
 
+    // Set which entity (0-based index) is selected in the view.
+    // Called by the HierarchyPanel click callback so the Inspector updates
+    // on the next syncPanels() call.  index = -1 means no selection.
+    void setViewSelectedEntity(int index) { m_viewSelectedEntity = index; }
+
     // ── Render contract ───────────────────────────────────────────
     // Renders: Hierarchy | 3D Viewport | Inspector — three-column layout.
     // Status bar row shows mode, dirty flag, entity/selection counts.

@@ -239,7 +239,7 @@ TEST_CASE("WorkspaceInputBridge syncs mouse position", "[Workspace][InputBridge]
     input.setMousePosition(250.f, 375.f);
 
     BasicInputContext ctx;
-    NF::WorkspaceInputBridge::sync(input, ctx);
+    NF::WorkspaceInputBridge{}.sync(input, ctx);
 
     REQUIRE(ctx.mousePosition().x == Approx(250.f));
     REQUIRE(ctx.mousePosition().y == Approx(375.f));
@@ -252,7 +252,7 @@ TEST_CASE("WorkspaceInputBridge syncs mouse buttons", "[Workspace][InputBridge]"
     input.setKeyDown(NF::KeyCode::Mouse1);
 
     BasicInputContext ctx;
-    NF::WorkspaceInputBridge::sync(input, ctx);
+    NF::WorkspaceInputBridge{}.sync(input, ctx);
 
     REQUIRE(ctx.primaryDown());
     REQUIRE_FALSE(ctx.secondaryDown());
@@ -265,7 +265,7 @@ TEST_CASE("WorkspaceInputBridge syncs right mouse button", "[Workspace][InputBri
     input.setKeyDown(NF::KeyCode::Mouse2);
 
     BasicInputContext ctx;
-    NF::WorkspaceInputBridge::sync(input, ctx);
+    NF::WorkspaceInputBridge{}.sync(input, ctx);
 
     REQUIRE_FALSE(ctx.primaryDown());
     REQUIRE(ctx.secondaryDown());
@@ -277,7 +277,7 @@ TEST_CASE("WorkspaceInputBridge no buttons down", "[Workspace][InputBridge]") {
     input.init();
 
     BasicInputContext ctx;
-    NF::WorkspaceInputBridge::sync(input, ctx);
+    NF::WorkspaceInputBridge{}.sync(input, ctx);
 
     REQUIRE_FALSE(ctx.primaryDown());
     REQUIRE_FALSE(ctx.secondaryDown());

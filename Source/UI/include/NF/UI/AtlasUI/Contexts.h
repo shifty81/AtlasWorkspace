@@ -62,7 +62,9 @@ class BasicInputContext final : public IInputContext {
 public:
     void setMousePosition(NF::Vec2 position) { m_mousePosition = position; }
     void setPrimaryDown(bool down) { m_primaryDown = down; }
+    void setPrimaryPressed(bool pressed) { m_primaryPressed = pressed; }
     void setSecondaryDown(bool down) { m_secondaryDown = down; }
+    void setScrollDelta(float delta) { m_scrollDelta = delta; }
     void setKeyDown(int keyCode, bool down) {
         if (down) {
             m_keysDown.insert(keyCode);
@@ -75,7 +77,9 @@ public:
 
     [[nodiscard]] NF::Vec2 mousePosition() const override { return m_mousePosition; }
     [[nodiscard]] bool primaryDown() const override { return m_primaryDown; }
+    [[nodiscard]] bool primaryPressed() const override { return m_primaryPressed; }
     [[nodiscard]] bool secondaryDown() const override { return m_secondaryDown; }
+    [[nodiscard]] float scrollDelta() const override { return m_scrollDelta; }
     [[nodiscard]] bool keyDown(int keyCode) const override { return m_keysDown.contains(keyCode); }
     [[nodiscard]] std::string_view typedText() const override { return m_typedText; }
     void requestFocus(IWidget* widget) override { m_focusWidget = widget; }
@@ -91,11 +95,13 @@ public:
 
 private:
     NF::Vec2 m_mousePosition{};
-    bool m_primaryDown = false;
-    bool m_secondaryDown = false;
+    bool m_primaryDown    = false;
+    bool m_primaryPressed = false;
+    bool m_secondaryDown  = false;
+    float m_scrollDelta   = 0.f;
     std::string m_typedText;
     std::unordered_set<int> m_keysDown;
-    IWidget* m_focusWidget = nullptr;
+    IWidget* m_focusWidget  = nullptr;
     IWidget* m_captureWidget = nullptr;
 };
 
