@@ -95,7 +95,7 @@ public:
     void handleInput(DockLayout& dock, InputSystem& input) {
         (void)dock;
         UI::AtlasUI::BasicInputContext inputCtx;
-        WorkspaceInputBridge::sync(input, inputCtx);
+        m_inputBridge.sync(input, inputCtx);
         for (auto& panel : m_host.panels()) {
             if (!panel->isVisible()) continue;
             panel->handleInput(inputCtx);
@@ -118,6 +118,7 @@ public:
 private:
     UI::AtlasUI::PanelHost m_host;
     UI::AtlasUI::DrawListDispatcher m_dispatcher;
+    WorkspaceInputBridge m_inputBridge;
     std::unordered_map<std::string, std::string> m_nameMap;
 
     std::shared_ptr<UI::AtlasUI::ViewportPanel>        m_viewport;

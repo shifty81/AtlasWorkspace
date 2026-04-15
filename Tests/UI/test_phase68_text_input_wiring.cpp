@@ -294,7 +294,7 @@ TEST_CASE("TextInput onChange not fired when Enter pressed (focus loss only)", "
 TEST_CASE("WorkspaceInputBridge syncs empty textInput", "[Phase68][Bridge]") {
     InputSystem input;
     BasicInputContext ctx;
-    WorkspaceInputBridge::sync(input, ctx);
+    NF::WorkspaceInputBridge{}.sync(input, ctx);
     CHECK(ctx.typedText().empty());
 }
 
@@ -306,7 +306,7 @@ TEST_CASE("WorkspaceInputBridge syncs typed text from InputSystem", "[Phase68][B
     CHECK(input.state().textInput == "Hi");
 
     BasicInputContext ctx;
-    WorkspaceInputBridge::sync(input, ctx);
+    NF::WorkspaceInputBridge{}.sync(input, ctx);
     CHECK(ctx.typedText() == "Hi");
 }
 
@@ -315,7 +315,7 @@ TEST_CASE("WorkspaceInputBridge syncs backspace character", "[Phase68][Bridge]")
     input.appendTextInput('\b');
 
     BasicInputContext ctx;
-    WorkspaceInputBridge::sync(input, ctx);
+    NF::WorkspaceInputBridge{}.sync(input, ctx);
     CHECK(ctx.typedText() == std::string(1, '\b'));
 }
 
@@ -324,6 +324,6 @@ TEST_CASE("WorkspaceInputBridge syncs enter character", "[Phase68][Bridge]") {
     input.appendTextInput('\r');
 
     BasicInputContext ctx;
-    WorkspaceInputBridge::sync(input, ctx);
+    NF::WorkspaceInputBridge{}.sync(input, ctx);
     CHECK(ctx.typedText() == std::string(1, '\r'));
 }

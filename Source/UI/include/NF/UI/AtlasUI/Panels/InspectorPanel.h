@@ -66,11 +66,12 @@ public:
         PanelBase::arrange(bounds);
         // Title bar (22 px) + entity-ID row (20 px) + separator/header (26 px) = 68 px.
         // The grid fills the remaining height with a 4 px horizontal inset each side.
-        static constexpr float kGridTopOffset  = 68.f; // pixels below panel top
-        static constexpr float kGridSideInset  =  4.f; // pixels inset on each side
+        static constexpr float kGridTopOffset  = 68.f;
+        static constexpr float kGridSideInset  =  4.f;
+        static constexpr float kScrollW        = 10.f;
         NF::Rect gridBounds = {bounds.x + kGridSideInset,
                                bounds.y + kGridTopOffset,
-                               std::max(0.f, bounds.w - kGridSideInset * 2.f),
+                               std::max(0.f, bounds.w - kGridSideInset * 2.f - kScrollW),
                                std::max(0.f, bounds.h - kGridTopOffset - kGridSideInset)};
         m_grid->arrange(gridBounds);
     }
@@ -84,44 +85,41 @@ private:
     std::unique_ptr<PropertyGrid> m_grid;
     ChangeCallback m_onChange;
 
-    /// Rebuild the PropertyGrid items from the current transform and properties.
-    void rebuildGrid() {
-        m_grid->clear();
-        if (m_selectedEntityId < 0) return;
+    float m_scrollOffset  = 0.f;
+    bool  m_thumbDragging = false;
+    float m_dragStartY    = 0.f;
+    float m_dragStartOff  = 0.f;
 
-        // Transform group
-        PropertyItem xformGroup;
-        xformGroup.name = "Transform";
-        xformGroup.expanded = true;
-        char buf[32];
-        auto makeFloat = [&](const char* n, float v) {
-            std::snprintf(buf, sizeof(buf), "%.3f", v);
-            PropertyItem item;
-            item.name = n;
-            item.value = PropertyValue(std::string(buf));
-            item.readOnly = false;
-            return item;
-        };
-        xformGroup.children.push_back(makeFloat("X", m_transformX));
-        xformGroup.children.push_back(makeFloat("Y", m_transformY));
-        xformGroup.children.push_back(makeFloat("Z", m_transformZ));
-        m_grid->addItem(std::move(xformGroup));
+    static constexpr float kScrollW   = 10.f;
+    static constexpr float kHeaderOff = 68.f; // content starts below this many px
 
-        // Custom properties group
-        if (!m_properties.empty()) {
-            PropertyItem propsGroup;
-            propsGroup.name = "Properties";
-            propsGroup.expanded = true;
-            for (const auto& p : m_properties) {
-                PropertyItem item;
-                item.name = p.label;
-                item.value = PropertyValue(p.value);
-                item.readOnly = false;
-                propsGroup.children.push_back(std::move(item));
-            }
-            m_grid->addItem(std::move(propsGroup));
-        }
+    [[nodiscard]] float contentHeight() const {
+        // PropertyGrid measures its own height; mirror the calculation.
+        return static_cast<float>(m_grid->visibleRowCount()) * 20.f;
     }
+    [[nodiscard]] float viewportHeight() const {
+        return std::max(0.f, m_bounds.h - kHeaderOff);
+    }
+    [[nodiscard]] float maxScroll() const {
+        return std::max(0.f, contentHeight() - viewportHeight());
+    }
+    [[nodiscard]] float thumbHeight() const {
+        float vpH = viewportHeight();
+        float ctH = contentHeight();
+        if (ctH <= vpH) return vpH;
+        return std::max(20.f, vpH * std::min(1.f, vpH / ctH));
+    }
+    [[nodiscard]] float thumbY() const {
+        float trackH = viewportHeight() - thumbHeight();
+        float frac   = (maxScroll() > 0.f) ? (m_scrollOffset / maxScroll()) : 0.f;
+        return (m_bounds.y + kHeaderOff) + trackH * frac;
+    }
+    void clampScroll() {
+        m_scrollOffset = std::max(0.f, std::min(m_scrollOffset, maxScroll()));
+    }
+
+    /// Rebuild the PropertyGrid items from the current transform and properties.
+    void rebuildGrid();
 };
 
 } // namespace NF::UI::AtlasUI

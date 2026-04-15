@@ -261,9 +261,8 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
 
             // ── WorkspacePanelHost: AtlasUI panels drawn over chrome ──
             // Only used for the Scene Editor — it owns the Hierarchy, Viewport,
-            // and Inspector panels.  All other tools render their own custom
-            // layout via renderToolView() in WorkspaceRenderer (see above).
-            // Panels for non-scene tools are handled entirely by renderToolView.
+            // Inspector, and ContentBrowser panels.  All other tools render their
+            // own custom layout via renderToolView() in WorkspaceRenderer.
             if (g_panelHost && g_toolDock) {
                 const NF::IHostedTool* activeTool =
                     g_shell->toolRegistry().activeTool();
@@ -276,23 +275,63 @@ static LRESULT CALLBACK WorkspaceWndProc(HWND hwnd, UINT msg,
                         static_cast<float>(g_clientW),
                         static_cast<float>(g_clientH),
                         true, consoleVis);
-                    // Three-column layout: Hierarchy | Viewport | Inspector
+
+                    // Four-zone layout:
+                    //  Top row: Hierarchy | Viewport | Inspector (fills most of area.h)
+                    //  Bottom row: ContentBrowser (fixed 180 px)
                     static constexpr float kHierW = 250.f;
                     static constexpr float kInspW = 300.f;
+                    static constexpr float kCBH   = 180.f;
+                    const float topH  = std::max(0.f, area.h - kCBH);
                     const float viewW = std::max(0.f, area.w - kHierW - kInspW);
+
                     if (auto* dp = g_toolDock->findPanel("Hierarchy")) {
                         dp->visible = true;
-                        dp->bounds  = {area.x, area.y, kHierW, area.h};
+                        dp->bounds  = {area.x, area.y, kHierW, topH};
                     }
                     if (auto* dp = g_toolDock->findPanel("Viewport")) {
                         dp->visible = true;
-                        dp->bounds  = {area.x + kHierW, area.y, viewW, area.h};
+                        dp->bounds  = {area.x + kHierW, area.y, viewW, topH};
                     }
                     if (auto* dp = g_toolDock->findPanel("Inspector")) {
                         dp->visible = true;
-                        dp->bounds  = {area.x + kHierW + viewW, area.y,
-                                       kInspW, area.h};
+                        dp->bounds  = {area.x + kHierW + viewW, area.y, kInspW, topH};
                     }
+                    if (auto* dp = g_toolDock->findPanel("ContentBrowser")) {
+                        dp->visible = true;
+                        dp->bounds  = {area.x, area.y + topH, area.w, kCBH};
+                    }
+
+                    // Populate ContentBrowser when the loaded project changes.
+                    static std::string s_lastCBProject;
+                    const std::string  curProjId =
+                        (g_shell->hasProject() && g_shell->projectAdapter())
+                            ? g_shell->projectAdapter()->projectId()
+                            : std::string{};
+                    if (curProjId != s_lastCBProject) {
+                        s_lastCBProject = curProjId;
+                        auto& cb = g_panelHost->contentBrowser();
+                        cb.clearEntries();
+                        if (!curProjId.empty() && g_shell->projectAdapter()) {
+                            const auto roots = g_shell->projectAdapter()->contentRoots();
+                            if (!roots.empty()) {
+                                cb.setCurrentPath(roots[0]);
+                                try {
+                                    namespace fs = std::filesystem;
+                                    fs::path dir(roots[0]);
+                                    if (fs::exists(dir) && fs::is_directory(dir)) {
+                                        for (const auto& de : fs::directory_iterator(dir)) {
+                                            cb.addEntry(de.path().filename().string(),
+                                                        de.is_directory());
+                                        }
+                                    }
+                                } catch (...) {}
+                            } else {
+                                cb.setCurrentPath("(no content roots)");
+                            }
+                        }
+                    }
+
                     activeTool->syncPanels(*g_panelHost);
                     g_panelHost->renderPanels(*g_toolDock);
                     g_panelHost->handleInput(*g_toolDock, *g_inputSystem);
@@ -638,9 +677,10 @@ int main(int argc, char* argv[]) {
     // setRenderer() is called after ui.setBackend() below.
     NF::WorkspacePanelHost panelHost;
     NF::DockLayout         toolDock;
-    toolDock.addPanel("Hierarchy", NF::DockSlot::Left);
-    toolDock.addPanel("Viewport",  NF::DockSlot::Center);
-    toolDock.addPanel("Inspector", NF::DockSlot::Right);
+    toolDock.addPanel("Hierarchy",      NF::DockSlot::Left);
+    toolDock.addPanel("Viewport",       NF::DockSlot::Center);
+    toolDock.addPanel("Inspector",      NF::DockSlot::Right);
+    toolDock.addPanel("ContentBrowser", NF::DockSlot::Bottom);
     // NullViewportSurface — headless surface registered so ViewportFrameLoop
     // has a valid bind/unbind target until a real GPU surface is attached.
     NF::NullViewportSurface viewportSurface(1280, 800);
@@ -732,6 +772,31 @@ int main(int argc, char* argv[]) {
         if (auto* sceneTool = dynamic_cast<NF::SceneEditorTool*>(rawTool)) {
             sceneTool->onAttachInput(&input);
             NF_LOG_INFO("AtlasWorkspace", "SceneEditorTool input attached (fly-cam enabled)");
+        }
+    }
+
+    // Wire HierarchyPanel entity-selection callback → SceneEditorTool + SelectionService.
+    // When the user clicks an entity row in the Hierarchy panel, this callback:
+    //  1. Updates SceneEditorTool::m_viewSelectedEntity so the Inspector shows the
+    //     correct transform on the next syncPanels() call (one-frame update latency).
+    //  2. Notifies the SelectionService so other panels and tools can observe it.
+    {
+        NF::SceneEditorTool* sceneToolPtr = nullptr;
+        if (auto* rawTool = shell.toolRegistry().find(NF::HostToolId::SceneEditor))
+            sceneToolPtr = dynamic_cast<NF::SceneEditorTool*>(rawTool);
+
+        if (sceneToolPtr) {
+            // Capture raw pointers — both sceneToolPtr and &shell outlive the callback
+            // (panelHost, which owns the callback, is destroyed before shell).
+            panelHost.hierarchy().setOnSelect(
+                [sceneToolPtr, &shell](int entityId) {
+                    // entityId from HierarchyPanel is 1-based (#id in the entry).
+                    // m_viewSelectedEntity is 0-based (array index).
+                    sceneToolPtr->setViewSelectedEntity(entityId - 1);
+                    shell.selectionService().selectExclusive(
+                        static_cast<NF::EntityID>(entityId));
+                });
+            NF_LOG_INFO("AtlasWorkspace", "HierarchyPanel selection callback wired");
         }
     }
 

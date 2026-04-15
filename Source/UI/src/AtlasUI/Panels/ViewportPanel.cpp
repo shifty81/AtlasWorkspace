@@ -21,19 +21,9 @@ void ViewportPanel::paint(IPaintContext& context) {
     // The grid overlay is suppressed when a real scene is rendered.
     if (m_colorAttachment != 0) {
         context.drawImage(m_bounds, m_colorAttachment, 0xFFFFFFFF);
-    } else if (m_viewportHandle != 0) {
-        // Wired but no frame yet — show a distinct "waiting for first frame" placeholder.
-        const Color waitColor = 0xFF1A1A2E;  // dark navy background
-        context.fillRect(m_bounds, waitColor);
-        constexpr float kWaitLabelWidth  = 280.f;
-        constexpr float kWaitLabelHeight =  14.f;
-        const char* waitLabel = "Viewport ready — awaiting first frame";
-        context.drawText({m_bounds.x + (m_bounds.w - kWaitLabelWidth)  * 0.5f,
-                          m_bounds.y + (m_bounds.h - kWaitLabelHeight) * 0.5f,
-                          kWaitLabelWidth, kWaitLabelHeight},
-                         waitLabel, 0, 0xFF4A90D9);
     } else if (m_gridEnabled) {
-        // Placeholder grid: drawn only when no scene texture is available.
+        // Placeholder grid: drawn when no GPU scene texture is available.
+        // When a viewport handle is wired this means "ready, awaiting first frame".
         const float step = 40.f;
         const Color gridColor = 0xFF333333;
         for (float gx = m_bounds.x; gx < m_bounds.x + m_bounds.w; gx += step)
@@ -41,10 +31,10 @@ void ViewportPanel::paint(IPaintContext& context) {
         for (float gy = m_bounds.y; gy < m_bounds.y + m_bounds.h; gy += step)
             context.fillRect({m_bounds.x, gy, m_bounds.w, 1.f}, gridColor);
 
-        // Center label shown only in placeholder mode
-        const char* label = "[ 3D Viewport ]";
-        context.drawText({m_bounds.x + (m_bounds.w - 120.f) * 0.5f,
-                          m_bounds.y + (m_bounds.h - 14.f) * 0.5f, 120.f, 14.f},
+        // Center label
+        const char* label = m_viewportHandle != 0 ? "[ Viewport Ready ]" : "[ 3D Viewport ]";
+        context.drawText({m_bounds.x + (m_bounds.w - 160.f) * 0.5f,
+                          m_bounds.y + (m_bounds.h - 14.f) * 0.5f, 160.f, 14.f},
                          label, 0, 0xFF444444);
     }
 

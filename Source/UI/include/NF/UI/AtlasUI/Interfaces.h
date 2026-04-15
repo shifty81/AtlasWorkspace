@@ -48,6 +48,12 @@ struct IInputContext {
     // Characters typed this frame (from the platform WM_CHAR / key event path).
     // '\b' represents Backspace, '\r' represents Enter/Return.
     [[nodiscard]] virtual std::string_view typedText() const = 0;
+    // true only on the first frame the primary button transitions from up→down.
+    // Defaults to false so existing test mocks need no changes.
+    [[nodiscard]] virtual bool primaryPressed() const { return false; }
+    // Mouse-wheel scroll delta for this frame (positive = scroll up/forward).
+    // Defaults to 0 so existing test mocks need no changes.
+    [[nodiscard]] virtual float scrollDelta() const { return 0.f; }
     virtual void requestFocus(IWidget* widget) = 0;
     virtual void capturePointer(IWidget* widget) = 0;
     virtual void releasePointer(IWidget* widget) = 0;
