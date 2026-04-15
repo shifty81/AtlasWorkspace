@@ -1418,6 +1418,39 @@ target_link_libraries(NF_EditorS198Tests PRIVATE
 )
 catch_discover_tests(NF_EditorS198Tests)
 
+# S199 — FogVolumeEditorV1, OcclusionVolumeEditorV1, SkydomeEditorV1
+add_executable(NF_EditorS199Tests
+    Editor/Legacy/test_s199_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS199Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS199Tests)
+
+# S200 — TagSystemEditorV1, DebugDrawEditorV1, ObjectPoolEditorV1
+add_executable(NF_EditorS200Tests
+    Editor/Legacy/test_s200_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS200Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS200Tests)
+
+# S201 — TriggerVolumeEditorV1, InteractionEditorV1, HapticEditorV1
+add_executable(NF_EditorS201Tests
+    Editor/Legacy/test_s201_editor.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_EditorS201Tests PRIVATE
+    NF::Editor NF::Core
+    Catch2::Catch2
+)
+catch_discover_tests(NF_EditorS201Tests)
+
 # Phase 67 (Camera) — Viewport camera fly-cam wiring and software renderer scanline write
 add_executable(NF_ViewportCameraTests
     Workspace/test_phase67_viewport_camera.cpp
