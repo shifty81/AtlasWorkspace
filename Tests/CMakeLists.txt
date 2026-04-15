@@ -1417,3 +1417,14 @@ target_link_libraries(NF_EditorS198Tests PRIVATE
     Catch2::Catch2
 )
 catch_discover_tests(NF_EditorS198Tests)
+
+# Phase 67 (Camera) — Viewport camera fly-cam wiring and software renderer scanline write
+add_executable(NF_ViewportCameraTests
+    Workspace/test_phase67_viewport_camera.cpp
+    catch_main.cpp
+)
+target_link_libraries(NF_ViewportCameraTests PRIVATE
+    NF::Editor NF::Workspace NF::UI NF::Core NF::Input
+    Catch2::Catch2
+)
+catch_discover_tests(NF_ViewportCameraTests)

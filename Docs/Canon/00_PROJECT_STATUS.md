@@ -39,10 +39,13 @@ Current Phase: **All Phases A–I Complete** — Atlas Workspace v1.0 Milestone 
 - **Naming:** AtlasAI canon complete — zero Arbiter references in active paths
 - **Viewport contracts:** ViewportHostContract, ViewportHostRegistry, ViewportFrameLoop
 - **NovaForge panel factories:** 6 panels instantiable via ProjectSystemsTool
+- **Viewport software renderer → screen:** `SoftwareViewportRenderer` now writes pixels into `IViewportSurface` via `writeScanlines()`; `GDIViewportSurface` copies them into the DIB scanline buffer so `BitBlt` displays the grid (Phase 67)
+- **Fly-camera wired:** `SceneEditorTool` owns camera state (pos/yaw/pitch) + `SceneViewportCameraController`; `update()` drives WASD + mouse-look when `InputSystem` is attached; `provideScene()` sets `overrideCamera=true` (Phase 67)
+- **Input attached to SceneEditorTool:** `main.cpp` calls `onAttachInput(&input)` after setup and `onDetachInput()` before shutdown (Phase 67)
 
 ### What Does NOT Work (Stubs, Shells, Not Wired)
 
-- **Viewport rendering:** Placeholder grid via SoftwareViewportRenderer, proving the viewport pipeline end-to-end. No real 3D/GPU rendering yet. D3D11 backend is architecturally complete but awaits Windows SDK + d3d11.lib for real device init.
+- **Viewport rendering:** Software renderer now writes pixels into `GDIViewportSurface` scanlines so the grid is visible on screen. No real 3D/GPU rendering yet. D3D11 backend is architecturally complete but awaits Windows SDK + d3d11.lib for real device init.
 - **Panel content:** All panels display chrome (titles, fake rows) but edit nothing real.
 - **NovaForge panels:** Have `projectRoot` and `ready` flag, but no schemas, no data, no save targets.
 - **Project load depth:** Loading .atlas selects the adapter and registers descriptors, but does not load asset registries, gameplay data, or documents.
