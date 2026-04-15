@@ -33,6 +33,7 @@
 #endif
 
 #include <cstdint>
+#include <cstring>
 
 namespace NF {
 
@@ -91,6 +92,22 @@ public:
     [[nodiscard]] bool     isValid() const override { return m_width > 0 && m_height > 0; }
     [[nodiscard]] uint32_t width()   const override { return m_width; }
     [[nodiscard]] uint32_t height()  const override { return m_height; }
+
+    /// Copy a CPU-side BGRA pixel buffer into the DIB section scanline buffer
+    /// so that unbind() → BitBlt displays the software-rendered content.
+    /// `count` must equal width()*height(); excess pixels are ignored.
+    /// No-op on non-Windows platforms (no DIB section exists).
+    void writeScanlines(const uint32_t* pixels, size_t count) override {
+#if defined(_WIN32)
+        if (!m_bits || !pixels || m_width == 0 || m_height == 0) return;
+        size_t expected = static_cast<size_t>(m_width) * m_height;
+        if (count > expected) count = expected;
+        std::memcpy(m_bits, pixels, count * sizeof(uint32_t));
+#else
+        (void)pixels;
+        (void)count;
+#endif
+    }
 
     // ── GDI-specific helpers ──────────────────────────────────────────────────
 

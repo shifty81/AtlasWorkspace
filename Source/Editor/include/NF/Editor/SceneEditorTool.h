@@ -18,6 +18,7 @@
 #include "NF/Workspace/IViewportSceneProvider.h"
 #include "NF/Workspace/ViewportHostContract.h"
 #include "NF/Workspace/WorkspaceViewportManager.h"
+#include <cmath>
 #include <string>
 
 namespace NF {
@@ -52,6 +53,62 @@ struct SceneEditorStats {
     uint32_t selectionCount   = 0; // currently selected entities
     float    lastFrameMs      = 0.0f;
     mutable bool isDirty      = false; // unsaved changes (mutable: set from const renderToolView)
+};
+
+// ── SceneViewportCameraController ─────────────────────────────────
+// Fly-camera controller for the scene viewport.
+// Activates only while the right mouse button is held (Mouse2).
+// Owns the camera world-space transform; caller pushes state to the
+// ViewportCameraDescriptor after update() returns.
+
+struct SceneViewportCameraController {
+    // Pitch is clamped to ±kMaxPitchDegrees to prevent gimbal lock at the poles.
+    static constexpr float kMaxPitchDegrees  = 89.f;
+    static constexpr float kDegreesToRadians = 3.14159265f / 180.f;
+
+    float moveSpeed         = 10.f;   // world units per second
+    float mouseSensitivity  = 0.15f;  // degrees per pixel
+    float sprintMultiplier  = 3.f;    // Shift-key speed boost
+
+    /// Update camera state.  Mutates pos/yaw/pitch only while RMB is held.
+    void update(float dt, const InputSystem& input,
+                Vec3& pos, float& yaw, float& pitch) {
+        if (!input.isKeyDown(KeyCode::Mouse2)) { m_active = false; return; }
+        m_active = true;
+
+        float dx = input.state().mouse.deltaX * mouseSensitivity;
+        float dy = input.state().mouse.deltaY * mouseSensitivity;
+        yaw   += dx;
+        pitch -= dy;
+        // Clamp pitch to ±89° to prevent gimbal lock at the poles.
+        if (pitch >  kMaxPitchDegrees) pitch =  kMaxPitchDegrees;
+        if (pitch < -kMaxPitchDegrees) pitch = -kMaxPitchDegrees;
+
+        float yawRad   = yaw   * (kDegreesToRadians);
+        float pitchRad = pitch * (kDegreesToRadians);
+        Vec3 fwd{std::cos(yawRad) * std::cos(pitchRad),
+                 std::sin(pitchRad),
+                 std::sin(yawRad) * std::cos(pitchRad)};
+        fwd = fwd.normalized();
+        Vec3 worldUp{0.f, 1.f, 0.f};
+        Vec3 right = fwd.cross(worldUp).normalized();
+
+        float speed = moveSpeed;
+        if (input.isKeyDown(KeyCode::LShift) || input.isKeyDown(KeyCode::RShift))
+            speed *= sprintMultiplier;
+
+        if (input.isKeyDown(KeyCode::W)) pos = pos + fwd   *  speed * dt;
+        if (input.isKeyDown(KeyCode::S)) pos = pos + fwd   * -speed * dt;
+        if (input.isKeyDown(KeyCode::D)) pos = pos + right *  speed * dt;
+        if (input.isKeyDown(KeyCode::A)) pos = pos + right * -speed * dt;
+        if (input.isKeyDown(KeyCode::E)) pos = pos + worldUp *  speed * dt;
+        if (input.isKeyDown(KeyCode::Q)) pos = pos + worldUp * -speed * dt;
+    }
+
+    [[nodiscard]] bool isActive() const { return m_active; }
+
+private:
+    bool m_active = false;
 };
 
 // ── SceneEditorTool ───────────────────────────────────────────────
@@ -102,6 +159,16 @@ public:
         return m_sceneProvider;
     }
 
+    // ── Camera state accessors (for tests and overlay display) ────
+    [[nodiscard]] Vec3  cameraPosition() const { return m_camPos;   }
+    [[nodiscard]] float cameraYaw()      const { return m_camYaw;   }
+    [[nodiscard]] float cameraPitch()    const { return m_camPitch; }
+    [[nodiscard]] bool  isFlyCamActive() const { return m_camController.isActive(); }
+
+    void setCameraPosition(Vec3 pos)    { m_camPos   = pos; }
+    void setCameraYaw(float yaw)        { m_camYaw   = yaw; }
+    void setCameraPitch(float pitch)    { m_camPitch = pitch; }
+
     // ── Project adapter hooks ─────────────────────────────────────
     void onProjectLoaded(const std::string& projectId) override;
     void onProjectUnloaded() override;
@@ -148,6 +215,14 @@ private:
 
     // Input pointer injected via onAttachInput()
     const InputSystem*       m_input          = nullptr;
+
+    // ── Fly-camera state ───────────────────────────────────────────
+    // Updated each frame in update() when m_input is available.
+    // Pushed to the viewport slot as a ViewportCameraDescriptor.
+    Vec3  m_camPos   = {0.f, 0.f, 5.f};
+    float m_camYaw   = -90.f;  // degrees; -90 = look down -Z
+    float m_camPitch =   0.f;
+    SceneViewportCameraController m_camController;
 
     // ── Mutable per-view UI state (safe from const renderToolView) ─
     // Hierarchy selection — index into the displayed entity list, -1 = none.

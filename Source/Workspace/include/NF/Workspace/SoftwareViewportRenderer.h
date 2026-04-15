@@ -43,16 +43,17 @@ public:
         m_lastWidth  = w;
         m_lastHeight = h;
 
-        // Try to get a writable pixel buffer.  GDIViewportSurface exposes
-        // scanlines() — we detect it via a dynamic cast-free approach:
-        // We write into an internal buffer and then call a virtual
-        // writeScanlines() if the surface supports it.
-        //
-        // For simplicity, we always write into our internal buffer and
-        // expose it for test assertions.  The actual blit to screen happens
-        // through the surface's normal unbind() path.
+        // Fill the internal pixel buffer with the grid pattern.
+        // The buffer is always kept for test assertions (pixels()/pixelCount()).
         m_buffer.resize(static_cast<size_t>(w) * h);
         fillGrid(m_buffer.data(), w, h, slot);
+
+        // Push pixels into the surface's backing store via the virtual
+        // writeScanlines() hook.  GDIViewportSurface copies into its DIB
+        // section so the next unbind() → BitBlt displays the grid.
+        // GPU-backed surfaces that manage their own pixel data leave this
+        // as a no-op and handle content through their own shader pipeline.
+        surface.writeScanlines(m_buffer.data(), m_buffer.size());
     }
 
     /// Access the last rendered pixel buffer (BGRA, top-down).

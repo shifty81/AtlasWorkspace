@@ -40,6 +40,16 @@ public:
 
     [[nodiscard]] virtual uint32_t width()  const = 0;
     [[nodiscard]] virtual uint32_t height() const = 0;
+
+    /// Write a CPU-side pixel buffer (BGRA, top-down) into the surface's
+    /// backing store.  The buffer must contain exactly width()*height() pixels.
+    ///
+    /// Used by SoftwareViewportRenderer to push its grid pixels into the
+    /// GDI DIB section so they appear on screen after unbind() → BitBlt.
+    /// GPU-backed surfaces may leave this as a no-op if they use shaders instead.
+    ///
+    /// Default: no-op.  Override in concrete surfaces that support CPU writes.
+    virtual void writeScanlines(const uint32_t* /*pixels*/, size_t /*count*/) {}
 };
 
 // ── NullViewportSurface ───────────────────────────────────────────────────────

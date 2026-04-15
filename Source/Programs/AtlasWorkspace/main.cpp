@@ -726,6 +726,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Attach input system to the SceneEditorTool so the fly-camera
+    // controller can read WASD and mouse input each frame.
+    if (auto* rawTool = shell.toolRegistry().find(NF::HostToolId::SceneEditor)) {
+        if (auto* sceneTool = dynamic_cast<NF::SceneEditorTool*>(rawTool)) {
+            sceneTool->onAttachInput(&input);
+            NF_LOG_INFO("AtlasWorkspace", "SceneEditorTool input attached (fly-cam enabled)");
+        }
+    }
+
     NF_LOG_INFO("AtlasWorkspace", "Workspace ready — entering main loop");
 
     auto lastTime = std::chrono::high_resolution_clock::now();
@@ -795,6 +804,12 @@ int main(int argc, char* argv[]) {
     g_panelHost   = nullptr;
     g_toolDock    = nullptr;
 #endif
+
+    // Detach input from tools before shutting down the input system.
+    if (auto* rawTool = shell.toolRegistry().find(NF::HostToolId::SceneEditor)) {
+        if (auto* sceneTool = dynamic_cast<NF::SceneEditorTool*>(rawTool))
+            sceneTool->onDetachInput();
+    }
 
     input.shutdown();
     shell.shutdown();

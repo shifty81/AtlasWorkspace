@@ -127,6 +127,26 @@ void SceneEditorTool::update(float dt) {
     if (m_state != HostedToolState::Active) return;
     m_stats.lastFrameMs = dt * 1000.0f;
 
+    // ── Fly-camera update ─────────────────────────────────────────────────────
+    // Process WASD + mouse-look when an InputSystem is attached.
+    // Only runs when no external scene provider owns the camera (i.e. the tool
+    // drives the viewport camera directly rather than delegating to a runtime).
+    if (m_input && !m_sceneProvider
+            && m_viewportMgr && m_viewportHandle != kInvalidViewportHandle) {
+        m_camController.update(dt, *m_input, m_camPos, m_camYaw, m_camPitch);
+
+        // Push the updated camera descriptor to the viewport slot so the
+        // frame loop and any GPU backend use the correct view transform.
+        ViewportCameraDescriptor cam;
+        cam.position    = m_camPos;
+        cam.yaw         = m_camYaw;
+        cam.pitch       = m_camPitch;
+        cam.fovDegrees  = 60.f;
+        cam.nearPlane   = 0.1f;
+        cam.farPlane    = 10000.f;
+        m_viewportMgr->setCamera(m_viewportHandle, cam);
+    }
+
     // Submit gizmo commands for each selected entity when in a transform mode.
     // Position data is currently a centroid placeholder (0,0,0) until the scene
     // runtime feeds per-entity world positions via a future entity query API.
@@ -161,10 +181,10 @@ ViewportSceneState SceneEditorTool::provideScene(ViewportHandle handle,
     state.entityCount = m_stats.entityCount;
     state.clearColor  = 0x1E1E1EFFu; // dark viewport background
 
-    if (m_viewportMgr && slot.handle != kInvalidViewportHandle) {
-        // Camera update deferred until fly-cam wired
-        state.overrideCamera = false;
-    }
+    // The tool owns the camera when no external provider is attached.
+    // Signal to the frame loop that it should use the tool's camera descriptor,
+    // which is kept up-to-date by the fly-cam controller in update().
+    state.overrideCamera = (m_viewportHandle != kInvalidViewportHandle);
 
     return state;
 }
