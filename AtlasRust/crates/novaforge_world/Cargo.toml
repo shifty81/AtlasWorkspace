@@ -1,0 +1,12 @@
+[package]
+name = "novaforge_world"
+version = "0.1.0"
+edition = "2021"
+description = "Bevy WorldPlugin that wires up bevy_voxel_world for NovaForge"
+
+[dependencies]
+atlas_core       = { workspace = true }
+novaforge_voxel  = { workspace = true }
+bevy             = { workspace = true }
+bevy_voxel_world = { workspace = true }
+tracing          = { workspace = true }

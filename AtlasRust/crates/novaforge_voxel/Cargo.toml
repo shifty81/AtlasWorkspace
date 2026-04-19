@@ -1,0 +1,12 @@
+[package]
+name = "novaforge_voxel"
+version = "0.1.0"
+edition = "2021"
+description = "Voxel world configuration and procedural terrain generation for NovaForge"
+
+[dependencies]
+atlas_core       = { workspace = true }
+bevy             = { workspace = true }
+bevy_voxel_world = { workspace = true }
+serde            = { workspace = true }
+tracing          = { workspace = true }

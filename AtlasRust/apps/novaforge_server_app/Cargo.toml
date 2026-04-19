@@ -1,0 +1,11 @@
+[package]
+name = "novaforge_server_app"
+version = "0.1.0"
+edition = "2021"
+description = "NovaForge headless dedicated server — Phase 3 stub"
+
+[[bin]]
+name = "novaforge_server"
+path = "src/main.rs"
+
+[dependencies]

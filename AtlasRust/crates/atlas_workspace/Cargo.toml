@@ -1,0 +1,7 @@
+[package]
+name = "atlas_workspace"
+version = "0.1.0"
+edition = "2021"
+description = "AtlasWorkspace host-app logic (Phase 4)"
+
+[dependencies]

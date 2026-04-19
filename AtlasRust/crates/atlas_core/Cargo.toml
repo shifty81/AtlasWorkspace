@@ -1,0 +1,9 @@
+[package]
+name = "atlas_core"
+version = "0.1.0"
+edition = "2021"
+description = "Core types, versioning, and shared primitives for the Atlas/NovaForge ecosystem"
+
+[dependencies]
+serde      = { workspace = true }
+tracing    = { workspace = true }

@@ -1,0 +1,7 @@
+[package]
+name = "atlas_animation"
+version = "0.1.0"
+edition = "2021"
+description = "Skeletal animation clips and state machine (Phase 3)"
+
+[dependencies]

@@ -1,0 +1,7 @@
+[package]
+name = "atlas_physics"
+version = "0.1.0"
+edition = "2021"
+description = "bevy_rapier3d physics wrapper (Phase 3)"
+
+[dependencies]

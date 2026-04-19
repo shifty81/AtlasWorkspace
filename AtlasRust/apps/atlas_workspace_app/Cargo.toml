@@ -1,0 +1,11 @@
+[package]
+name = "atlas_workspace_app"
+version = "0.1.0"
+edition = "2021"
+description = "AtlasWorkspace IDE host — Phase 4 stub"
+
+[[bin]]
+name = "atlas_workspace"
+path = "src/main.rs"
+
+[dependencies]
