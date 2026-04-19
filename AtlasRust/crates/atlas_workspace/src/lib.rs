@@ -269,3 +269,135 @@ impl WorkspaceShell {
         }
     }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── ProjectFileVersion ────────────────────────────────────────────────────
+
+    #[test]
+    fn project_file_version_current() {
+        let v = ProjectFileVersion::current();
+        assert_eq!(v.major, 1);
+        assert_eq!(v.minor, 0);
+    }
+
+    #[test]
+    fn project_file_version_default_equals_current() {
+        assert_eq!(ProjectFileVersion::default(), ProjectFileVersion::current());
+    }
+
+    // ── ProjectSection ────────────────────────────────────────────────────────
+
+    #[test]
+    fn project_section_set_and_get() {
+        let mut section = ProjectSection::default();
+        section.set("author", "Atlas");
+        assert_eq!(section.get("author"), Some("Atlas"));
+        assert!(section.get("missing").is_none());
+    }
+
+    // ── WorkspaceProjectFile ──────────────────────────────────────────────────
+
+    #[test]
+    fn project_file_section_access() {
+        let mut pf = WorkspaceProjectFile::new("proj-001", "MyProject");
+        let section = pf.section("WorldEditor");
+        section.set("scene", "MainWorld.atlas");
+        assert_eq!(pf.get_section("WorldEditor").unwrap().get("scene"), Some("MainWorld.atlas"));
+    }
+
+    #[test]
+    fn project_file_save_and_load() {
+        let dir = std::env::temp_dir();
+        let path = dir.join(format!("atlas_proj_{}.json", std::process::id()));
+        let mut pf = WorkspaceProjectFile::new("test-id", "TestProject");
+        pf.set_content_root("Content/");
+        pf.section("Settings").set("theme", "dark");
+        pf.save(&path).expect("must save");
+        let loaded = WorkspaceProjectFile::load(&path).expect("must load");
+        assert_eq!(loaded.project_name, "TestProject");
+        assert_eq!(loaded.project_id,   "test-id");
+        assert_eq!(loaded.content_root, "Content/");
+        assert_eq!(loaded.get_section("Settings").unwrap().get("theme"), Some("dark"));
+        std::fs::remove_file(&path).ok();
+    }
+
+    // ── ProjectSerializer / WorkspaceShellSnapshot ───────────────────────────
+
+    #[test]
+    fn shell_snapshot_round_trip() {
+        let snap = WorkspaceShellSnapshot {
+            project_id:          "snap-001".into(),
+            project_name:        "SnapTest".into(),
+            content_root:        "Content/".into(),
+            active_tool_id:      "WorldEditor".into(),
+            registered_tool_ids: vec!["WorldEditor".into(), "AssetBrowser".into()],
+            visible_panel_ids:   vec!["Inspector".into()],
+            file_version:        ProjectFileVersion::current(),
+        };
+        let mut pf = WorkspaceProjectFile::new("snap-001", "SnapTest");
+        ProjectSerializer::serialize(&snap, &mut pf).expect("serialize must succeed");
+        let snap2 = ProjectSerializer::deserialize(&pf).expect("deserialize must succeed");
+        assert_eq!(snap2.project_id, "snap-001");
+        assert_eq!(snap2.active_tool_id, "WorldEditor");
+        assert!(snap2.registered_tool_ids.contains(&"AssetBrowser".into()));
+    }
+
+    #[test]
+    fn snapshot_is_invalid_when_empty() {
+        let snap = WorkspaceShellSnapshot::default();
+        assert!(!snap.is_valid(), "empty snapshot must be invalid");
+    }
+
+    #[test]
+    fn snapshot_is_valid_with_project_id() {
+        let snap = WorkspaceShellSnapshot {
+            project_id:   "valid".into(),
+            project_name: "Valid".into(),
+            ..Default::default()
+        };
+        assert!(snap.is_valid());
+    }
+
+    // ── WorkspaceShell ────────────────────────────────────────────────────────
+
+    #[test]
+    fn workspace_shell_register_and_activate_tool() {
+        let mut shell = WorkspaceShell::new("/tmp/test_ws");
+        shell.init();
+        shell.register_tool(WorkspaceTool {
+            id:           "WorldEditor".into(),
+            display_name: "World Editor".into(),
+            icon:         "🌍".into(),
+            active:       false,
+        });
+        shell.register_tool(WorkspaceTool {
+            id:           "ScriptEditor".into(),
+            display_name: "Script Editor".into(),
+            icon:         "📝".into(),
+            active:       false,
+        });
+        assert_eq!(shell.tools().len(), 2);
+        assert!(shell.activate_tool("WorldEditor"));
+        assert_eq!(shell.active_tool(), Some("WorldEditor"));
+        assert!(!shell.activate_tool("NonExistent"));
+    }
+
+    #[test]
+    fn workspace_shell_snapshot_reflects_state() {
+        let mut shell = WorkspaceShell::new("/tmp/snap_ws");
+        shell.init();
+        shell.register_tool(WorkspaceTool {
+            id: "AnimEditor".into(), display_name: "Anim".into(),
+            icon: "🎬".into(), active: false,
+        });
+        shell.activate_tool("AnimEditor");
+        let snap = shell.snapshot();
+        assert_eq!(snap.active_tool_id, "AnimEditor");
+        assert!(snap.registered_tool_ids.contains(&"AnimEditor".into()));
+    }
+}

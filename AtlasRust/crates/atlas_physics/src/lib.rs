@@ -250,13 +250,19 @@ impl PhysicsWorld {
     pub fn set_gravity(&mut self, g: Vec3) { self.gravity = g; }
     pub fn gravity(&self) -> Vec3 { self.gravity }
 
+    pub fn body_position(&self, idx: usize) -> Vec3 {
+        self.bodies[idx].position
+    }
+
     pub fn step(&mut self, dt: f32) {
         for body in &mut self.bodies {
             if body.rigid_body.use_gravity && body.rigid_body.body_type == BodyType::Dynamic {
                 body.rigid_body.apply_force(self.gravity * body.rigid_body.mass);
             }
             body.rigid_body.integrate(dt);
-            body.position = body.position + body.rigid_body.velocity * dt;
+            if body.rigid_body.body_type != BodyType::Static {
+                body.position = body.position + body.rigid_body.velocity * dt;
+            }
         }
     }
 
@@ -319,4 +325,166 @@ impl PhysicsWorld {
 
 impl Default for PhysicsWorld {
     fn default() -> Self { Self::new() }
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Vec3 ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn vec3_dot_product() {
+        let a = Vec3::new(1.0, 0.0, 0.0);
+        let b = Vec3::new(0.0, 1.0, 0.0);
+        assert_eq!(a.dot(b), 0.0, "orthogonal vectors have zero dot product");
+
+        let c = Vec3::new(2.0, 3.0, 4.0);
+        let d = Vec3::new(1.0, 1.0, 1.0);
+        assert_eq!(c.dot(d), 9.0);
+    }
+
+    #[test]
+    fn vec3_length() {
+        let v = Vec3::new(3.0, 4.0, 0.0);
+        assert!((v.length() - 5.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn vec3_add_sub_mul() {
+        let a = Vec3::new(1.0, 2.0, 3.0);
+        let b = Vec3::new(4.0, 5.0, 6.0);
+        let sum = a + b;
+        assert_eq!(sum.x, 5.0);
+        assert_eq!(sum.y, 7.0);
+        assert_eq!(sum.z, 9.0);
+
+        let diff = b - a;
+        assert_eq!(diff.x, 3.0);
+
+        let scaled = a * 2.0;
+        assert_eq!(scaled.z, 6.0);
+    }
+
+    // ── Aabb ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn aabb_contains_center() {
+        let aabb = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
+        assert!(aabb.contains(Vec3::new(0.0, 0.0, 0.0)), "AABB must contain its center");
+    }
+
+    #[test]
+    fn aabb_does_not_contain_outside_point() {
+        let aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0));
+        assert!(!aabb.contains(Vec3::new(2.0, 0.5, 0.5)));
+    }
+
+    #[test]
+    fn aabb_intersects_overlapping_boxes() {
+        let a = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(2.0, 2.0, 2.0));
+        let b = Aabb::new(Vec3::new(1.0, 1.0, 1.0), Vec3::new(3.0, 3.0, 3.0));
+        assert!(a.intersects(b), "overlapping boxes must intersect");
+    }
+
+    #[test]
+    fn aabb_does_not_intersect_separated_boxes() {
+        let a = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0));
+        let b = Aabb::new(Vec3::new(2.0, 2.0, 2.0), Vec3::new(3.0, 3.0, 3.0));
+        assert!(!a.intersects(b), "separated boxes must not intersect");
+    }
+
+    #[test]
+    fn aabb_center() {
+        let aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(4.0, 4.0, 4.0));
+        let c = aabb.center();
+        assert!((c.x - 2.0).abs() < 1e-5);
+        assert!((c.y - 2.0).abs() < 1e-5);
+    }
+
+    // ── Ray ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn ray_hits_unit_aabb() {
+        let ray = Ray {
+            origin: Vec3::new(-5.0, 0.5, 0.5),
+            direction: Vec3::new(1.0, 0.0, 0.0),
+        };
+        let aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0));
+        let hit = ray_intersect_aabb(ray, aabb);
+        assert!(hit.is_some(), "ray aligned with +X must hit the box");
+        let h = hit.unwrap();
+        assert!((h.distance - 5.0).abs() < 1e-3, "hit distance should be 5 units");
+    }
+
+    #[test]
+    fn ray_misses_aabb() {
+        let ray = Ray {
+            origin: Vec3::new(-5.0, 5.0, 0.5),
+            direction: Vec3::new(1.0, 0.0, 0.0),
+        };
+        let aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0));
+        assert!(ray_intersect_aabb(ray, aabb).is_none(), "ray above box must miss");
+    }
+
+    // ── RigidBody / PhysicsWorld ───────────────────────────────────────────
+
+    #[test]
+    fn physics_world_step_moves_dynamic_body() {
+        let mut world = PhysicsWorld::new();
+        world.init();
+        let body = RigidBody {
+            body_type:   BodyType::Dynamic,
+            mass:        1.0,
+            use_gravity: true,
+            ..Default::default()
+        };
+        let shape = CollisionShape::Box(Aabb::new(
+            Vec3::new(-0.5, -0.5, -0.5),
+            Vec3::new(0.5, 0.5, 0.5),
+        ));
+        let start = Vec3::new(0.0, 10.0, 0.0);
+        let idx = world.add_body(body, shape, start);
+        let y_before = world.body_position(idx).y;
+        world.step(1.0);
+        let y_after = world.body_position(idx).y;
+        assert!(y_after < y_before, "dynamic body should fall under gravity");
+    }
+
+    #[test]
+    fn physics_world_static_body_does_not_move() {
+        let mut world = PhysicsWorld::new();
+        let body = RigidBody {
+            body_type: BodyType::Static,
+            velocity:  Vec3::new(1.0, 1.0, 1.0),
+            mass:      1.0,
+            ..Default::default()
+        };
+        let shape = CollisionShape::Box(Aabb::new(
+            Vec3::new(-0.5, -0.5, -0.5),
+            Vec3::new(0.5, 0.5, 0.5),
+        ));
+        let start = Vec3::new(0.0, 0.0, 0.0);
+        let idx = world.add_body(body, shape, start);
+        world.step(1.0);
+        assert_eq!(world.body_position(idx).y, 0.0, "static body must not move");
+    }
+
+    #[test]
+    fn physics_world_raycast_hits_body() {
+        let mut world = PhysicsWorld::new();
+        let body = RigidBody::default();
+        let shape = CollisionShape::Box(Aabb::new(
+            Vec3::new(-1.0, -1.0, -1.0),
+            Vec3::new(1.0, 1.0, 1.0),
+        ));
+        world.add_body(body, shape, Vec3::new(0.0, 0.0, 0.0));
+        let ray = Ray {
+            origin:    Vec3::new(-10.0, 0.0, 0.0),
+            direction: Vec3::new(1.0, 0.0, 0.0),
+        };
+        assert!(world.raycast(ray).is_some(), "raycast should hit body");
+    }
 }

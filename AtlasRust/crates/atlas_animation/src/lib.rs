@@ -366,3 +366,70 @@ impl AnimationSystem {
 impl Default for AnimationSystem {
     fn default() -> Self { Self::new() }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skeleton_add_and_find_bone() {
+        let mut skel = Skeleton::new("TestSkeleton");
+        let root_idx = skel.add_bone("Root", -1, Transform::identity());
+        let child_idx = skel.add_bone("Spine", root_idx, Transform::identity());
+        assert_eq!(skel.bone_count(), 2);
+        assert!(skel.find_bone("Root").is_some());
+        assert!(skel.find_bone("Spine").is_some());
+        assert!(skel.find_bone("Missing").is_none());
+        assert_eq!(skel.bone(child_idx).unwrap().parent_index, root_idx);
+    }
+
+    #[test]
+    fn animation_clip_duration() {
+        let clip = AnimationClip::new("Walk", 1.5);
+        assert!((clip.duration() - 1.5).abs() < 1e-5, "duration should match constructor");
+    }
+
+    #[test]
+    fn animation_clip_add_channel_and_sample() {
+        let mut clip = AnimationClip::new("Idle", 1.0);
+        let ch = clip.add_channel(0);
+        // Add keyframes: position goes from 0 to 1 over 1 second
+        ch.keys.push(TransformKey { time: 0.0, value: Transform::identity() });
+        ch.keys.push(TransformKey {
+            time: 1.0,
+            value: Transform { position: Vec3::new(1.0, 0.0, 0.0), ..Transform::identity() },
+        });
+        // out_pose must be pre-sized to at least (max_bone_index + 1)
+        let mut pose = vec![Transform::identity(); 1];
+        clip.sample(0.5, &mut pose);
+        // mid-point: position.x should be ≈ 0.5
+        assert!((pose[0].position.x - 0.5).abs() < 1e-3, "mid-point lerp x ≈ 0.5");
+    }
+
+    #[test]
+    fn state_machine_transition_to() {
+        let mut sm = AnimationStateMachine::new();
+        let idle_clip = AnimationClip::new("Idle", 1.0);
+        let walk_clip = AnimationClip::new("Walk", 1.0);
+        let idle_idx = sm.add_clip(idle_clip);
+        let walk_idx = sm.add_clip(walk_clip);
+        sm.add_state("Idle", Some(idle_idx), true, 1.0);
+        sm.add_state("Walk", Some(walk_idx), true, 1.0);
+        sm.add_transition("Idle", "Walk", 0.0);
+        assert_eq!(sm.current_state(), "Idle");
+        sm.transition_to("Walk");
+        sm.update(0.016);
+        assert_eq!(sm.current_state(), "Walk");
+    }
+
+    #[test]
+    fn animation_system_creates_machines() {
+        let mut sys = AnimationSystem::new();
+        sys.init();
+        let idx = sys.create_machine();
+        assert!(sys.machine(idx).is_some());
+        assert!(sys.machine(idx + 1).is_none());
+    }
+}

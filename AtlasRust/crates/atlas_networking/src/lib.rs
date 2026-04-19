@@ -250,3 +250,85 @@ impl NetworkManager {
 impl Default for NetworkManager {
     fn default() -> Self { Self::new(NetRole::None) }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn packet_new_has_sender_and_type() {
+        let pkt = Packet::new(PacketType::Connect, 42);
+        assert_eq!(pkt.sender_id, 42);
+        assert!(matches!(pkt.packet_type, PacketType::Connect));
+    }
+
+    #[test]
+    fn connection_initial_state() {
+        let conn = Connection::new(1, "127.0.0.1", 7777);
+        assert_eq!(conn.id(), 1);
+        assert_eq!(conn.address(), "127.0.0.1");
+        assert_eq!(conn.port(), 7777);
+        assert!(matches!(conn.state(), ConnectionState::Disconnected));
+    }
+
+    #[test]
+    fn connection_send_queue() {
+        let mut conn = Connection::new(1, "127.0.0.1", 7777);
+        conn.set_state(ConnectionState::Connected);
+        let pkt = Packet::new(PacketType::EntityUpdate, 1);
+        conn.queue_send(pkt);
+        assert_eq!(conn.send_queue().len(), 1);
+        conn.clear_send_queue();
+        assert!(conn.send_queue().is_empty());
+    }
+
+    #[test]
+    fn connection_reliable_buffer() {
+        let mut conn = Connection::new(1, "127.0.0.1", 7777);
+        let mut pkt = Packet::new(PacketType::EntityUpdate, 1);
+        pkt.sequence_num = 7;
+        conn.queue_send(pkt);
+        conn.ack_reliable(7);
+        assert!(conn.reliable_buffer().is_empty());
+    }
+
+    #[test]
+    fn network_manager_connect_assigns_id() {
+        let mut mgr = NetworkManager::new(NetRole::Client);
+        let id = mgr.connect("10.0.0.1", 7777);
+        assert!(mgr.connection(id).is_some());
+    }
+
+    #[test]
+    fn network_manager_disconnect() {
+        let mut mgr = NetworkManager::new(NetRole::Client);
+        let id = mgr.connect("10.0.0.1", 7777);
+        mgr.disconnect(id);
+        assert!(mgr.connection(id).is_none());
+    }
+
+    #[test]
+    fn network_manager_broadcast() {
+        let mut mgr = NetworkManager::new(NetRole::Server);
+        let id1 = mgr.connect("10.0.0.1", 7777);
+        let id2 = mgr.connect("10.0.0.2", 7777);
+        mgr.connection_mut(id1).unwrap().set_state(ConnectionState::Connected);
+        mgr.connection_mut(id2).unwrap().set_state(ConnectionState::Connected);
+        let pkt = Packet::new(PacketType::EntityUpdate, 0);
+        mgr.broadcast(pkt);
+        assert_eq!(mgr.connection(id1).unwrap().send_queue().len(), 1);
+        assert_eq!(mgr.connection(id2).unwrap().send_queue().len(), 1);
+    }
+
+    #[test]
+    fn connection_timeout() {
+        let mut conn = Connection::new(1, "1.2.3.4", 9000);
+        // is_timed_out only returns true when Connected
+        conn.set_state(ConnectionState::Connected);
+        conn.set_last_heartbeat(0.0);
+        assert!(conn.is_timed_out(35.0, 30.0), "no heartbeat for 35 s should time out");
+        assert!(!conn.is_timed_out(25.0, 30.0), "25 s since heartbeat should NOT time out");
+    }
+}

@@ -30,6 +30,17 @@ impl Default for Vec4 {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Mat4(pub [[f32; 4]; 4]);
 
+impl Mat4 {
+    pub fn identity() -> Self {
+        Self([
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
+    }
+}
+
 impl Default for Mat4 {
     fn default() -> Self {
         Self([
@@ -248,4 +259,96 @@ impl Renderer {
 
 impl Default for Renderer {
     fn default() -> Self { Self::new(1280, 720) }
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_mesh() -> Mesh {
+        let verts = vec![
+            Vertex { position: Vec3::new(0.0, 0.0, 0.0), ..Default::default() },
+            Vertex { position: Vec3::new(1.0, 0.0, 0.0), ..Default::default() },
+            Vertex { position: Vec3::new(0.5, 1.0, 0.0), ..Default::default() },
+        ];
+        let indices = vec![0, 1, 2];
+        Mesh::new(verts, indices)
+    }
+
+    #[test]
+    fn mesh_triangle_count() {
+        let mesh = sample_mesh();
+        assert_eq!(mesh.triangle_count(), 1);
+        assert_eq!(mesh.vertex_count(), 3);
+    }
+
+    #[test]
+    fn mesh_bounds() {
+        let mesh = sample_mesh();
+        let (min, max) = mesh.bounds().unwrap();
+        assert_eq!(min.x, 0.0);
+        assert_eq!(max.x, 1.0);
+        assert_eq!(max.y, 1.0);
+    }
+
+    #[test]
+    fn mesh_dirty_flag() {
+        let mut mesh = sample_mesh();
+        assert!(mesh.is_dirty(), "new mesh should be dirty");
+        mesh.clear_dirty();
+        assert!(!mesh.is_dirty());
+        mesh.set_vertices(vec![]);
+        assert!(mesh.is_dirty(), "set_vertices must mark dirty");
+    }
+
+    #[test]
+    fn shader_compile() {
+        let mut shader = Shader::new("Test", "void main() {}", "void main() {}");
+        assert!(shader.compile());
+        assert!(shader.is_compiled());
+    }
+
+    #[test]
+    fn shader_uniforms() {
+        let mut shader = Shader::new("Test", "", "");
+        shader.set_uniform_f32("time", 1.5);
+        shader.set_uniform_vec3("lightDir", Vec3::new(0.0, 1.0, 0.0));
+        assert!((shader.uniform_f32("time").unwrap() - 1.5).abs() < 1e-5);
+        let ld = shader.uniform_vec3("lightDir").unwrap();
+        assert_eq!(ld.y, 1.0);
+    }
+
+    #[test]
+    fn renderer_add_and_query() {
+        let mut renderer = Renderer::new(1280, 720);
+        renderer.init();
+        let mesh_idx = renderer.add_mesh(sample_mesh());
+        let shader = Shader::new("Default", "", "");
+        let shader_idx = renderer.add_shader(shader);
+        let mat = Material::new("Ground");
+        let mat_idx = renderer.add_material(mat);
+        assert_eq!(mesh_idx, 0);
+        assert_eq!(shader_idx, 0);
+        assert_eq!(mat_idx, 0);
+    }
+
+    #[test]
+    fn renderer_submit_and_flush() {
+        let mut renderer = Renderer::new(1280, 720);
+        renderer.init();
+        let _m = renderer.add_mesh(sample_mesh());
+        let cmd = RenderCommand {
+            mesh_index:     0,
+            material_index: 0,
+            transform:      Mat4::identity(),
+            render_mode:    SceneRenderMode::Lit,
+            cast_shadow:    false,
+        };
+        renderer.submit(cmd);
+        assert_eq!(renderer.commands.len(), 1);
+        renderer.flush();
+        assert_eq!(renderer.commands.len(), 0);
+    }
 }

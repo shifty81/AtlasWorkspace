@@ -191,3 +191,38 @@ macro_rules! nf_error {
         tracing::error!(target: $subsystem, "{}", $msg)
     };
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_string_is_non_empty() {
+        assert!(!NF_VERSION_STRING.is_empty());
+    }
+
+    #[test]
+    fn version_parts_make_sense() {
+        assert!(NF_VERSION_MAJOR >= 0);
+        assert!(NF_VERSION_MINOR >= 0);
+        assert!(NF_VERSION_PATCH >= 0);
+    }
+
+    #[test]
+    fn material_ids_are_distinct() {
+        let ids = [mat::STONE, mat::DIRT, mat::GRASS, mat::WATER, mat::METAL, mat::GLASS,
+                   mat::ORE_IRON, mat::ORE_GOLD, mat::ORE_CRYSTAL];
+        for i in 0..ids.len() {
+            for j in (i + 1)..ids.len() {
+                assert_ne!(ids[i], ids[j], "material IDs must be unique");
+            }
+        }
+    }
+
+    #[test]
+    fn stone_material_is_zero() {
+        assert_eq!(mat::STONE, 0);
+    }
+}

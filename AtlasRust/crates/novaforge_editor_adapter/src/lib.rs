@@ -140,3 +140,77 @@ impl WorldSyncAdapter {
         std::fs::read_to_string(path).ok()
     }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn launch_contract_to_args() {
+        let contract = LaunchContract {
+            project_path:   "/projects/MyGame".into(),
+            workspace_root: "/ws".into(),
+            session_id:     "sess-1".into(),
+            headless:       false,
+            game_binary:    String::new(),
+        };
+        let args = contract.to_args();
+        assert!(args.iter().any(|a| a.contains("/projects/MyGame")));
+        assert!(args.iter().any(|a| a.contains("/ws")));
+        assert!(args.iter().any(|a| a.contains("sess-1")));
+    }
+
+    #[test]
+    fn bridge_initially_disconnected() {
+        let contract = LaunchContract::new("/projects/Test");
+        let bridge = EditorGameBridge::new(AdapterMode::OutOfProcess, contract);
+        assert!(!bridge.is_connected());
+        assert!(bridge.child_pid().is_none());
+    }
+
+    #[test]
+    fn bridge_in_process_begin_play() {
+        let contract = LaunchContract::new("/projects/Test");
+        let bridge = EditorGameBridge::new(AdapterMode::InProcess, contract);
+        let mut engine = atlas_engine::Engine::new(atlas_engine::EngineConfig {
+            headless: true,
+            ..Default::default()
+        });
+        engine.init_core();
+        bridge.begin_play(&mut engine);
+        assert!(engine.is_running());
+    }
+
+    #[test]
+    fn bridge_in_process_end_play() {
+        let contract = LaunchContract::new("/projects/Test");
+        let bridge = EditorGameBridge::new(AdapterMode::InProcess, contract);
+        let mut engine = atlas_engine::Engine::new(atlas_engine::EngineConfig {
+            headless: true,
+            ..Default::default()
+        });
+        engine.init_core();
+        bridge.begin_play(&mut engine);
+        // Subscribe to EDITOR_END_PLAY so we can verify it was published
+        let received = std::sync::Arc::new(std::sync::Mutex::new(false));
+        let r2 = received.clone();
+        engine.events.subscribe("EDITOR_END_PLAY", move |_| { *r2.lock().unwrap() = true; });
+        bridge.end_play(&mut engine);
+        assert!(*received.lock().unwrap(), "end_play must publish EDITOR_END_PLAY event");
+    }
+
+    #[test]
+    fn world_sync_snapshot_round_trip() {
+        let dir = std::env::temp_dir()
+            .join(format!("atlas_world_sync_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).ok();
+        let mut adapter = WorldSyncAdapter::new(&dir);
+        assert!(adapter.latest_snapshot().is_none(), "no snapshot before first write");
+        adapter.write_snapshot(r#"{"entities":42}"#).expect("must write snapshot");
+        let snap = adapter.latest_snapshot().expect("must find snapshot");
+        assert!(snap.contains("42"));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+}

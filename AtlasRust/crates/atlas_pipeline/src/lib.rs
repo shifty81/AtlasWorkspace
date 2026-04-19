@@ -350,3 +350,111 @@ impl PipelineWatcher {
 impl Drop for PipelineWatcher {
     fn drop(&mut self) { self.stop(); }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn change_event_type_round_trip() {
+        // ChangeEventType uses domain-specific variants; test as_str / from_str symmetry
+        for variant in [
+            ChangeEventType::AssetImported,
+            ChangeEventType::WorldChanged,
+            ChangeEventType::ScriptUpdated,
+        ] {
+            let s = variant.as_str();
+            let back = ChangeEventType::from_str(s);
+            assert_eq!(back, variant, "round-trip failed for {s}");
+        }
+    }
+
+    #[test]
+    fn change_event_unknown_type_is_unknown() {
+        assert!(matches!(ChangeEventType::from_str("gibberish"), ChangeEventType::Unknown));
+    }
+
+    #[test]
+    fn change_event_json_round_trip() {
+        let ev = ChangeEvent::new("WorldEditor", ChangeEventType::WorldChanged, "Content/Map.atlas");
+        let json = ev.to_json_string();
+        let back = ChangeEvent::from_json_str(&json).expect("must deserialize");
+        assert_eq!(back.tool, "WorldEditor");
+        assert_eq!(back.path, "Content/Map.atlas");
+        assert!(matches!(back.event_type, ChangeEventType::WorldChanged));
+    }
+
+    #[test]
+    fn manifest_register_and_find_asset() {
+        let mut manifest = Manifest::new();
+        let record = AssetRecord {
+            guid:        String::new(),
+            path:        "Textures/grass.png".into(),
+            asset_type:  "Texture2D".into(),
+            import_date: 0,
+            checksum:    String::new(),
+        };
+        let guid = manifest.register_asset(record);
+        assert!(!guid.is_empty(), "registered asset must get a GUID");
+        let found = manifest.find_by_guid(&guid);
+        assert!(found.is_some(), "must be findable by GUID");
+        assert_eq!(found.unwrap().path, "Textures/grass.png");
+    }
+
+    #[test]
+    fn manifest_find_by_path() {
+        let mut manifest = Manifest::new();
+        let record = AssetRecord {
+            guid: String::new(), path: "Audio/click.wav".into(),
+            asset_type: "AudioClip".into(), import_date: 0, checksum: String::new(),
+        };
+        manifest.register_asset(record);
+        assert!(manifest.find_by_path("Audio/click.wav").is_some());
+        assert!(manifest.find_by_path("NonExistent").is_none());
+    }
+
+    #[test]
+    fn manifest_remove_asset() {
+        let mut manifest = Manifest::new();
+        let record = AssetRecord {
+            guid: String::new(), path: "Mesh/cube.obj".into(),
+            asset_type: "Mesh".into(), import_date: 0, checksum: String::new(),
+        };
+        let guid = manifest.register_asset(record);
+        assert_eq!(manifest.record_count(), 1);
+        assert!(manifest.remove_asset(&guid));
+        assert_eq!(manifest.record_count(), 0);
+    }
+
+    #[test]
+    fn watch_log_append_and_file_created() {
+        let dir = std::env::temp_dir();
+        let path = dir.join(format!("atlas_test_watchlog_{}.log", std::process::id()));
+        let log = WatchLog::new(path.clone());
+        let ev = ChangeEvent::new("Test", ChangeEventType::AssetImported, "asset.png");
+        log.append(&ev);
+        assert!(path.exists(), "WatchLog must create the file on first append");
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.contains("asset.png"));
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn pipeline_watcher_poll_mode() {
+        let dir = std::env::temp_dir().join(format!("atlas_watcher_test_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).ok();
+        let watcher = PipelineWatcher::new(dir.clone());
+        let received = std::sync::Arc::new(std::sync::Mutex::new(Vec::<ChangeEvent>::new()));
+        let r2 = received.clone();
+        watcher.subscribe(move |ev| { r2.lock().unwrap().push(ev); });
+        let ev = ChangeEvent::new("Test", ChangeEventType::AssetImported, "poll_test.txt");
+        ev.write_to_dir(&dir).expect("must write event file");
+        watcher.poll();
+        let events = received.lock().unwrap();
+        assert!(!events.is_empty(), "poll must deliver the event written to the watch dir");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+}

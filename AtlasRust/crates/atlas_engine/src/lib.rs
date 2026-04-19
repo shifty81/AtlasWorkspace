@@ -350,3 +350,224 @@ impl Engine {
 impl Default for Engine {
     fn default() -> Self { Self::new(EngineConfig::default()) }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Logger ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn logger_sink_receives_messages() {
+        use std::sync::{Arc, Mutex};
+        let captured = Arc::new(Mutex::new(Vec::<String>::new()));
+        let cap2 = captured.clone();
+        let mut logger = Logger::new();
+        logger.set_sink(move |msg: &str| {
+            cap2.lock().unwrap().push(msg.to_string());
+        });
+        logger.info("hello");
+        logger.warn("watch out");
+        logger.error("oops");
+        let msgs = captured.lock().unwrap();
+        assert_eq!(msgs.len(), 3);
+        assert!(msgs[0].contains("INFO"));
+        assert!(msgs[1].contains("WARN"));
+        assert!(msgs[2].contains("ERROR"));
+    }
+
+    // ── EventBus ─────────────────────────────────────────────────────────────
+
+    #[test]
+    fn event_bus_publish_fires_subscriber() {
+        let mut bus = EventBus::new();
+        let fired = std::sync::Arc::new(std::sync::Mutex::new(false));
+        let f2 = fired.clone();
+        bus.subscribe("TestEvent", move |_e| { *f2.lock().unwrap() = true; });
+        bus.publish(Event::new("TestEvent"));
+        assert!(*fired.lock().unwrap(), "subscriber must be called on publish");
+    }
+
+    #[test]
+    fn event_bus_deferred_queue_flushed() {
+        let mut bus = EventBus::new();
+        let count = std::sync::Arc::new(std::sync::Mutex::new(0u32));
+        let c2 = count.clone();
+        bus.subscribe("Tick", move |_| { *c2.lock().unwrap() += 1; });
+        bus.enqueue(Event::new("Tick"));
+        bus.enqueue(Event::new("Tick"));
+        assert_eq!(bus.queue_size(), 2);
+        bus.flush();
+        assert_eq!(bus.queue_size(), 0);
+        assert_eq!(*count.lock().unwrap(), 2);
+    }
+
+    #[test]
+    fn event_bus_unsubscribe_stops_delivery() {
+        let mut bus = EventBus::new();
+        let count = std::sync::Arc::new(std::sync::Mutex::new(0u32));
+        let c2 = count.clone();
+        let id = bus.subscribe("E", move |_| { *c2.lock().unwrap() += 1; });
+        bus.publish(Event::new("E"));
+        bus.unsubscribe(id);
+        bus.publish(Event::new("E"));
+        assert_eq!(*count.lock().unwrap(), 1, "after unsubscribe, should receive only 1 event");
+    }
+
+    #[test]
+    fn event_bus_wildcard_matches_all() {
+        let mut bus = EventBus::new();
+        let count = std::sync::Arc::new(std::sync::Mutex::new(0u32));
+        let c2 = count.clone();
+        bus.subscribe("*", move |_| { *c2.lock().unwrap() += 1; });
+        bus.publish(Event::new("A"));
+        bus.publish(Event::new("B"));
+        bus.publish(Event::new("C"));
+        assert_eq!(*count.lock().unwrap(), 3);
+    }
+
+    #[test]
+    fn event_bus_total_published_counter() {
+        let mut bus = EventBus::new();
+        bus.publish(Event::new("X"));
+        bus.publish(Event::new("Y"));
+        assert_eq!(bus.total_published(), 2);
+    }
+
+    // ── EntityManager ────────────────────────────────────────────────────────
+
+    #[test]
+    fn entity_manager_create_and_destroy() {
+        let mut em = EntityManager::new();
+        let e1 = em.create();
+        let e2 = em.create();
+        assert_ne!(e1, e2);
+        assert!(em.is_alive(e1));
+        em.destroy(e1);
+        assert!(!em.is_alive(e1));
+        assert!(em.is_alive(e2));
+        assert_eq!(em.count(), 1);
+    }
+
+    #[test]
+    fn entity_manager_reuses_destroyed_ids() {
+        let mut em = EntityManager::new();
+        let e1 = em.create();
+        em.destroy(e1);
+        let e2 = em.create();
+        // The free list is LIFO, so the next create should reuse e1's id.
+        assert_eq!(e1, e2, "destroyed entity id should be reused");
+    }
+
+    #[test]
+    fn entity_manager_clear() {
+        let mut em = EntityManager::new();
+        em.create(); em.create(); em.create();
+        em.clear();
+        assert_eq!(em.count(), 0);
+    }
+
+    // ── ComponentStore ───────────────────────────────────────────────────────
+
+    #[derive(Debug, PartialEq)]
+    struct Position { x: f32, y: f32 }
+
+    #[derive(Debug, PartialEq)]
+    struct Health { hp: f32 }
+
+    #[test]
+    fn component_store_add_and_get() {
+        let mut store = ComponentStore::new();
+        store.add(1, Position { x: 10.0, y: 20.0 });
+        let pos = store.get::<Position>(1).unwrap();
+        assert_eq!(pos.x, 10.0);
+        assert_eq!(pos.y, 20.0);
+    }
+
+    #[test]
+    fn component_store_get_missing_returns_none() {
+        let store = ComponentStore::new();
+        assert!(store.get::<Position>(99).is_none());
+    }
+
+    #[test]
+    fn component_store_has() {
+        let mut store = ComponentStore::new();
+        store.add(1, Health { hp: 100.0 });
+        assert!(store.has::<Health>(1));
+        assert!(!store.has::<Health>(2));
+    }
+
+    #[test]
+    fn component_store_remove() {
+        let mut store = ComponentStore::new();
+        store.add(1, Health { hp: 50.0 });
+        store.remove::<Health>(1);
+        assert!(!store.has::<Health>(1));
+    }
+
+    #[test]
+    fn component_store_mutate() {
+        let mut store = ComponentStore::new();
+        store.add(1, Health { hp: 50.0 });
+        store.get_mut::<Health>(1).unwrap().hp = 75.0;
+        assert_eq!(store.get::<Health>(1).unwrap().hp, 75.0);
+    }
+
+    // ── Engine ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn engine_tick_increments_counter() {
+        let mut engine = Engine::new(EngineConfig { headless: true, ..Default::default() });
+        engine.init_core();
+        engine.tick(1.0 / 30.0);
+        engine.tick(1.0 / 30.0);
+        assert_eq!(engine.tick_count(), 2);
+    }
+
+    #[test]
+    fn engine_run_headless() {
+        let mut engine = Engine::new(EngineConfig { headless: true, ..Default::default() });
+        engine.init_core();
+        engine.run_headless(10);
+        assert_eq!(engine.tick_count(), 10);
+    }
+
+    #[test]
+    fn engine_max_ticks_stops_early() {
+        let mut engine = Engine::new(EngineConfig {
+            headless:  true,
+            max_ticks: 5,
+            ..Default::default()
+        });
+        engine.init_core();
+        engine.run_headless(100);  // ask for 100, should stop at 5
+        assert_eq!(engine.tick_count(), 5);
+    }
+
+    #[test]
+    fn engine_register_system() {
+        let mut engine = Engine::new(EngineConfig::default());
+        engine.register_system("Physics");
+        engine.register_system("Rendering");
+        let order = engine.system_execution_order();
+        // "Core" is registered in init_core; without calling init_core here we
+        // only see the two we registered.
+        assert!(order.contains(&"Physics".to_string()));
+        assert!(order.contains(&"Rendering".to_string()));
+    }
+
+    #[test]
+    fn engine_frame_callback_is_called() {
+        use std::sync::{Arc, Mutex};
+        let count = Arc::new(Mutex::new(0u32));
+        let c2 = count.clone();
+        let mut engine = Engine::new(EngineConfig { headless: true, ..Default::default() });
+        engine.init_core();
+        engine.set_frame_callback(move |_dt| { *c2.lock().unwrap() += 1; });
+        engine.run_headless(3);
+        assert_eq!(*count.lock().unwrap(), 3);
+    }
+}

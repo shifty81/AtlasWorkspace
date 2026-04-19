@@ -266,3 +266,150 @@ impl EditorContext {
 impl Default for EditorContext {
     fn default() -> Self { Self::new() }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── InspectorPanel ────────────────────────────────────────────────────────
+
+    #[test]
+    fn inspector_select_and_deselect() {
+        let mut panel = InspectorPanel::new();
+        assert!(panel.selected_id.is_none());
+        panel.select(42, "Entity 42");
+        assert_eq!(panel.selected_id, Some(42));
+        assert_eq!(panel.title, "Entity 42");
+        panel.deselect();
+        assert!(panel.selected_id.is_none());
+    }
+
+    #[test]
+    fn inspector_set_properties() {
+        let mut panel = InspectorPanel::new();
+        panel.select(1, "Test");
+        panel.set_bool("IsActive", true, "General");
+        panel.set_float("Mass", 9.8, "Physics");
+        panel.set_string("Tag", "Player", "Meta");
+        assert_eq!(panel.properties.len(), 3);
+        let mass = panel.properties.iter().find(|p| p.name == "Mass").unwrap();
+        assert_eq!(mass.category, "Physics");
+    }
+
+    #[test]
+    fn inspector_deselect_clears_properties() {
+        let mut panel = InspectorPanel::new();
+        panel.select(1, "X");
+        panel.set_float("Speed", 5.0, "Movement");
+        panel.deselect();
+        assert!(panel.properties.is_empty(), "deselect must clear properties");
+    }
+
+    // ── ConsolePanel ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn console_push_and_read() {
+        let mut console = ConsolePanel::new(100);
+        console.push(LogLevel::Info, "Startup complete", "Engine");
+        console.push(LogLevel::Warn, "Missing texture", "Renderer");
+        assert_eq!(console.count(), 2);
+        assert_eq!(console.entries()[0].message, "Startup complete");
+    }
+
+    #[test]
+    fn console_max_entries_enforced() {
+        let mut console = ConsolePanel::new(3);
+        for i in 0..10 {
+            console.push(LogLevel::Info, format!("msg {i}"), "Test");
+        }
+        assert_eq!(console.count(), 3, "console must not exceed max_entries");
+    }
+
+    #[test]
+    fn console_clear() {
+        let mut console = ConsolePanel::new(100);
+        console.push(LogLevel::Error, "Crash!", "System");
+        console.clear();
+        assert_eq!(console.count(), 0);
+    }
+
+    // ── DiagnosticsProfiler ───────────────────────────────────────────────────
+
+    #[test]
+    fn profiler_begin_frame_and_samples() {
+        let mut profiler = DiagnosticsProfiler::default();
+        profiler.begin_frame(1.0 / 60.0);
+        profiler.push_sample("Physics", 2.5, 0);
+        profiler.push_sample("Render", 4.0, 0);
+        assert_eq!(profiler.samples.len(), 2);
+        assert!(profiler.fps > 0.0);
+    }
+
+    #[test]
+    fn profiler_begin_frame_clears_samples() {
+        let mut profiler = DiagnosticsProfiler::default();
+        profiler.begin_frame(1.0 / 30.0);
+        profiler.push_sample("Physics", 1.0, 0);
+        profiler.begin_frame(1.0 / 30.0); // second frame clears samples
+        assert_eq!(profiler.samples.len(), 0);
+    }
+
+    // ── UndoStack ─────────────────────────────────────────────────────────────
+
+    struct DummyCmd { name: &'static str }
+    impl UndoableCommand for DummyCmd {
+        fn execute(&mut self) {}
+        fn undo(&mut self) {}
+        fn description(&self) -> &str { self.name }
+    }
+
+    #[test]
+    fn undo_stack_execute_and_undo() {
+        let mut stack: UndoStack = UndoStack::new(10);
+        assert!(!stack.can_undo());
+        assert!(!stack.can_redo());
+        stack.execute(Box::new(DummyCmd { name: "AddOne" }));
+        assert!(stack.can_undo());
+        assert!(!stack.can_redo());
+        assert_eq!(stack.undo_description(), Some("AddOne"));
+        let undid = stack.undo();
+        assert!(undid);
+        assert!(!stack.can_undo());
+        assert!(stack.can_redo());
+    }
+
+    #[test]
+    fn undo_stack_redo() {
+        let mut stack = UndoStack::new(10);
+        stack.execute(Box::new(DummyCmd { name: "AddOne" }));
+        stack.undo();
+        assert!(stack.can_redo());
+        assert_eq!(stack.redo_description(), Some("AddOne"));
+        let redid = stack.redo();
+        assert!(redid);
+        assert!(!stack.can_redo());
+        assert!(stack.can_undo());
+    }
+
+    #[test]
+    fn undo_stack_execute_clears_redo() {
+        let mut stack = UndoStack::new(10);
+        stack.execute(Box::new(DummyCmd { name: "A" }));
+        stack.undo();
+        stack.execute(Box::new(DummyCmd { name: "B" }));
+        assert!(!stack.can_redo(), "executing a new command must clear the redo stack");
+    }
+
+    #[test]
+    fn undo_stack_max_depth() {
+        let mut stack = UndoStack::new(3);
+        for _ in 0..10 {
+            stack.execute(Box::new(DummyCmd { name: "X" }));
+        }
+        let mut undo_count = 0;
+        while stack.can_undo() { stack.undo(); undo_count += 1; }
+        assert_eq!(undo_count, 3);
+    }
+}

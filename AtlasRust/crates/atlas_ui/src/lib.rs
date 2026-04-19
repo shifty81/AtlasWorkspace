@@ -287,3 +287,163 @@ impl PanelRegistry {
         self.panels.iter().filter(|p| p.visible)
     }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Color ────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn color_from_rgb() {
+        let c = Color::rgb(255, 128, 0);
+        assert_eq!(c.r, 255);
+        assert_eq!(c.g, 128);
+        assert_eq!(c.b, 0);
+        assert_eq!(c.a, 255);
+    }
+
+    #[test]
+    fn color_from_rgba() {
+        let c = Color::rgba(10, 20, 30, 128);
+        assert_eq!(c.a, 128);
+    }
+
+    // ── Theme ────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn dark_theme_background_is_dark() {
+        let dark = Theme::dark();
+        // Background colour for dark theme should have low luminance
+        let bg = dark.tokens.background;
+        assert!(bg.r < 80 && bg.g < 80 && bg.b < 80, "dark theme background must be dark");
+    }
+
+    #[test]
+    fn light_theme_background_is_light() {
+        let light = Theme::light();
+        let bg = light.tokens.background;
+        assert!(bg.r > 180 && bg.g > 180, "light theme background must be light");
+    }
+
+    // ── CommandRegistry ───────────────────────────────────────────────────────
+
+    #[test]
+    fn command_registry_register_and_find() {
+        let mut reg = CommandRegistry::new();
+        reg.register(CommandDescriptor {
+            id:           "file.save".into(),
+            display_name: "Save".into(),
+            shortcut:     "Ctrl+S".into(),
+            category:     "File".into(),
+        });
+        let cmd = reg.find("file.save").expect("must find registered command");
+        assert_eq!(cmd.display_name, "Save");
+        assert!(reg.find("nonexistent").is_none());
+    }
+
+    #[test]
+    fn command_registry_count() {
+        let mut reg = CommandRegistry::new();
+        assert_eq!(reg.count(), 0);
+        for i in 0..5 {
+            reg.register(CommandDescriptor {
+                id:           format!("cmd.{i}"),
+                display_name: format!("Cmd {i}"),
+                shortcut:     String::new(),
+                category:     "Test".into(),
+            });
+        }
+        assert_eq!(reg.count(), 5);
+    }
+
+    // ── FocusService ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn focus_service_request_and_release() {
+        let mut svc = FocusService::default();
+        svc.request_focus("Inspector");
+        assert_eq!(svc.focused_panel(), Some("Inspector"));
+        assert!(svc.has_focus("Inspector"));
+        assert!(!svc.has_focus("Console"));
+        svc.release_focus();
+        assert!(svc.focused_panel().is_none());
+    }
+
+    #[test]
+    fn focus_service_steal_focus() {
+        let mut svc = FocusService::default();
+        svc.request_focus("PanelA");
+        svc.request_focus("PanelB");
+        assert_eq!(svc.focused_panel(), Some("PanelB"), "latest request wins");
+    }
+
+    // ── NotificationHost ──────────────────────────────────────────────────────
+
+    #[test]
+    fn notification_host_push_and_expire() {
+        let mut host = NotificationHost::default();
+        host.push(NotificationLevel::Info, "Hello", 2.0);
+        assert_eq!(host.count(), 1);
+        host.tick(3.0);   // advance past the timeout
+        assert_eq!(host.count(), 0, "notification must expire after timeout");
+    }
+
+    #[test]
+    fn notification_host_dismiss() {
+        let mut host = NotificationHost::default();
+        let id = host.push(NotificationLevel::Warning, "Warn", 60.0);
+        assert_eq!(host.count(), 1);
+        host.dismiss(id);
+        assert_eq!(host.count(), 0);
+    }
+
+    // ── TooltipService ────────────────────────────────────────────────────────
+
+    #[test]
+    fn tooltip_appears_after_delay() {
+        let mut svc = TooltipService::default();
+        svc.hover("Hello tooltip", 0.5);
+        svc.tick(0.3);
+        assert!(svc.visible_text().is_none(), "tooltip must not show before delay");
+        svc.tick(0.3);
+        assert_eq!(svc.visible_text(), Some("Hello tooltip"));
+    }
+
+    #[test]
+    fn tooltip_clears() {
+        let mut svc = TooltipService::default();
+        svc.hover("Test", 0.0);
+        svc.tick(0.1);
+        svc.clear();
+        assert!(svc.visible_text().is_none());
+    }
+
+    // ── PanelRegistry ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn panel_registry_register_and_find() {
+        let mut reg = PanelRegistry::default();
+        reg.register(PanelDescriptor {
+            id:       "Inspector".into(),
+            title:    "Inspector".into(),
+            visible:  true,
+            closable: true,
+        });
+        assert!(reg.find("Inspector").is_some());
+        assert!(reg.find("Missing").is_none());
+    }
+
+    #[test]
+    fn panel_registry_set_visible() {
+        let mut reg = PanelRegistry::default();
+        reg.register(PanelDescriptor {
+            id: "Console".into(), title: "Console".into(), visible: true, closable: true,
+        });
+        reg.set_visible("Console", false);
+        let count: usize = reg.visible_panels().count();
+        assert_eq!(count, 0, "hidden panel must not appear in visible_panels");
+    }
+}

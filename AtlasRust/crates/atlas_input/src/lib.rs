@@ -230,3 +230,97 @@ impl InputSystem {
 impl Default for InputSystem {
     fn default() -> Self { Self::new() }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn key_press_is_detected() {
+        let mut sys = InputSystem::new();
+        sys.set_key_down(KeyCode::A);
+        sys.update();
+        assert!(sys.is_key_down(KeyCode::A));
+    }
+
+    #[test]
+    fn key_release_is_detected() {
+        let mut sys = InputSystem::new();
+        sys.set_key_down(KeyCode::Space);
+        sys.update();
+        sys.set_key_up(KeyCode::Space);
+        sys.update();
+        assert!(!sys.is_key_down(KeyCode::Space));
+    }
+
+    #[test]
+    fn mouse_position_updated() {
+        let mut sys = InputSystem::new();
+        sys.set_mouse_position(320.0, 240.0);
+        sys.update();
+        let s = sys.state();
+        assert_eq!(s.mouse.x, 320.0);
+        assert_eq!(s.mouse.y, 240.0);
+    }
+
+    #[test]
+    fn text_input_accumulated() {
+        let mut sys = InputSystem::new();
+        sys.append_text_input('H');
+        sys.append_text_input('i');
+        // Read before calling update (update clears the buffer)
+        let text = &sys.state().text_input;
+        assert_eq!(text, "Hi");
+    }
+
+    #[test]
+    fn text_input_cleared_after_update() {
+        let mut sys = InputSystem::new();
+        sys.append_text_input('X');
+        sys.update();
+        sys.update();
+        assert!(sys.state().text_input.is_empty());
+    }
+
+    #[test]
+    fn action_binding_fires_on_key() {
+        let mut sys = InputSystem::new();
+        sys.bind_action(ActionBinding {
+            action_name: "Jump".into(),
+            key:   KeyCode::Space,
+            ctrl:  false,
+            shift: false,
+            alt:   false,
+        });
+        sys.set_key_down(KeyCode::Space);
+        sys.update();
+        assert!(sys.is_action_active("Jump"), "Jump action must be active when Space is down");
+    }
+
+    #[test]
+    fn action_binding_inactive_without_key() {
+        let mut sys = InputSystem::new();
+        sys.bind_action(ActionBinding {
+            action_name: "Run".into(),
+            key:   KeyCode::LShift,
+            ctrl:  false,
+            shift: false,
+            alt:   false,
+        });
+        sys.update();
+        assert!(!sys.is_action_active("Run"));
+    }
+
+    #[test]
+    fn gamepad_axes_set() {
+        let mut sys = InputSystem::new();
+        sys.set_gamepad_connected(true);
+        sys.set_gamepad_axes(0.5, -0.3, 0.1, 0.9);
+        sys.update();
+        let gp = &sys.state().gamepad;
+        assert!((gp.left_stick_x - 0.5).abs() < 1e-5);
+        assert!((gp.left_stick_y - (-0.3)).abs() < 1e-5);
+    }
+}

@@ -255,3 +255,94 @@ impl AudioDevice {
 impl Default for AudioDevice {
     fn default() -> Self { Self::new() }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn audio_clip_duration_pcm_stereo() {
+        // Stereo16: bytes_per_sample=2, channels=2 → 4 bytes per frame
+        // 44100 Hz, 1 second → 44100*4 = 176400 bytes
+        let data = vec![0u8; 176_400];
+        let clip = AudioClip::new("test", AudioFormat::Stereo16, 44100, data);
+        let dur = clip.duration();
+        assert!((dur - 1.0).abs() < 1e-3, "stereo clip duration should be 1 second, got {dur}");
+    }
+
+    #[test]
+    fn audio_source_play_stop() {
+        let mut src = AudioSource::new();
+        assert!(!src.is_playing());
+        src.play();
+        assert!(src.is_playing());
+        src.stop();
+        assert!(!src.is_playing());
+        assert_eq!(src.playback_position(), 0.0);
+    }
+
+    #[test]
+    fn audio_source_advance_without_loop_stops_at_end() {
+        let mut src = AudioSource::with_clip(0);
+        src.play();
+        src.set_looping(false);
+        src.advance(2.0, 1.0);  // advance 2 s on a 1 s clip → should stop
+        assert!(!src.is_playing(), "non-looping source should stop when clip ends");
+    }
+
+    #[test]
+    fn audio_source_advance_with_loop_wraps() {
+        let mut src = AudioSource::with_clip(0);
+        src.play();
+        src.set_looping(true);
+        src.advance(1.5, 1.0);  // advance 1.5 s on a 1 s clip → wrap to 0.5
+        assert!(src.is_playing(), "looping source must keep playing");
+        assert!(src.playback_position() < 1.0, "position must wrap");
+    }
+
+    #[test]
+    fn audio_source_volume_clamp() {
+        let mut src = AudioSource::new();
+        src.set_volume(2.0);
+        assert_eq!(src.volume(), 1.0, "volume clamps at 1.0");
+        src.set_volume(-0.5);
+        assert_eq!(src.volume(), 0.0, "volume clamps at 0.0");
+    }
+
+    #[test]
+    fn mixer_effective_volume() {
+        let mut mixer = AudioMixer::new();
+        mixer.set_master_volume(0.5);
+        let ch = mixer.add_channel("Music", 0.8);
+        let eff = mixer.effective_volume(ch);
+        assert!((eff - 0.4).abs() < 1e-5, "effective = master * channel: 0.5*0.8 = 0.4");
+    }
+
+    #[test]
+    fn mixer_mute_channel() {
+        let mut mixer = AudioMixer::new();
+        let ch = mixer.add_channel("SFX", 1.0);
+        mixer.set_channel_muted(ch, true);
+        assert_eq!(mixer.effective_volume(ch), 0.0, "muted channel must have zero effective volume");
+    }
+
+    #[test]
+    fn audio_device_init_and_shutdown() {
+        let mut device = AudioDevice::new();
+        let ok = device.init();
+        assert!(ok, "headless audio device init should succeed");
+        device.shutdown();
+    }
+
+    #[test]
+    fn audio_device_add_clip_and_source() {
+        let mut device = AudioDevice::new();
+        device.init();
+        let clip = AudioClip::new("click", AudioFormat::Mono16, 44100, vec![0u8; 1000]);
+        let _clip_idx = device.add_clip(clip);
+        let src_idx = device.add_source();
+        assert!(device.source(src_idx).is_some());
+    }
+}

@@ -256,3 +256,122 @@ impl PatchApplicator {
         Ok(applied)
     }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn patch_version_display() {
+        let v = PatchVersion { major: 1, minor: 2, patch: 3 };
+        assert_eq!(format!("{v}"), "1.2.3");
+    }
+
+    #[test]
+    fn patch_version_ordering() {
+        let v1 = PatchVersion::new(1, 0, 0);
+        let v2 = PatchVersion::new(1, 1, 0);
+        assert!(v1 < v2);
+    }
+
+    #[test]
+    fn patch_manifest_add_entries_and_count() {
+        let from = PatchVersion::new(1, 0, 0);
+        let to   = PatchVersion::new(1, 1, 0);
+        let mut manifest = PatchManifest::new(from, to, "Initial patch");
+        manifest.add_entry(PatchEntry {
+            path:      "Content/Map.atlas".into(),
+            operation: PatchOp::Create { checksum: "abc123".into() },
+            size:      1024,
+        });
+        manifest.add_entry(PatchEntry {
+            path:      "Content/Old.atlas".into(),
+            operation: PatchOp::Delete,
+            size:      0,
+        });
+        assert_eq!(manifest.entry_count(), 2);
+    }
+
+    #[test]
+    fn patch_manifest_save_and_load() {
+        let dir = std::env::temp_dir();
+        let path = dir.join(format!("atlas_patch_manifest_{}.json", std::process::id()));
+        let from = PatchVersion::new(0, 9, 0);
+        let to   = PatchVersion::new(1, 0, 0);
+        let mut manifest = PatchManifest::new(from, to, "Full release");
+        manifest.add_entry(PatchEntry {
+            path:      "Bin/novaforge_server".into(),
+            operation: PatchOp::Create { checksum: "deadbeef".into() },
+            size:      8_192,
+        });
+        manifest.save(&path).expect("must save manifest");
+        let loaded = PatchManifest::load(&path).expect("must load manifest");
+        assert_eq!(loaded.entry_count(), 1);
+        assert_eq!(loaded.entries[0].path, "Bin/novaforge_server");
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn installed_manifest_register_and_find() {
+        let mut installed = InstalledManifest::new();
+        installed.register_file(FileRecord {
+            path:     "Content/Map.atlas".into(),
+            checksum: "abc".into(),
+            size:     512,
+        });
+        assert!(installed.find_file("Content/Map.atlas").is_some());
+        assert!(installed.find_file("Missing").is_none());
+    }
+
+    #[test]
+    fn installed_manifest_remove_file() {
+        let mut installed = InstalledManifest::new();
+        installed.register_file(FileRecord {
+            path: "remove_me.txt".into(), checksum: "x".into(), size: 10,
+        });
+        installed.remove_file("remove_me.txt");
+        assert!(installed.find_file("remove_me.txt").is_none());
+    }
+
+    #[test]
+    fn patch_verifier_missing_file_detected() {
+        let dir = std::env::temp_dir().join(format!("atlas_patch_verify_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).ok();
+        let verifier = PatchVerifier::new(&dir);
+        let from = PatchVersion::new(1, 0, 0);
+        let to   = PatchVersion::new(1, 1, 0);
+        let mut manifest = PatchManifest::new(from, to, "test");
+        manifest.add_entry(PatchEntry {
+            path:      "non_existent_file.txt".into(),
+            operation: PatchOp::Create { checksum: "anything".into() },
+            size:      100,
+        });
+        let errors = verifier.verify(&manifest);
+        assert!(!errors.is_empty(), "verifier must report missing file as error");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn patch_verifier_correct_file_passes() {
+        let dir = std::env::temp_dir().join(format!("atlas_patch_ok_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).ok();
+        let file_path = dir.join("asset.bin");
+        let data = b"hello world";
+        std::fs::write(&file_path, data).unwrap();
+        let verifier = PatchVerifier::new(&dir);
+        // Use empty checksum so verification is skipped (only existence is checked)
+        let from = PatchVersion::new(1, 0, 0);
+        let to   = PatchVersion::new(1, 1, 0);
+        let mut manifest = PatchManifest::new(from, to, "test");
+        manifest.add_entry(PatchEntry {
+            path:      "asset.bin".into(),
+            operation: PatchOp::Replace { checksum: String::new() }, // empty = skip checksum
+            size:      data.len() as u64,
+        });
+        let errors = verifier.verify(&manifest);
+        assert!(errors.is_empty(), "existing file with empty checksum must pass: {errors:?}");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+}
