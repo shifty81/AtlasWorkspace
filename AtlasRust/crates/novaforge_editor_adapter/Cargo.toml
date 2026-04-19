@@ -1,0 +1,7 @@
+[package]
+name = "novaforge_editor_adapter"
+version = "0.1.0"
+edition = "2021"
+description = "Editor-to-game bridge adapter (Phase 2)"
+
+[dependencies]

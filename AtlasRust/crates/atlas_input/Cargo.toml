@@ -1,0 +1,7 @@
+[package]
+name = "atlas_input"
+version = "0.1.0"
+edition = "2021"
+description = "leafwing-input-manager action bindings (Phase 3)"
+
+[dependencies]

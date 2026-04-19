@@ -1,0 +1,62 @@
+[workspace]
+members = [
+    # Engine subsystem crates
+    "crates/atlas_core",
+    "crates/atlas_engine",
+    "crates/atlas_renderer",
+    "crates/atlas_physics",
+    "crates/atlas_audio",
+    "crates/atlas_animation",
+    "crates/atlas_input",
+    "crates/atlas_networking",
+    "crates/atlas_ui",
+    "crates/atlas_pipeline",
+    "crates/atlas_workspace",
+    "crates/atlas_editor",
+    # NovaForge game crates
+    "crates/novaforge_voxel",
+    "crates/novaforge_world",
+    "crates/novaforge_game",
+    "crates/novaforge_editor_adapter",
+    "crates/novaforge_patch",
+    # Application binaries
+    "apps/atlas_workspace_app",
+    "apps/novaforge_game_app",
+    "apps/novaforge_editor_app",
+    "apps/novaforge_server_app",
+]
+resolver = "2"
+
+[workspace.dependencies]
+# ── Bevy engine ───────────────────────────────────────────────────
+bevy            = { version = "0.18" }
+bevy_voxel_world = { version = "0.15" }
+bevy_egui       = { version = "0.39" }
+bevy_rapier3d   = { version = "0.33" }
+
+# ── Serialization ─────────────────────────────────────────────────
+serde      = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+
+# ── Logging ───────────────────────────────────────────────────────
+tracing            = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# ── Workspace-internal crates ─────────────────────────────────────
+atlas_core                = { path = "crates/atlas_core" }
+atlas_engine              = { path = "crates/atlas_engine" }
+atlas_renderer            = { path = "crates/atlas_renderer" }
+atlas_physics             = { path = "crates/atlas_physics" }
+atlas_audio               = { path = "crates/atlas_audio" }
+atlas_animation           = { path = "crates/atlas_animation" }
+atlas_input               = { path = "crates/atlas_input" }
+atlas_networking          = { path = "crates/atlas_networking" }
+atlas_ui                  = { path = "crates/atlas_ui" }
+atlas_pipeline            = { path = "crates/atlas_pipeline" }
+atlas_workspace           = { path = "crates/atlas_workspace" }
+atlas_editor              = { path = "crates/atlas_editor" }
+novaforge_voxel           = { path = "crates/novaforge_voxel" }
+novaforge_world           = { path = "crates/novaforge_world" }
+novaforge_game            = { path = "crates/novaforge_game" }
+novaforge_editor_adapter  = { path = "crates/novaforge_editor_adapter" }
+novaforge_patch           = { path = "crates/novaforge_patch" }

@@ -1,0 +1,16 @@
+[package]
+name = "novaforge_game_app"
+version = "0.1.0"
+edition = "2021"
+description = "NovaForge — standalone voxel game client (Phase 1)"
+
+[[bin]]
+name = "novaforge_game"
+path = "src/main.rs"
+
+[dependencies]
+novaforge_game  = { workspace = true }
+atlas_core      = { workspace = true }
+bevy            = { workspace = true }
+tracing         = { workspace = true }
+tracing-subscriber = { workspace = true }

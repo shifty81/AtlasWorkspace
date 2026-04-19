@@ -1,0 +1,7 @@
+[package]
+name = "novaforge_patch"
+version = "0.1.0"
+edition = "2021"
+description = "Patch and update system (Phase 3)"
+
+[dependencies]

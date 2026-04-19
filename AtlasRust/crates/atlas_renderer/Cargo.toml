@@ -1,0 +1,7 @@
+[package]
+name = "atlas_renderer"
+version = "0.1.0"
+edition = "2021"
+description = "Bevy 3D renderer configuration and custom shaders (Phase 3)"
+
+[dependencies]
