@@ -146,6 +146,7 @@ fn fly_camera(
     // Only look around when the cursor is captured (FPS mode)
     let grabbed = cursor
         .single()
+        .ok()
         .map(|c| c.grab_mode != CursorGrabMode::None)
         .unwrap_or(false);
 
