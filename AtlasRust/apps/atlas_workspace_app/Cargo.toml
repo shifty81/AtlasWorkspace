@@ -9,3 +9,11 @@ name = "atlas_workspace"
 path = "src/main.rs"
 
 [dependencies]
+atlas_core      = { workspace = true }
+atlas_engine    = { workspace = true }
+atlas_workspace = { workspace = true }
+atlas_editor    = { workspace = true }
+atlas_ui        = { workspace = true }
+atlas_pipeline  = { workspace = true }
+tracing         = { workspace = true }
+tracing-subscriber = { workspace = true }

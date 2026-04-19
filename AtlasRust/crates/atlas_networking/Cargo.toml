@@ -5,3 +5,7 @@ edition = "2021"
 description = "Client/server replication via bevy_replicon (Phase 3)"
 
 [dependencies]
+atlas_core  = { workspace = true }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+tracing     = { workspace = true }

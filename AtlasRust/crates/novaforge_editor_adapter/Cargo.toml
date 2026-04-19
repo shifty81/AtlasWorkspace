@@ -5,3 +5,9 @@ edition = "2021"
 description = "Editor-to-game bridge adapter (Phase 2)"
 
 [dependencies]
+atlas_core      = { workspace = true }
+atlas_engine    = { path = "../atlas_engine" }
+atlas_workspace = { path = "../atlas_workspace" }
+serde           = { workspace = true }
+serde_json      = { workspace = true }
+tracing         = { workspace = true }

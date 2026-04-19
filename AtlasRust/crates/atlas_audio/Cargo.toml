@@ -5,3 +5,6 @@ edition = "2021"
 description = "Spatial audio via bevy_kira_audio (Phase 3)"
 
 [dependencies]
+atlas_core = { workspace = true }
+serde      = { workspace = true }
+tracing    = { workspace = true }
