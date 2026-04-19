@@ -6,7 +6,7 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 
 use atlas_physics::PhysicsWorld;

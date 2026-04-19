@@ -3,10 +3,8 @@
 //! Mirrors the C++ NF::Editor system. Actual egui rendering is at the app level.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use atlas_ui::{FocusService, NotificationHost, PanelDescriptor, PanelRegistry, Theme};
-use atlas_workspace::{WorkspaceShell, WorkspaceTool};
 
 // ── Editor panel IDs (canonical) ──────────────────────────────────────────────
 

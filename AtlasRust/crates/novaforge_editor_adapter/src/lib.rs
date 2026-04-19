@@ -8,8 +8,7 @@
 use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, process};
 
-use atlas_engine::{Engine, EngineConfig, EngineMode, Event};
-use atlas_workspace::WorkspaceShell;
+use atlas_engine::{Engine, Event};
 
 // ── Launch contract ───────────────────────────────────────────────────────────
 

@@ -4,11 +4,9 @@
 //! verification for the game client and server.
 
 use serde::{Deserialize, Serialize};
-use serde_json as json;
 use std::{
     collections::HashMap,
     fs,
-    io::{Read, Write},
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };

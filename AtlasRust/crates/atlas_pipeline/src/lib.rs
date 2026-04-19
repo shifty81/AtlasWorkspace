@@ -5,7 +5,6 @@
 //! `.atlas/pipeline/` directory tree — no sockets, no RPC.
 
 use serde::{Deserialize, Serialize};
-use serde_json as json;
 use std::{
     collections::HashMap,
     fs,

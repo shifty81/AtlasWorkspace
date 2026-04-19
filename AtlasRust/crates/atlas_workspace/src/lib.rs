@@ -4,14 +4,13 @@
 //! Mirrors the C++ NF::Workspace / ProjectSerializer system.
 
 use serde::{Deserialize, Serialize};
-use serde_json as json;
 use std::{
     collections::HashMap,
     fs,
     path::{Path, PathBuf},
 };
 
-use atlas_pipeline::{ChangeEvent, ChangeEventType, Manifest, PipelineWatcher, WatchLog};
+use atlas_pipeline::Manifest;
 
 // ── Project file ──────────────────────────────────────────────────────────────
 
@@ -101,10 +100,6 @@ impl WorkspaceShellSnapshot {
     pub fn is_valid(&self) -> bool {
         !self.project_id.is_empty() && !self.project_name.is_empty()
     }
-}
-
-impl ProjectFileVersion {
-    fn default_version() -> Self { Self::current() }
 }
 
 impl Default for ProjectFileVersion {
