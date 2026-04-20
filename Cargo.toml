@@ -1,0 +1,62 @@
+[workspace]
+members = [
+    # ── Engine subsystem crates ───────────────────────────────────────────────
+    "AtlasRust/crates/atlas_core",
+    "AtlasRust/crates/atlas_engine",
+    "AtlasRust/crates/atlas_renderer",
+    "AtlasRust/crates/atlas_physics",
+    "AtlasRust/crates/atlas_audio",
+    "AtlasRust/crates/atlas_animation",
+    "AtlasRust/crates/atlas_input",
+    "AtlasRust/crates/atlas_networking",
+    "AtlasRust/crates/atlas_ui",
+    "AtlasRust/crates/atlas_pipeline",
+    "AtlasRust/crates/atlas_workspace",
+    "AtlasRust/crates/atlas_editor",
+    # ── NovaForge game crates ─────────────────────────────────────────────────
+    "AtlasRust/crates/novaforge_voxel",
+    "AtlasRust/crates/novaforge_world",
+    "AtlasRust/crates/novaforge_game",
+    "AtlasRust/crates/novaforge_editor_adapter",
+    "AtlasRust/crates/novaforge_patch",
+    # ── Application binaries ──────────────────────────────────────────────────
+    "AtlasRust/apps/atlas_workspace_app",
+    "AtlasRust/apps/novaforge_game_app",
+    "AtlasRust/apps/novaforge_editor_app",
+    "AtlasRust/apps/novaforge_server_app",
+]
+resolver = "2"
+
+[workspace.dependencies]
+# ── Bevy ──────────────────────────────────────────────────────────────────────
+bevy             = { version = "0.18" }
+bevy_voxel_world = { version = "0.15" }
+bevy_egui        = { version = "0.39" }
+bevy_rapier3d    = { version = "0.33" }
+
+# ── Serialisation ─────────────────────────────────────────────────────────────
+serde      = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+tracing            = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# ── Workspace-internal crates ─────────────────────────────────────────────────
+atlas_core                = { path = "AtlasRust/crates/atlas_core" }
+atlas_engine              = { path = "AtlasRust/crates/atlas_engine" }
+atlas_renderer            = { path = "AtlasRust/crates/atlas_renderer" }
+atlas_physics             = { path = "AtlasRust/crates/atlas_physics" }
+atlas_audio               = { path = "AtlasRust/crates/atlas_audio" }
+atlas_animation           = { path = "AtlasRust/crates/atlas_animation" }
+atlas_input               = { path = "AtlasRust/crates/atlas_input" }
+atlas_networking          = { path = "AtlasRust/crates/atlas_networking" }
+atlas_ui                  = { path = "AtlasRust/crates/atlas_ui" }
+atlas_pipeline            = { path = "AtlasRust/crates/atlas_pipeline" }
+atlas_workspace           = { path = "AtlasRust/crates/atlas_workspace" }
+atlas_editor              = { path = "AtlasRust/crates/atlas_editor" }
+novaforge_voxel           = { path = "AtlasRust/crates/novaforge_voxel" }
+novaforge_world           = { path = "AtlasRust/crates/novaforge_world" }
+novaforge_game            = { path = "AtlasRust/crates/novaforge_game" }
+novaforge_editor_adapter  = { path = "AtlasRust/crates/novaforge_editor_adapter" }
+novaforge_patch           = { path = "AtlasRust/crates/novaforge_patch" }

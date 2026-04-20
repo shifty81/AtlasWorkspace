@@ -1,0 +1,45 @@
+[alias]
+# ── Build shortcuts ──────────────────────────────────────────────────────────
+ws   = "build --workspace"                                  # build everything
+wsr  = "build --workspace --release"                        # release build
+wsc  = "check --workspace"                                  # fast type-check
+
+# ── Individual binaries ──────────────────────────────────────────────────────
+editor   = "run  --bin novaforge_editor"
+server   = "run  --bin novaforge_server"
+game     = "run  --bin novaforge_game"
+workspace = "run --bin atlas_workspace"
+
+# ── Test & lint ──────────────────────────────────────────────────────────────
+t    = "test --workspace"                                   # all tests
+lint = "clippy --workspace -- -D warnings"                  # strict clippy
+fmt  = "fmt --all -- --check"                               # formatting check
+
+# ── Documentation ────────────────────────────────────────────────────────────
+doc  = "doc --workspace --no-deps --open"
+
+[build]
+# Emit compiler errors in a compact format; overridden by cargo's terminal
+# detection, but useful for CI log parsing.
+# message-format = "short"   # uncomment for CI
+
+[profile.dev]
+# Faster linking in development
+split-debuginfo = "unpacked"
+
+[profile.release]
+# Lean release binaries — LTO reduces binary size and improves inlining.
+lto            = "thin"
+codegen-units  = 1
+strip          = "debuginfo"
+
+[profile.release-debug]
+# Profile with symbols for profiling tools (cargo build --profile release-debug)
+inherits       = "release"
+debug          = true
+strip          = "none"
+
+[profile.ci]
+# Optimised CI profile — faster test runs without full release overhead.
+inherits       = "dev"
+opt-level      = 1

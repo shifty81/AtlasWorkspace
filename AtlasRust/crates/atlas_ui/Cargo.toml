@@ -5,3 +5,6 @@ edition = "2021"
 description = "Shared egui widget primitives and theme tokens (Phase 2)"
 
 [dependencies]
+atlas_core = { workspace = true }
+serde      = { workspace = true }
+tracing    = { workspace = true }

@@ -5,3 +5,9 @@ edition = "2021"
 description = "Editor panels, inspectors, and gizmos (Phase 2)"
 
 [dependencies]
+atlas_core      = { workspace = true }
+atlas_ui        = { path = "../atlas_ui" }
+atlas_workspace = { path = "../atlas_workspace" }
+serde           = { workspace = true }
+serde_json      = { workspace = true }
+tracing         = { workspace = true }

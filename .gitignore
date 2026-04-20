@@ -1,4 +1,38 @@
-# ── Build output ──────────────────────────────────────────────────
+# ── Rust / Cargo ──────────────────────────────────────────────────────────────
+target/
+**/*.rs.bk
+*.pdb
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.vs/
+.vscode/
+*.sln
+*.vcxproj
+*.vcxproj.*
+*.suo
+*.user
+.idea/
+*.swp
+*.swo
+*~
+.project
+.cproject
+.settings/
+*.code-workspace
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.lnk
+
+# ── Logs & temp ───────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+Logs/
+
+# ── C++ build artifacts (legacy / reference source only) ─────────────────────
 Builds/
 build/
 build_ci/
@@ -9,6 +43,12 @@ build_test_debug/
 out/
 dist/
 cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+install_manifest.txt
 *.o
 *.obj
 *.a
@@ -18,50 +58,7 @@ cmake-build-*/
 *.dll
 *.exe
 
-# ── CMake ─────────────────────────────────────────────────────────
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-CTestTestfile.cmake
-Makefile.cmake
-compile_commands.json
-install_manifest.txt
-*.cmake
-!CMakeLists.txt
-!CMakePresets.json
-!Source/**/CMakeLists.txt
-!Tests/CMakeLists.txt
-!NovaForge/**/CMakeLists.txt
-!cmake/*.cmake
-
-# ── IDE / Editor ──────────────────────────────────────────────────
-.vs/
-.vscode/
-*.sln
-*.vcxproj
-*.vcxproj.*
-*.suo
-*.user
-*.sdf
-*.opensdf
-*.ipch
-*.aps
-.idea/
-*.swp
-*.swo
-*~
-.project
-.cproject
-.settings/
-*.code-workspace
-
-# ── OS ────────────────────────────────────────────────────────────
-.DS_Store
-Thumbs.db
-Desktop.ini
-*.lnk
-
-# ── Dependency managers ───────────────────────────────────────────
+# ── Dependency managers ───────────────────────────────────────────────────────
 vcpkg_installed/
 node_modules/
 __pycache__/
@@ -69,35 +66,26 @@ __pycache__/
 .venv/
 venv/
 
-# ── Logs & temp ───────────────────────────────────────────────────
-*.log
-*.tmp
-*.bak
-*.swp
-
-# ── Runtime state (editor session persistence) ────────────────────
+# ── Runtime state ─────────────────────────────────────────────────────────────
 Saved/
-
-# ── Atlas Workspace runtime ───────────────────────────────────────
 Atlas/Workspace/Sessions/*
 !Atlas/Workspace/Sessions/.gitkeep
 
-# ── Pipeline IPC runtime ─────────────────────────────────────────
+# ── Pipeline IPC runtime ──────────────────────────────────────────────────────
 NovaForge/.novaforge/pipeline/
 !NovaForge/.novaforge/.gitkeep
 
-# ── Generated verification ────────────────────────────────────────
-build_verify/
-
-# ── Binaries / Intermediate ──────────────────────────────────────
+# ── Binaries / Intermediate ───────────────────────────────────────────────────
 Binaries/
 Intermediate/
 x64/
 Debug/
 Release/
 
-# ── Package output ────────────────────────────────────────────────
+# ── Package output ────────────────────────────────────────────────────────────
 *.tar.gz
 *.tar.bz2
 *.7z
 NovaForge/Docs/Architecture.zip
+build_verify/
+

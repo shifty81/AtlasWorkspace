@@ -5,3 +5,7 @@ edition = "2021"
 description = "ECS app setup and plugin registry (Phase 3)"
 
 [dependencies]
+atlas_core    = { workspace = true }
+atlas_physics = { path = "../atlas_physics" }
+serde         = { workspace = true }
+tracing       = { workspace = true }

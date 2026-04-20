@@ -5,3 +5,6 @@ edition = "2021"
 description = "bevy_rapier3d physics wrapper (Phase 3)"
 
 [dependencies]
+atlas_core = { workspace = true }
+serde      = { workspace = true }
+tracing    = { workspace = true }

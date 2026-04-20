@@ -9,3 +9,8 @@ name = "novaforge_server"
 path = "src/main.rs"
 
 [dependencies]
+atlas_core      = { workspace = true }
+atlas_engine    = { workspace = true }
+atlas_networking = { workspace = true }
+tracing         = { workspace = true }
+tracing-subscriber = { workspace = true }
